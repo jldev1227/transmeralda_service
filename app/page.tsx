@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { empresas, vehiculos, conductores, municipiosSort } from './lib/data'; // Import data
 
 interface Municipio {
@@ -26,16 +26,38 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
+  // State for cliente selected
+  const [clienteSelected, setCliente] = useState("")
+
+  // State for conductor
+  const [conductorSelected, setConductorSelected] = useState("")
+
+  // State for vehicle
+  const [vehicleSelected, setVehicleSelected] = useState("")
+
+  // State for date request
+  const [dateRequest, setDateRequest] = useState("")
+
+  // State for date to do request
+  const [dateRequestToDo, setDateRequestToDo] = useState("")
 
   // State for selected locations
-  const [selectedOriginDept, setSelectedOriginDept] = useState('');
   const [selectedOriginMun, setSelectedOriginMun] = useState('');
-  const [selectedDestDept, setSelectedDestDept] = useState('');
   const [selectedDestMun, setSelectedDestMun] = useState('');
 
   // State for specific address inputs
   const [originSpecific, setOriginSpecific] = useState('');
   const [destSpecific, setDestSpecific] = useState('');
+
+  // purpose
+  const [purpose, setPurpose] = useState('');
+
+  // purpose
+  const [hourOut, setHourOut] = useState('');
+
+  // purpose
+  const [state, setState] = useState('solicitado');
+
 
   const nextStep = () => {
     setCurrentStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -47,29 +69,46 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // **TODO**: Gather all form data including:
-    // - Selected client ID
-    // - Dates
-    // - selectedOriginMun (DIVIPOLA code)
-    // - originSpecific (text)
-    // - selectedDestMun (DIVIPOLA code)
-    // - destSpecific (text)
-    // - Selected Purpose
-    // - Selected Driver ID (optional)
-    // - Selected Vehicle ID (optional)
-    // - Departure Time (optional)
-    // - Selected Status
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    console.log("Form Data Submitted:", {
-      ...data,
+
+    // Create a complete data object with all required fields
+    const completeData = {
       origen_municipio_divipola: selectedOriginMun,
       origen_especifico: originSpecific,
       destino_municipio_divipola: selectedDestMun,
-      destino_especifico: destSpecific,
+      destino_especifico: destSpecific.trim(),
+      fecha_solicitud: dateRequest,
+      fecha_realizacion: dateRequestToDo,
+      cliente_id: clienteSelected,
+      conductor_id: conductorSelected,
+      vehiculo_id: vehicleSelected,
+      proposito: purpose,
+      hora_salida: hourOut,
+      estado: state
+    };
+
+    // Save to localStorage
+    // Generate a unique ID for this submission or use an existing one
+    const submissionId = `trip_request_${Date.now()}`;
+
+    // Get existing trips data or initialize an empty array
+    const existingTrips = JSON.parse(localStorage.getItem('tripRequests') || '[]');
+
+    // Add new trip data to the array
+    existingTrips.push({
+      id: submissionId,
+      ...completeData,
+      timestamp: new Date().toISOString()
     });
-    alert("Solicitud Registrada! (Ver consola para datos)"); // Placeholder action
-  }
+
+    // Save updated array back to localStorage
+    localStorage.setItem('tripRequests', JSON.stringify(existingTrips));
+
+    console.log("Form Data Submitted and saved to localStorage:", completeData);
+
+    // Optional: Add success notification or redirect
+    // alert("Trip request saved successfully!");
+    // navigate('/trip-requests');
+  };
   // --- Step Indicator Component ---
   const StepIndicator = ({ stepNumber, title }: { stepNumber: number, title: string }) => {
     const isActive = currentStep === stepNumber;
@@ -87,7 +126,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
-      <div className="w-full max-w-3xl mb-8">
+      <div className="w-full max-w-5xl mb-8">
         {/* Step Progress Bar */}
         <div className="flex items-center justify-between">
           <StepIndicator stepNumber={1} title="Info Básica" />
@@ -100,7 +139,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="w-full max-w-3xl bg-white p-6 sm:p-10 rounded-lg shadow-lg">
+      <div className="w-full max-w-5xl bg-white p-6 sm:p-10 rounded-lg shadow-lg">
         <h1 className="text-2xl font-semibold mb-8 text-center text-gray-800">
           Solicitud de Servicio - Transmeralda
         </h1>
@@ -120,6 +159,8 @@ export default function Home() {
                     className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
                     required
                     defaultValue=""
+                    onChange={(e) => setCliente(e.target.value)}
+                    value={clienteSelected}
                   >
                     <option value="" disabled>Seleccione una empresa</option>
                     {empresas.map((empresa) => (
@@ -137,14 +178,14 @@ export default function Home() {
                   <label htmlFor="requestDate" className="block text-sm font-medium text-gray-700 mb-1">Fecha de Solicitud</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon /></div>
-                    <input type="date" name="requestDate" id="requestDate" className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" required />
+                    <input type="date" name="requestDate" id="requestDate" className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" required value={dateRequest} onChange={(e) => setDateRequest(e.target.value)} />
                   </div>
                 </div>
                 <div className="relative">
                   <label htmlFor="serviceDate" className="block text-sm font-medium text-gray-700 mb-1">Fecha de Realización</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon /></div>
-                    <input type="date" name="serviceDate" id="serviceDate" className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" required />
+                    <input type="date" name="serviceDate" id="serviceDate" className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" required value={dateRequestToDo} onChange={(e) => setDateRequestToDo(e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -163,13 +204,14 @@ export default function Home() {
                     <select
                       name="client"
                       id="client"
-                      className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
+                      className={`${selectedOriginMun !== "" ? "text-gray-800" : "text-gray-400"} pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600`}
                       required
-                      defaultValue=""
+                      value={selectedOriginMun}
+                      onChange={(e) => setSelectedOriginMun(e.target.value)}
                     >
                       <option value="" disabled>Seleccione un origen</option>
-                      {municipiosSort.map((municipio) => (
-                        <option key={municipio["Código Departamento"]} value={municipio["Código Departamento"]}>
+                      {municipiosSort.map((municipio, idx) => (
+                        <option className='text-gray-800' key={idx} value={municipio["Código Municipio"]}>
                           {municipio["Nombre Municipio"]} (DEP: {municipio["Nombre Departamento"]}) (COD: {municipio["Código Municipio"]})
                         </option>
                       ))}
@@ -183,17 +225,42 @@ export default function Home() {
                     <select
                       name="client"
                       id="client"
-                      className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
+                      className={`${selectedDestMun !== "" ? "text-gray-800" : "text-gray-400"} pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600`}
                       required
-                      defaultValue=""
+                      value={selectedDestMun}
+                      onChange={(e) => setSelectedDestMun(e.target.value)}
                     >
                       <option value="" disabled>Seleccione un destino</option>
-                      {municipiosSort.map((municipio) => (
-                        <option key={municipio["Código Departamento"]} value={municipio["Código Departamento"]}>
+                      {municipiosSort.map((municipio, idx) => (
+                        <option className='text-gray-800' key={idx} value={municipio["Código Municipio"]}>
                           {municipio["Nombre Municipio"]} (DEP: {municipio["Nombre Departamento"]}) (COD: {municipio["Código Municipio"]})
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative">
+                  <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">Origen especifico del Trayecto</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
+                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600"
+                      placeholder='Escribe un origen especifico'
+                      onChange={(e) => setOriginSpecific(e.target.value)}
+                      value={originSpecific}
+                    />
+                  </div>
+                </div>
+                <div className="relative">
+                  <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">Destino especifico del Trayecto</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
+                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600"
+                      placeholder='Escribe un destino especifico'
+                      onChange={(e) => setDestSpecific(e.target.value)}
+                      value={destSpecific}
+                    />
                   </div>
                 </div>
               </div>
@@ -202,16 +269,47 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Propósito del Servicio</label>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <div className="flex items-center">
-                    <input id="purpose-personnel" name="purpose" type="radio" value="personnel" className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500" required />
-                    <label htmlFor="purpose-personnel" className="ml-2 flex items-center text-sm text-gray-900"><UsersIcon className="w-4 h-4 mr-1 inline" />Recoger Personal</label>
+                    <input
+                      id="purpose-personnel"
+                      onChange={() => setPurpose('personal')}
+                      checked={purpose === 'personal'}
+                      name="purpose"
+                      type="radio"
+                      value="personal"
+                      className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      required
+                    />
+                    <label htmlFor="purpose-personnel" className="ml-2 flex items-center text-sm text-gray-900">
+                      <UsersIcon />Recoger Personal
+                    </label>
                   </div>
                   <div className="flex items-center">
-                    <input id="purpose-tools" name="purpose" type="radio" value="tools" className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500" />
-                    <label htmlFor="purpose-tools" className="ml-2 flex items-center text-sm text-gray-900"><WrenchScrewdriverIcon className="w-4 h-4 mr-1 inline" />Llevar Herramienta</label>
+                    <input
+                      id="purpose-tools"
+                      name="purpose"
+                      onChange={() => setPurpose('herramienta')}
+                      checked={purpose === 'herramienta'}
+                      type="radio"
+                      value="herramienta"
+                      className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                    />
+                    <label htmlFor="purpose-tools" className="ml-2 flex items-center text-sm text-gray-900">
+                      <WrenchScrewdriverIcon />Llevar Herramienta
+                    </label>
                   </div>
                   <div className="flex items-center">
-                    <input id="purpose-vehicle" name="purpose" type="radio" value="vehicle" className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500" />
-                    <label htmlFor="purpose-vehicle" className="ml-2 flex items-center text-sm text-gray-900"><TruckIcon className="w-4 h-4 mr-1 inline" />Posicionar Vehículo</label>
+                    <input
+                      id="purpose-vehicle"
+                      name="purpose"
+                      onChange={() => setPurpose('vehiculo')}
+                      checked={purpose === 'vehiculo'}
+                      type="radio"
+                      value="vehiculo"
+                      className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                    />
+                    <label htmlFor="purpose-vehicle" className="ml-2 flex items-center text-sm text-gray-900">
+                      <TruckIcon />Posicionar Vehículo
+                    </label>
                   </div>
                 </div>
               </div>
@@ -232,12 +330,13 @@ export default function Home() {
                       name="driver"
                       id="driver"
                       className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
-                      defaultValue=""
+                      value={conductorSelected}
+                      onChange={(e) => setConductorSelected(e.target.value)}
                     >
                       <option value="" disabled>Seleccione un conductor</option>
                       {conductores.map((conductor) => (
                         <option key={conductor.id} value={conductor.id}>
-                          {conductor.nombre} ({conductor.numeroDocumento})
+                          {conductor.nombre} {conductor.apellido} ({conductor.numeroDocumento})
                         </option>
                       ))}
                     </select>
@@ -253,7 +352,8 @@ export default function Home() {
                       name="vehicle"
                       id="vehicle"
                       className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
-                      defaultValue=""
+                      value={vehicleSelected}
+                      onChange={(e) => setVehicleSelected(e.target.value)}
                     >
                       <option value="" disabled>Seleccione un vehículo</option>
                       {vehiculos.map((vehiculo) => (
@@ -270,7 +370,7 @@ export default function Home() {
                   <label htmlFor="departureTime" className="block text-sm font-medium text-gray-700 mb-1">Hora de Salida Planificada</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ClockIcon /></div>
-                    <input type="time" name="departureTime" id="departureTime" className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" />
+                    <input type="time" name="departureTime" id="departureTime" onChange={(e => setHourOut(e.target.value))} value={hourOut} className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" />
                   </div>
                 </div>
               </div>
@@ -285,7 +385,7 @@ export default function Home() {
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Estado Inicial del Servicio</label>
                 <div className="relative">
                   {/* Optional: Add an icon here */}
-                  <select id="status" name="status" className="text-gray-800 pl-3 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none" defaultValue="solicitado">
+                  <select id="status" name="status" value={state} onChange={(e => setState(e.target.value))} className="text-gray-800 pl-3 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none">
                     <option value="solicitado">Solicitado</option>
                     <option value="planificado">Planificado</option>
                     {/* Other statuses might be set later in the process */}
@@ -308,13 +408,12 @@ export default function Home() {
               Anterior
             </button>
             {currentStep < totalSteps ? (
-              <button
-                type="button"
+              <div
                 onClick={nextStep}
                 className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
               >
                 Siguiente
-              </button>
+              </div>
             ) : (
               <button
                 type="submit"
