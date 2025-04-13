@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { TruckIcon, ChevronLeftIcon, ChevronRightIcon, Trash2, Edit, Eye } from "lucide-react";
+import { useRef, useState } from "react";
+import { TruckIcon } from "lucide-react";
 import { conductores, empresas, municipios, vehiculos } from "@/app/lib/data";
 import { limitText } from "@/helpers";
+import { useRouter } from "next/navigation";
 
 // Nueva interfaz para controlar animaciones de filas
 interface RowAnimationState {
@@ -17,6 +18,7 @@ const ServiceTable = ({ services }) => {
     const [page, setPage] = useState(1);
     const itemsPerPage = 10;
     const totalPages = Math.ceil(services.length / itemsPerPage);
+    const router = useRouter()
 
     // Filtrar vehículos según la página actual
     const servicesPaginados = services.slice(
@@ -146,6 +148,9 @@ const ServiceTable = ({ services }) => {
                             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                 Conductor
                             </th>
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                Estado
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
@@ -163,7 +168,8 @@ const ServiceTable = ({ services }) => {
                                             ${isNew ? "animate-highlight-new bg-green-50" : ""}
                                             ${isUpdated ? "animate-highlight-update bg-blue-50" : ""}
                                           `}
-                                        id={`vehiculo-row-${service.id}`}
+                                        id={`servicio-row-${service.id}`}
+                                        onClick={router.push(`/servicio/${service.id}`)}
                                     >
                                         {/* Información del vehículo */}
                                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm relative">
