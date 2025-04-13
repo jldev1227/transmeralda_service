@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { empresas, vehiculos, conductores, municipiosSort } from './lib/data'; // Import data
+import { empresas, vehiculos, conductores, municipiosSort } from '../app/lib/data'; // Import data
 
 interface Municipio {
   c_digo_dane_del_departamento: string;
