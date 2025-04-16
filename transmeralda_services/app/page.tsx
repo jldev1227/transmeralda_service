@@ -7,7 +7,6 @@ import {
   ClipboardSignature,
   ClockIcon,
   PlusIcon,
-  Router,
   TruckIcon,
 } from "lucide-react";
 
@@ -90,7 +89,7 @@ export default function Dashboard() {
         </div>
 
         {/* Resumen de estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
           <div className="bg-white shadow rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 p-3 rounded-md bg-emerald-100 text-emerald-600">
@@ -187,15 +186,7 @@ export default function Dashboard() {
             <div className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse" />
             <span>Sincronización en tiempo real activa</span>
           </div>
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Visualizando ({servicios.length}) servicios
-            </h3>
-          </div>
-
-
           <ServiceTable services={servicios} />
-
         </div>
       </div>
     </div>

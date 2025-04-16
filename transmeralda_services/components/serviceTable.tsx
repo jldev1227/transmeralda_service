@@ -36,12 +36,14 @@ const ServiceTable = ({ services }) => {
     // Obtener color según el estado del vehículo
     const getStatusColor = (estado: string) => {
         switch (estado) {
-            case "ACTIVO":
+            case "EN_CURSO":
                 return "bg-emerald-100 text-emerald-800";
-            case "INACTIVO":
+            case "CANCELADO":
                 return "bg-red-100 text-red-800";
-            case "MANTENIMIENTO":
+            case "PROGRAMADO":
                 return "bg-amber-100 text-amber-800";
+            case "COMPLETADO":
+                return "bg-primary-100 text-primary-800";
             default:
                 return "bg-gray-100 text-gray-800";
         }
@@ -128,7 +130,7 @@ const ServiceTable = ({ services }) => {
     // }, [socketEventLogs]);
 
     return (
-        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5">
             <div className="overflow-x-auto">
                 <table ref={tableRef} className="min-w-full divide-y divide-gray-300">
                     <thead className="bg-gray-50">
@@ -169,7 +171,7 @@ const ServiceTable = ({ services }) => {
                                             ${isUpdated ? "animate-highlight-update bg-blue-50" : ""}
                                           `}
                                         id={`servicio-row-${service.id}`}
-                                        onClick={router.push(`/servicio/${service.id}`)}
+                                        onClick={() => router.push(`/servicio/${service.id}`)}
                                     >
                                         {/* Información del vehículo */}
                                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm relative">
@@ -193,7 +195,7 @@ const ServiceTable = ({ services }) => {
                                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                                             <div className="text-gray-900">{municipios.find(m => m["Código Municipio"] === service.destino_id)?.["Nombre Municipio"]}</div>
                                             <div className="text-gray-500 text-xs">{limitText(service.destino_especifico, 30)}</div>
-                                            </td>
+                                        </td>
 
                                         {/* Características del vehículo */}
                                         <td className="whitespace-nowrap px-3 py-4 text-sm">
@@ -212,6 +214,13 @@ const ServiceTable = ({ services }) => {
                                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                                             <div className="text-gray-900">{limitText(`${conductores.find(v => v.id === service.conductor_id)?.nombre} ${conductores.find(v => v.id === service.conductor_id)?.nombre}`, 30)}</div>
                                             <div className="text-gray-500 text-xs">C.C. {conductores.find(v => v.id === service.conductor_id)?.numeroDocumento}</div>
+                                        </td>
+                                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(service.estado)}`}
+                                            >
+                                                {service.estado}
+                                            </span>
                                         </td>
                                     </tr>
                                 )

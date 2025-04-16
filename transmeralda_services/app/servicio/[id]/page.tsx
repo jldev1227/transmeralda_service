@@ -266,8 +266,8 @@ export default function ServiceRouteMap() {
   };
 
   return (
-    <div className="service-routes-container">
-      <div className="bg-white rounded-lg shadow-sm mb-4">
+    <div className="max-w-7xl mx-auto mt-5">
+      <div className="rounded-lg shadow-sm mb-4">
         <h2 className="text-xl font-bold mb-2">Rutas de Servicios</h2>
         <p className="text-gray-600 mb-4">Visualización de servicios de transporte y mensajería</p>
 
@@ -367,7 +367,7 @@ export default function ServiceRouteMap() {
           width: '100%',
           borderRadius: '8px',
           overflow: 'hidden',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         }}
       >
         <style jsx global>{`
