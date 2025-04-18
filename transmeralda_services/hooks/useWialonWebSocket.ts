@@ -1,6 +1,6 @@
 // hooks/useWialonWebSocket.ts
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 
 interface WialonWebSocketOptions {
   token: string;
@@ -24,27 +24,27 @@ export const useWialonWebSocket = ({
   onMessage,
   onConnect,
   onDisconnect,
-  onError
+  onError,
 }: WialonWebSocketOptions) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<WialonWebSocketState>({
     isConnected: false,
     isConnecting: false,
     error: null,
-    lastMessage: null
+    lastMessage: null,
   });
 
   // Función para conectar WebSocket
   const connect = useCallback(async () => {
     if (!token || !sessionId || state.isConnecting) return;
 
-    setState(prev => ({ ...prev, isConnecting: true }));
+    setState((prev) => ({ ...prev, isConnecting: true }));
 
     try {
       // Obtenemos los parámetros para la conexión WebSocket a través de nuestro proxy
-      const prepareResponse = await axios.post('/api/wialon-socket', {
-        action: 'prepare',
-        sid: sessionId
+      const prepareResponse = await axios.post("/api/wialon-socket", {
+        action: "prepare",
+        sid: sessionId,
       });
 
       const { wsUrl, subscriptionParams } = prepareResponse.data;
@@ -53,56 +53,77 @@ export const useWialonWebSocket = ({
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('WebSocket conectado');
-        setState(prev => ({ ...prev, isConnected: true, isConnecting: false, error: null }));
-        
+        console.log("WebSocket conectado");
+        setState((prev) => ({
+          ...prev,
+          isConnected: true,
+          isConnecting: false,
+          error: null,
+        }));
+
         // Enviamos los parámetros de suscripción
         ws.send(JSON.stringify(subscriptionParams));
-        
+
         if (onConnect) onConnect();
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          setState(prev => ({ ...prev, lastMessage: data }));
+
+          setState((prev) => ({ ...prev, lastMessage: data }));
           if (onMessage) onMessage(data);
         } catch (err) {
-          console.error('Error al procesar mensaje WebSocket:', err);
+          console.error("Error al procesar mensaje WebSocket:", err);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('Error en WebSocket:', error);
-        setState(prev => ({ 
-          ...prev, 
-          error: new Error('WebSocket connection error'), 
-          isConnecting: false 
+        console.error("Error en WebSocket:", error);
+        setState((prev) => ({
+          ...prev,
+          error: new Error("WebSocket connection error"),
+          isConnecting: false,
         }));
         if (onError) onError(error);
       };
 
       ws.onclose = () => {
-        console.log('WebSocket desconectado');
-        setState(prev => ({ ...prev, isConnected: false, isConnecting: false }));
+        console.log("WebSocket desconectado");
+        setState((prev) => ({
+          ...prev,
+          isConnected: false,
+          isConnecting: false,
+        }));
         if (onDisconnect) onDisconnect();
       };
 
       setSocket(ws);
     } catch (error) {
-      console.error('Error al preparar conexión WebSocket:', error);
-      setState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error : new Error('Unknown error'), 
-        isConnecting: false 
+      console.error("Error al preparar conexión WebSocket:", error);
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+        isConnecting: false,
       }));
       if (onError) onError(error);
     }
-  }, [token, sessionId, state.isConnecting, onConnect, onMessage, onError, onDisconnect]);
+  }, [
+    token,
+    sessionId,
+    state.isConnecting,
+    onConnect,
+    onMessage,
+    onError,
+    onDisconnect,
+  ]);
 
   // Desconexión manual del WebSocket
   const disconnect = useCallback(() => {
-    if (socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)) {
+    if (
+      socket &&
+      [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)
+    ) {
       socket.close();
     }
   }, [socket]);
@@ -116,7 +137,14 @@ export const useWialonWebSocket = ({
     return () => {
       disconnect();
     };
-  }, [sessionId, socket, state.isConnected, state.isConnecting, connect, disconnect]);
+  }, [
+    sessionId,
+    socket,
+    state.isConnected,
+    state.isConnecting,
+    connect,
+    disconnect,
+  ]);
 
   // Reconexión automática
   const reconnect = useCallback(() => {
@@ -128,6 +156,6 @@ export const useWialonWebSocket = ({
     ...state,
     connect,
     disconnect,
-    reconnect
+    reconnect,
   };
 };

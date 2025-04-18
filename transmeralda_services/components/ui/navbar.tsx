@@ -71,7 +71,7 @@ const Navbar = () => {
                   <span className="text-white font-bold">T</span>
                 </div>
                 <span className="ml-2 text-gray-900 font-semibold text-lg">
-                  Gestión de Flota
+                  Gestión de Servicios
                 </span>
               </div>
             </div>

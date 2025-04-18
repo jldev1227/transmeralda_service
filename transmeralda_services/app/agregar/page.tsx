@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { empresas, vehiculos, conductores, municipiosSort } from '../lib/data'; // Import data
+import Select from 'react-select';
+import { TimeInput } from "@heroui/date-input";
 
 // Placeholder icons (keep existing definitions)
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-3h.008v.008H12v-.008ZM12 15h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75v-.008ZM9.75 18h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5v-.008ZM7.5 18h.008v.008H7.5v-.008ZM14.25 15h.008v.008H14.25v-.008ZM14.25 18h.008v.008H14.25v-.008ZM16.5 15h.008v.008H16.5v-.008ZM16.5 18h.008v.008H16.5v-.008Z" /></svg>;
@@ -117,12 +119,22 @@ export default function Home() {
     );
   };
 
+  const empresaOptions = empresas.map((empresa) => ({
+    value: empresa.id,
+    label: `${empresa.Nombre} (NIT: ${empresa.NIT})`,
+  }));
+
+  const municipioOptions = municipiosSort.map((municipio) => ({
+    value: municipio["Nombre Municipio"],
+    label: `${municipio["Nombre Municipio"]} (COD: ${municipio["Código Municipio"]})`,
+  }));
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
+    <div className="bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div className="w-full max-w-5xl mb-8">
         {/* Step Progress Bar */}
         <div className="flex items-center justify-between">
-          <StepIndicator stepNumber={1} title="Info Básica" />
+          <StepIndicator stepNumber={1} title="Información Básica" />
           <div className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? 'bg-emerald-600' : 'bg-gray-200'}`}></div>
           <StepIndicator stepNumber={2} title="Detalles Viaje" />
           <div className={`flex-1 h-0.5 mx-4 ${currentStep > 2 ? 'bg-emerald-600' : 'bg-gray-200'}`}></div>
@@ -144,25 +156,60 @@ export default function Home() {
               {/* Client - Changed to Select */}
               <div className="relative">
                 <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                <div className="relative">
+                <div className="relative shadow-sm rounded-md">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><BuildingOfficeIcon /></div>
-                  <select
+                  <Select
                     name="client"
-                    id="client"
-                    className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
+                    inputId="client"
+                    classNamePrefix="react-select"
+                    className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                    options={empresaOptions}
+                    placeholder="Seleccione una empresa"
+                    value={empresaOptions.find(opt => opt.value === clienteSelected) || null}
+                    onChange={option => setCliente(option ? option.value : "")}
+                    isSearchable
                     required
-                    defaultValue=""
-                    onChange={(e) => setCliente(e.target.value)}
-                    value={clienteSelected}
-                  >
-                    <option value="" disabled>Seleccione una empresa</option>
-                    {empresas.map((empresa) => (
-                      <option key={empresa.id} value={empresa.id}>
-                        {empresa.Nombre} (NIT: {empresa.NIT})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"><ChevronDownIcon /></div>
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        border: "none",
+                        boxShadow: state.isFocused ? '0 0 0 1px #059669' : undefined,
+                        '&:hover': { borderColor: '#059669' },
+                        backgroundColor: 'white',
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#9ca3af',
+                        fontSize: '0.875rem',
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: '#1f2937',
+                        fontSize: '0.875rem',
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        zIndex: 50,
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        color: state.isSelected ? '#059669' : '#1f2937',
+                        backgroundColor: state.isFocused ? '#f0fdf4' : 'white',
+                        fontSize: '0.875rem',
+                      }),
+                      dropdownIndicator: (base) => ({
+                        ...base,
+                        color: '#374151',
+                        paddingRight: '0rem',
+                      }),
+                      indicatorSeparator: () => ({ display: 'none' }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#1f2937',
+                        fontSize: '0.875rem',
+                      }),
+                    }}
+                  />
                 </div>
               </div>
               {/* Dates */}
@@ -192,44 +239,120 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative">
                   <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">Origen del Trayecto</label>
-                  <div className="relative">
+                  <div className="relative shadow-sm rounded-md">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
-                    <select
-                      name="client"
-                      id="client"
-                      className={`${selectedOriginMun !== "" ? "text-gray-800" : "text-gray-400"} pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600`}
+                    <Select
+                      name="origin"
+                      inputId="origin"
+                      classNamePrefix="react-select"
+                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      options={municipioOptions}
+                      placeholder="Seleccione un origen"
+                      value={municipioOptions.find(opt => opt.value === selectedOriginMun) || null}
+                      onChange={option => setSelectedOriginMun(option ? option.value : "")}
+                      isSearchable
                       required
-                      value={selectedOriginMun}
-                      onChange={(e) => setSelectedOriginMun(e.target.value)}
-                    >
-                      <option value="" disabled>Seleccione un origen</option>
-                      {municipiosSort.map((municipio, idx) => (
-                        <option className='text-gray-800' key={idx} value={municipio["Código Municipio"]}>
-                          {municipio["Nombre Municipio"]} (DEP: {municipio["Nombre Departamento"]}) (COD: {municipio["Código Municipio"]})
-                        </option>
-                      ))}
-                    </select>
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          border: "none",
+                          boxShadow: state.isFocused ? '0 0 0 1px #059669' : undefined,
+                          '&:hover': { borderColor: '#059669' },
+                          backgroundColor: 'white',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                          fontSize: '0.875rem',
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 50,
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          color: state.isSelected ? '#059669' : '#1f2937',
+                          backgroundColor: state.isFocused ? '#f0fdf4' : 'white',
+                          fontSize: '0.875rem',
+                        }),
+                        dropdownIndicator: (base) => ({
+                          ...base,
+                          color: '#374151',
+                          paddingRight: '0rem',
+                        }),
+                        indicatorSeparator: () => ({ display: 'none' }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="relative">
                   <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">Destino del Trayecto</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
-                    <select
-                      name="client"
-                      id="client"
-                      className={`${selectedDestMun !== "" ? "text-gray-800" : "text-gray-400"} pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600`}
+                  <div className="relative  shadow-sm rounded-md">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <LocationMarkerIcon />
+                    </div>
+                    <Select
+                      name="destination"
+                      inputId="destination"
+                      classNamePrefix="react-select"
+                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      options={municipioOptions}
+                      placeholder="Seleccione un destino"
+                      value={municipioOptions.find(opt => opt.value === selectedDestMun) || null}
+                      onChange={option => setSelectedDestMun(option ? option.value : "")}
+                      isSearchable
                       required
-                      value={selectedDestMun}
-                      onChange={(e) => setSelectedDestMun(e.target.value)}
-                    >
-                      <option value="" disabled>Seleccione un destino</option>
-                      {municipiosSort.map((municipio, idx) => (
-                        <option className='text-gray-800' key={idx} value={municipio["Código Municipio"]}>
-                          {municipio["Nombre Municipio"]} (DEP: {municipio["Nombre Departamento"]}) (COD: {municipio["Código Municipio"]})
-                        </option>
-                      ))}
-                    </select>
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          border: "none",
+                          boxShadow: state.isFocused ? '0 0 0 1px #059669' : undefined,
+                          '&:hover': { borderColor: '#059669' },
+                          backgroundColor: 'white',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                          fontSize: '0.875rem',
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 50,
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          color: state.isSelected ? '#059669' : '#1f2937',
+                          backgroundColor: state.isFocused ? '#f0fdf4' : 'white',
+                          fontSize: '0.875rem',
+                        }),
+                        dropdownIndicator: (base) => ({
+                          ...base,
+                          color: '#374151',
+                          paddingRight: '0rem',
+                        }),
+                        indicatorSeparator: () => ({ display: 'none' }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -238,7 +361,7 @@ export default function Home() {
                   <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">Origen especifico del Trayecto</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
-                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600"
+                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
                       placeholder='Escribe un origen especifico'
                       onChange={(e) => setOriginSpecific(e.target.value)}
                       value={originSpecific}
@@ -249,7 +372,7 @@ export default function Home() {
                   <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">Destino especifico del Trayecto</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LocationMarkerIcon /></div>
-                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none outline-emerald-600"
+                    <input type="text" className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
                       placeholder='Escribe un destino especifico'
                       onChange={(e) => setDestSpecific(e.target.value)}
                       value={destSpecific}
@@ -272,7 +395,7 @@ export default function Home() {
                       className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
                       required
                     />
-                    <label htmlFor="purpose-personnel" className="ml-2 flex items-center text-sm text-gray-900">
+                    <label htmlFor="purpose-personnel" className="ml-2 flex items-center text-sm text-gray-900 gap-2">
                       <UsersIcon />Recoger Personal
                     </label>
                   </div>
@@ -286,7 +409,7 @@ export default function Home() {
                       value="herramienta"
                       className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
                     />
-                    <label htmlFor="purpose-tools" className="ml-2 flex items-center text-sm text-gray-900">
+                    <label htmlFor="purpose-tools" className="ml-2 flex items-center text-sm text-gray-900 gap-2">
                       <WrenchScrewdriverIcon />Llevar Herramienta
                     </label>
                   </div>
@@ -300,7 +423,7 @@ export default function Home() {
                       value="vehiculo"
                       className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
                     />
-                    <label htmlFor="purpose-vehicle" className="ml-2 flex items-center text-sm text-gray-900">
+                    <label htmlFor="purpose-vehicle" className="ml-2 flex items-center text-sm text-gray-900 gap-2">
                       <TruckIcon />Posicionar Vehículo
                     </label>
                   </div>
@@ -317,53 +440,144 @@ export default function Home() {
                 {/* Conductor - Changed to Select */}
                 <div className="relative">
                   <label htmlFor="driver" className="block text-sm font-medium text-gray-700 mb-1">Conductor Asignado</label>
-                  <div className="relative">
+                  <div className="relative shadow-sm rounded-md">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><UserIcon /></div>
-                    <select
+                    <Select
                       name="driver"
-                      id="driver"
-                      className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
-                      value={conductorSelected}
-                      onChange={(e) => setConductorSelected(e.target.value)}
-                    >
-                      <option value="" disabled>Seleccione un conductor</option>
-                      {conductores.map((conductor) => (
-                        <option key={conductor.id} value={conductor.id}>
-                          {conductor.nombre} {conductor.apellido} ({conductor.numeroDocumento})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"><ChevronDownIcon /></div>
+                      inputId="driver"
+                      classNamePrefix="react-select"
+                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      options={conductores.map((conductor) => ({
+                        value: conductor.id,
+                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numeroDocumento})`,
+                      }))}
+                      placeholder="Seleccione un conductor"
+                      value={
+                        conductores
+                          .map((conductor) => ({
+                            value: conductor.id,
+                            label: `${conductor.nombre} ${conductor.apellido} (${conductor.numeroDocumento})`,
+                          }))
+                          .find((opt) => opt.value === conductorSelected) || null
+                      }
+                      onChange={(option) => setConductorSelected(option ? option.value : "")}
+                      isSearchable
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          border: "none",
+                          boxShadow: state.isFocused ? '0 0 0 1px #059669' : undefined,
+                          '&:hover': { borderColor: '#059669' },
+                          backgroundColor: 'white',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                          fontSize: '0.875rem',
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 50,
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          color: state.isSelected ? '#059669' : '#1f2937',
+                          backgroundColor: state.isFocused ? '#f0fdf4' : 'white',
+                          fontSize: '0.875rem',
+                        }),
+                        dropdownIndicator: (base) => ({
+                          ...base,
+                          color: '#374151',
+                          paddingRight: '0rem',
+                        }),
+                        indicatorSeparator: () => ({ display: 'none' }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                      }}
+                    />
                   </div>
                 </div>
                 {/* Vehicle - Changed to Select */}
                 <div className="relative">
                   <label htmlFor="vehicle" className="block text-sm font-medium text-gray-700 mb-1">Vehículo Asignado</label>
-                  <div className="relative">
+                  <div className="relative shadow-sm rounded-md">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><TruckIcon /></div>
-                    <select
-                      name="vehicle"
-                      id="vehicle"
-                      className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
-                      value={vehicleSelected}
-                      onChange={(e) => setVehicleSelected(e.target.value)}
-                    >
-                      <option value="" disabled>Seleccione un vehículo</option>
-                      {vehiculos.map((vehiculo) => (
-                        <option key={vehiculo.id} value={vehiculo.id}>
-                          {vehiculo.placa} ({vehiculo.marca} {vehiculo.linea} {vehiculo.modelo})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"><ChevronDownIcon /></div>
+                    <Select
+                      name="driver"
+                      inputId="driver"
+                      classNamePrefix="react-select"
+                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      options={vehiculos.map((vehiculo) => ({
+                        value: vehiculo.id,
+                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                      }))}
+                      placeholder="Seleccione un vehiculo"
+                      value={
+                        vehiculos
+                          .map((vehiculo) => ({
+                            value: vehiculo.id,
+                            label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                          }))
+                          .find((opt) => opt.value === vehicleSelected) || null
+                      }
+                      onChange={(option) => setVehicleSelected(option ? option.value : "")}
+                      isSearchable
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          border: "none",
+                          boxShadow: state.isFocused ? '0 0 0 1px #059669' : undefined,
+                          '&:hover': { borderColor: '#059669' },
+                          backgroundColor: 'white',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                          fontSize: '0.875rem',
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 50,
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          color: state.isSelected ? '#059669' : '#1f2937',
+                          backgroundColor: state.isFocused ? '#f0fdf4' : 'white',
+                          fontSize: '0.875rem',
+                        }),
+                        dropdownIndicator: (base) => ({
+                          ...base,
+                          color: '#374151',
+                          paddingRight: '0rem',
+                        }),
+                        indicatorSeparator: () => ({ display: 'none' }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#1f2937',
+                          fontSize: '0.875rem',
+                        }),
+                      }}
+                    />
                   </div>
                 </div>
                 {/* Departure Time */}
                 <div className="relative md:col-span-2">
                   <label htmlFor="departureTime" className="block text-sm font-medium text-gray-700 mb-1">Hora de Salida Planificada</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ClockIcon /></div>
-                    <input type="time" name="departureTime" id="departureTime" onChange={(e => setHourOut(e.target.value))} value={hourOut} className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2" />
+                    <TimeInput variant='bordered'/>
                   </div>
                 </div>
               </div>
@@ -396,12 +610,13 @@ export default function Home() {
               type="button"
               onClick={prevStep}
               disabled={currentStep === 1}
-              className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="z-0 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Anterior
             </button>
             {currentStep < totalSteps ? (
               <div
+                role='button'
                 onClick={nextStep}
                 className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
               >

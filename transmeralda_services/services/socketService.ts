@@ -13,10 +13,10 @@ class SocketService {
   // Método para obtener la URL del socket con el protocolo correcto
   private getSocketUrl(): string {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://api.transmeralda.com";
-    
+
     // Para depuración
     console.log("URL base del socket:", url);
-    
+
     return url;
   }
 
@@ -34,16 +34,16 @@ class SocketService {
 
     try {
       console.log("Intentando conectar a:", socketUrl);
-      
+
       this.socket = io(socketUrl, {
-        path: '/socket.io/',
+        path: "/socket.io/",
         transports: ["polling"], // Usar solo polling para evitar problemas con WebSockets
         timeout: 20000,
         reconnectionAttempts: 5,
         reconnectionDelay: 2000,
         forceNew: true,
         query: { userId },
-        withCredentials: true
+        withCredentials: true,
       });
 
       // Manejadores de eventos de conexión
@@ -61,7 +61,7 @@ class SocketService {
   private handleConnect = () => {
     console.log("Socket conectado exitosamente");
     toast.success("Conexión en tiempo real establecida");
-    
+
     this.reconnectAttempts = 0; // Resetear conteo de intentos al conectar
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -72,7 +72,7 @@ class SocketService {
   // Manejador de error de conexión
   private handleConnectError = (error: any) => {
     console.error("Error de conexión Socket.IO:", error);
-    
+
     // Intentar reconectar con estrategia diferente
     this.disconnect();
     this.attemptReconnect();
@@ -81,7 +81,7 @@ class SocketService {
   // Manejador de desconexión
   private handleDisconnect = (reason: string) => {
     console.log("Socket desconectado, razón:", reason);
-    
+
     // Intentar reconectar si la desconexión no fue intencional
     if (reason !== "io client disconnect" && this.userId) {
       this.attemptReconnect();
@@ -97,12 +97,15 @@ class SocketService {
   private attemptReconnect = () => {
     if (this.reconnectAttempts < this.maxReconnectAttempts && this.userId) {
       this.reconnectAttempts++;
-      
-      console.log(`Intento de reconexión ${this.reconnectAttempts} de ${this.maxReconnectAttempts}`);
+
+      console.log(
+        `Intento de reconexión ${this.reconnectAttempts} de ${this.maxReconnectAttempts}`,
+      );
 
       // Calcular retraso exponencial
-      const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
-      
+      const delay =
+        this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
+
       console.log(`Intentando reconectar en ${delay}ms`);
 
       this.reconnectTimer = setTimeout(() => {
@@ -110,17 +113,17 @@ class SocketService {
           // En el último intento, probar con URL alternativa
           if (this.reconnectAttempts === this.maxReconnectAttempts) {
             console.log("Último intento con configuración alternativa");
-            
+
             // Usar la misma URL pero con configuración diferente
             this.socket = io(this.getSocketUrl(), {
-              path: '/socket.io/',
+              path: "/socket.io/",
               transports: ["polling"], // Intentar polling como último recurso
               timeout: 15000,
               forceNew: true,
               query: { userId: this.userId },
               withCredentials: true,
             });
-            
+
             // Reconectar manejadores
             this.socket.on("connect", this.handleConnect);
             this.socket.on("connect_error", this.handleConnectError);
@@ -154,7 +157,9 @@ class SocketService {
       console.log(`Registrando escucha para evento '${event}'`);
       this.socket.on(event, callback);
     } else {
-      console.warn(`No se pudo registrar escucha para '${event}': Socket no inicializado`);
+      console.warn(
+        `No se pudo registrar escucha para '${event}': Socket no inicializado`,
+      );
     }
   }
 

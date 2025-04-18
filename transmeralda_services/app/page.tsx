@@ -9,40 +9,19 @@ import {
   PlusIcon,
   TruckIcon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { SearchIcon } from "@/components/icons";
-import { useRouter } from "next/navigation";
 import { useService } from "@/context/serviceContext";
 import ServiceTable from "@/components/serviceTable";
 
-
-// Función para obtener la clase de color según el estado
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Solicitado":
-      return "bg-emerald-100 text-emerald-800";
-    case "En ejecución":
-      return "bg-red-100 text-red-800";
-    case "Realizado":
-      return "bg-amber-100 text-amber-800";
-    case "Cancelado":
-      return "bg-gray-100 text-gray-800";
-    case "planificado":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-600";
-  }
-};
-
 export default function Dashboard() {
-  const {
-    servicios
-  } = useService();
+  const { servicios } = useService();
 
-  const router = useRouter()
+  const router = useRouter();
 
   return (
-    <div className="flex-grow px-6 py-8">
+    <div className="max-w-7xl mx-auto py-8 max-xl:px-6">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-semibold text-gray-900">Servicios</h1>
@@ -64,20 +43,20 @@ export default function Dashboard() {
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
               placeholder="Buscar por placa, marca o propietario..."
               type="text"
-            // value={filtros.busqueda}
-            // onChange={(e) =>
-            //   setFiltros({ ...filtros, busqueda: e.target.value })
-            // }
+              // value={filtros.busqueda}
+              // onChange={(e) =>
+              //   setFiltros({ ...filtros, busqueda: e.target.value })
+              // }
             />
           </div>
 
           <div className="sm:w-64">
             <select
               className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-            // value={filtros.estado}
-            // onChange={(e) =>
-            //   setFiltros({ ...filtros, estado: e.target.value })
-            // }
+              // value={filtros.estado}
+              // onChange={(e) =>
+              //   setFiltros({ ...filtros, estado: e.target.value })
+              // }
             >
               <option value="">Todos los estados</option>
               <option value="DISPONIBLE">Disponible</option>

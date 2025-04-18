@@ -8,6 +8,7 @@ import { ClientLayout } from "./client-layout"; // Componente cliente que creare
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
+import { AuthGuard } from "@/components/authGuard";
 
 export const metadata: Metadata = {
   title: {
@@ -43,7 +44,9 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+          <AuthGuard>
             <ClientLayout>{children}</ClientLayout>
+          </AuthGuard>
         </Providers>
       </body>
     </html>

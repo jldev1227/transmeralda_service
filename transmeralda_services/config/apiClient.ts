@@ -33,7 +33,7 @@ const createApiClient = () => {
 
     // Redirigir al sistema de autenticación
     const authSystem =
-      process.env.NEXT_PUBLIC_AUTH_SYSTEM || "https://auth.midominio.com/login";
+      process.env.NEXT_PUBLIC_AUTH_SYSTEM || "http://auth.midominio.local:3001";
 
     window.location.href = authSystem;
   };
