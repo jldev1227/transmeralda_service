@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { ClipboardSignature } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { conductores, empresas, municipios, vehiculos } from "@/app/lib/data";
 import { limitText } from "@/helpers";
+import { Servicio, useService } from "@/context/serviceContext";
 
 // Nueva interfaz para controlar animaciones de filas
 interface RowAnimationState {
@@ -15,7 +15,8 @@ interface RowAnimationState {
 }
 
 // Componente principal de tabla de vehículos
-const ServiceTable = ({ services }) => {
+const ServiceTable = ({ services }: { services: Servicio[] }) => {
+  const { municipios, conductores, vehiculos, empresas } = useService()
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(services.length / itemsPerPage);
@@ -37,13 +38,13 @@ const ServiceTable = ({ services }) => {
   // Obtener color según el estado del vehículo
   const getStatusColor = (estado: string) => {
     switch (estado) {
-      case "EN_CURSO":
+      case "en curso":
         return "bg-emerald-100 text-emerald-800";
-      case "CANCELADO":
+      case "cancelado":
         return "bg-red-100 text-red-800";
-      case "PROGRAMADO":
+      case "planificado":
         return "bg-amber-100 text-amber-800";
-      case "COMPLETADO":
+      case "completado":
         return "bg-primary-100 text-primary-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -176,7 +177,7 @@ const ServiceTable = ({ services }) => {
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {servicesPaginados.length > 0 ? (
-              servicesPaginados.map((service) => {
+              servicesPaginados.map((service: Servicio) => {
                 // Verificar si esta fila tiene animación activa
                 const animation = rowAnimations[service.id];
                 const isNew = animation?.isNew || false;
@@ -186,14 +187,14 @@ const ServiceTable = ({ services }) => {
                   <tr
                     key={service.id}
                     className={`
-                                            hover:bg-gray-50 hover:cursor-pointer 
-                                            ${isNew ? "animate-highlight-new bg-green-50" : ""}
-                                            ${isUpdated ? "animate-highlight-update bg-blue-50" : ""}
-                                          `}
+                      hover:bg-gray-50 hover:cursor-pointer 
+                      ${isNew ? "animate-highlight-new bg-green-50" : ""}
+                      ${isUpdated ? "animate-highlight-update bg-blue-50" : ""}
+                    `}
                     id={`servicio-row-${service.id}`}
                     onClick={() => router.push(`/servicio/${service.id}`)}
                   >
-                    {/* Información del vehículo */}
+                    {/* Información del servicio */}
                     <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm relative">
                       <div className="font-semibold text-gray-900">
                         {/* Indicador de elemento nuevo/actualizado */}
@@ -203,16 +204,10 @@ const ServiceTable = ({ services }) => {
                         {isUpdated && !isNew && (
                           <span className="absolute h-full w-1 bg-blue-500 left-0 top-0" />
                         )}
-                        {service.placa}
                       </div>
                       <div className="text-gray-500">
                         <div className="text-gray-900">
-                          {
-                            municipios.find(
-                              (m) =>
-                                m["Código Municipio"] === service.origen_id,
-                            )?.["Nombre Municipio"]
-                          }
+                          {service.origen.nombre_municipio} - {service.origen.nombre_departamento}
                         </div>
                         <div className="text-gray-500 text-xs">
                           {limitText(service.origen_especifico, 30)}
@@ -223,11 +218,7 @@ const ServiceTable = ({ services }) => {
                     {/* Información del propietario */}
                     <td className="whitespace-nowrap px-3 py-4 text-sm">
                       <div className="text-gray-900">
-                        {
-                          municipios.find(
-                            (m) => m["Código Municipio"] === service.destino_id,
-                          )?.["Nombre Municipio"]
-                        }
+                        {service.destino.nombre_municipio} - {service.destino.nombre_departamento}
                       </div>
                       <div className="text-gray-500 text-xs">
                         {limitText(service.destino_especifico, 30)}
@@ -239,9 +230,9 @@ const ServiceTable = ({ services }) => {
                       <div className="text-gray-900">
                         {limitText(
                           empresas.find((e) => e.id === service.cliente_id)
-                            ?.Nombre,
+                            ?.Nombre || "",
                           30,
-                        ) || ""}
+                        )}
                       </div>
                       <div className="text-gray-500 text-xs">
                         NIT:{" "}
@@ -271,21 +262,17 @@ const ServiceTable = ({ services }) => {
                     <td className="whitespace-nowrap px-3 py-4 text-sm">
                       <div className="text-gray-900">
                         {limitText(
-                          `${conductores.find((v) => v.id === service.conductor_id)?.nombre} ${conductores.find((v) => v.id === service.conductor_id)?.nombre}`,
+                          `${service.conductor.nombre} ${service.conductor.apellido}`,
                           30,
                         )}
                       </div>
                       <div className="text-gray-500 text-xs">
-                        C.C.{" "}
-                        {
-                          conductores.find((v) => v.id === service.conductor_id)
-                            ?.numeroDocumento
-                        }
+                        C.C.{service.conductor.numero_identificacion}
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(service.estado)}`}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(service.estado)}`}
                       >
                         {service.estado}
                       </span>
@@ -298,7 +285,7 @@ const ServiceTable = ({ services }) => {
                 <td className="py-8 text-center" colSpan={6}>
                   <ClipboardSignature className="mx-auto h-12 w-12 text-gray-300" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No hay sertvicios
+                    No hay servicios
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
                     No se encontraron servicios con los criterios de búsqueda
@@ -349,8 +336,8 @@ const ServiceTable = ({ services }) => {
               <div className="flex space-x-2">
                 <button
                   className={`px-3 py-1 border rounded-md ${page === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                     }`}
                   disabled={page === 1}
                   onClick={() => cambiarPagina(page - 1)}
@@ -386,8 +373,8 @@ const ServiceTable = ({ services }) => {
                       <button
                         key={pageNum}
                         className={`px-3 py-1 border rounded-md ${page === pageNum
-                            ? "bg-emerald-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50"
                           }`}
                         onClick={() => cambiarPagina(pageNum)}
                       >
@@ -399,8 +386,8 @@ const ServiceTable = ({ services }) => {
 
                 <button
                   className={`px-3 py-1 border rounded-md ${page === Math.ceil(services.length / itemsPerPage)
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                     }`}
                   disabled={page === Math.ceil(services.length / itemsPerPage)}
                   onClick={() => cambiarPagina(page + 1)}

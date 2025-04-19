@@ -10,6 +10,8 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useService } from "@/context/serviceContext";
+import { useParams } from "next/navigation";
 
 // Componente para ajustar la vista del mapa según las rutas
 function RoutesController({ routes, activeRouteId }) {
@@ -22,9 +24,7 @@ function RoutesController({ routes, activeRouteId }) {
 
       if (route && route.geometry && route.geometry.length > 0) {
         const bounds = L.latLngBounds(route.geometry);
-
         map.fitBounds(bounds, { padding: [50, 50] });
-
         return;
       }
     }
@@ -36,7 +36,6 @@ function RoutesController({ routes, activeRouteId }) {
 
       if (allPoints.length > 0) {
         const bounds = L.latLngBounds(allPoints);
-
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }
@@ -47,8 +46,6 @@ function RoutesController({ routes, activeRouteId }) {
 
 // Crear íconos personalizados para origen y destino basados en el estado
 const createServiceIcon = (color, type) => {
-  // Definir color de relleno según el tipo (origen/destino)
-  const fillColor = type === "origin" ? color : "#ffffff";
   // Definir símbolo central según el tipo
   const innerSymbol =
     type === "origin"
@@ -72,59 +69,29 @@ const createServiceIcon = (color, type) => {
   });
 };
 
-// Función para simular coordenadas desde códigos de municipio
-// En una aplicación real, usarías una base de datos o API para obtener coordenadas reales
-const getCoordinatesByMunicipioCode = (code) => {
-  const municipioCoordinates = {
-    // Antioquia
-    "05001": [6.2442, -75.5812], // Medellín
-    "05002": [5.7866, -75.4239], // Abejorral
-    "05004": [6.6355, -76.051], // Abriaquí
-    "05021": [6.3739, -75.138], // Alejandría
-    "05030": [6.0336, -75.7038], // Amagá
-    // Coordenadas de respaldo para códigos no encontrados
-    default: [6.2442, -75.5812],
-  };
-
-  return municipioCoordinates[code] || municipioCoordinates.default;
-};
 
 // Función para convertir estado a colores
 const getColorByState = (state) => {
   switch (state) {
-    case "PROGRAMADO":
+    case "planificado":
       return "#f59e0b"; // Amber-500
-    case "EN_CURSO":
+    case "en curso":
       return "#10b981"; // Emerald-500
-    case "COMPLETADO":
+    case "completado":
       return "#3b82f6"; // Blue-500 (primario)
     default:
       return "#6b7280"; // Gray-500
   }
 };
 
-// Función para obtener un gradiente SVG basado en el estado
-const getGradientByState = (state) => {
-  switch (state) {
-    case "PROGRAMADO":
-      return "linear-gradient(to bottom, #fbbf24, #f59e0b)"; // Amber-400 to Amber-500
-    case "EN_CURSO":
-      return "linear-gradient(to bottom, #34d399, #10b981)"; // Emerald-400 to Emerald-500
-    case "COMPLETADO":
-      return "linear-gradient(to bottom, #60a5fa, #3b82f6)"; // Blue-400 to Blue-500
-    default:
-      return "linear-gradient(to bottom, #9ca3af, #6b7280)"; // Gray-400 to Gray-500
-  }
-};
-
 // Función para obtener clase CSS basada en el estado
 const getClassByState = (state) => {
   switch (state) {
-    case "PROGRAMADO":
+    case "planificado":
       return "bg-amber-50 border-amber-200 text-amber-800";
-    case "EN_CURSO":
+    case "en curso":
       return "bg-emerald-50 border-emerald-200 text-emerald-800";
-    case "COMPLETADO":
+    case "completado":
       return "bg-blue-50 border-blue-200 text-blue-800";
     default:
       return "bg-gray-50 border-gray-200 text-gray-800";
@@ -134,11 +101,11 @@ const getClassByState = (state) => {
 // Función para obtener texto de estado en español
 const getStatusText = (state) => {
   switch (state) {
-    case "PROGRAMADO":
-      return "Programado";
-    case "EN_CURSO":
+    case "planificado":
+      return "Planificado";
+    case "en curso":
       return "En curso";
-    case "COMPLETADO":
+    case "completado":
       return "Completado";
     default:
       return state;
@@ -181,121 +148,153 @@ const formatCurrency = (value) => {
 };
 
 export default function ServiceRouteMap() {
-  // Datos de ejemplo de servicios
-  const serviciosData = [
-    {
-      id: "srv-1rfhmi2wq",
-      origen_id: "05001",
-      destino_id: "05021",
-      origen_especifico: "MEDELLÍN, ANTIOQUIA - Terminal de transporte",
-      destino_especifico: "ALEJANDRÍA, ANTIOQUIA - Parque empresarial",
-      conductor_id: "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-      vehiculo_id: 3,
-      cliente_id: 11,
-      estado: "EN_CURSO",
-      tipo_servicio: "TRANSPORTE_PERSONAL",
-      fecha_inicio: "2025-01-23T07:08:46.532Z",
-      fecha_fin: "2025-01-23T11:08:46.532Z",
-      distancia_km: 47,
-      valor: 3171705,
-      observaciones: null,
-      createdAt: "2025-04-12T22:13:28.890Z",
-      updatedAt: "2025-04-12T22:13:28.890Z",
-    },
-  ];
-
-  const [servicios, setServicios] = useState([]);
+  const params = useParams();
+  const { id } = params;
+  const { servicio, obtenerServicio } = useService();
   const [loading, setLoading] = useState(true);
   const [activeServicio, setActiveServicio] = useState(null);
-  const [routeGeometries, setRouteGeometries] = useState([]);
+  const [servicioWithRoutes, setServicioWithRoutes] = useState(null);
+
+  // First check if id exists, then ensure it's a string before using it
+  if (!id) return null;
+
+  // Handle the case where id could be an array
+  const serviceId = Array.isArray(id) ? id[0] : id;
+  
+  useEffect(()=>{
+    obtenerServicio(serviceId);
+  }, [serviceId])
 
   // Cargar y preparar los datos de servicios
   useEffect(() => {
-    const fetchRouteGeometries = async () => {
+
+    if(!servicio) return
+    const fetchRouteGeometry = async () => {
       setLoading(true);
 
       try {
-        // Procesar cada servicio para obtener geometrías de ruta
-        const serviciosWithRoutes = await Promise.all(
-          serviciosData.map(async (servicio) => {
-            const origenCoords = getCoordinatesByMunicipioCode(
-              servicio.origen_id,
-            );
-            const destinoCoords = getCoordinatesByMunicipioCode(
-              servicio.destino_id,
-            );
+        // Asegurarse de que tenemos el servicio
+        if (!servicio) {
+          setLoading(false);
+          return;
+        }
 
-            try {
-              // Intentar obtener la geometría real de la ruta desde OSRM
-              const response = await fetch(
-                `https://router.project-osrm.org/route/v1/driving/${origenCoords[1]},${origenCoords[0]};${destinoCoords[1]},${destinoCoords[0]}?overview=full&geometries=geojson`,
-              );
+        const origenCoords = [servicio.origen.latitud, servicio.origen.longitud]
+        const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud]
 
-              if (!response.ok) {
-                throw new Error("Error al obtener la ruta");
-              }
+        try {
+          // Intentar obtener la geometría real de la ruta desde OSRM
+          // Usando la IP local del servidor OSRM
+          const response = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${origenCoords[1]},${origenCoords[0]};${destinoCoords[1]},${destinoCoords[0]}?overview=full&geometries=geojson`
+          );
 
-              const data = await response.json();
+          if (!response.ok) {
+            throw new Error("Error al obtener la ruta");
+          }
 
-              if (
-                data.code !== "Ok" ||
-                !data.routes ||
-                data.routes.length === 0
-              ) {
-                throw new Error("No se encontró una ruta");
-              }
+          const data = await response.json();
 
-              // Extraer la geometría de la ruta y convertirla al formato [lat, lng]
-              const route = data.routes[0];
-              const coordinates = route.geometry.coordinates.map((coord) => [
-                coord[1],
-                coord[0],
-              ]);
+          if (
+            data.code !== "Ok" ||
+            !data.routes ||
+            data.routes.length === 0
+          ) {
+            throw new Error("No se encontró una ruta");
+          }
 
-              return {
-                ...servicio,
-                origenCoords,
-                destinoCoords,
-                geometry: coordinates,
-                routeDistance: (route.distance / 1000).toFixed(1),
-                routeDuration: Math.round(route.duration / 60),
-              };
-            } catch (error) {
-              console.warn("Error al obtener ruta detallada:", error.message);
+          // Extraer la geometría de la ruta y convertirla al formato [lat, lng]
+          const route = data.routes[0];
+          const coordinates = route.geometry.coordinates.map((coord) => [
+            coord[1],
+            coord[0],
+          ]);
 
-              // Si hay un error, usar línea recta entre origen y destino
-              return {
-                ...servicio,
-                origenCoords,
-                destinoCoords,
-                geometry: [origenCoords, destinoCoords],
-                routeDistance: servicio.distancia_km,
-                routeDuration: null,
-              };
-            }
-          }),
-        );
+          setServicioWithRoutes({
+            ...servicio,
+            origenCoords,
+            destinoCoords,
+            geometry: coordinates,
+            routeDistance: (route.distance / 1000).toFixed(1),
+            routeDuration: Math.round(route.duration / 60),
+          });
+        } catch (error) {
+          console.warn("Error al obtener ruta detallada:", error.message);
 
-        setServicios(serviciosWithRoutes);
+          // Si hay un error, usar línea recta entre origen y destino
+          setServicioWithRoutes({
+            ...servicio,
+            origenCoords,
+            destinoCoords,
+            geometry: [origenCoords, destinoCoords],
+            routeDistance: servicio.distancia_km,
+            routeDuration: null,
+          });
+        }
       } catch (error) {
-        console.error("Error al procesar servicios:", error);
+        console.error("Error al procesar el servicio:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRouteGeometries();
-  }, []);
+    if (servicio) {
+      fetchRouteGeometry();
+    }
+  }, [servicio]); // Agregada dependencia de servicio y obtenerServicio
 
   // Manejar clic en un servicio para activarlo
-  const handleServicioClick = (servicio) => {
+  const handleServicioClick = (servicioClickeado) => {
+    if (!servicioClickeado && servicioWithRoutes) {
+      // Si no se proporciona un servicio, usar el actual
+      servicioClickeado = servicioWithRoutes;
+    }
+    
+    if (!servicioClickeado) return;
+    
     setActiveServicio(
-      activeServicio && activeServicio.id === servicio.id ? null : servicio,
+      activeServicio && activeServicio.id === servicioClickeado.id 
+        ? null 
+        : servicioClickeado
     );
   };
 
+  // Si no hay servicio con rutas, mostrar pantalla de carga
+  if (!servicioWithRoutes && !loading) {
+    return (
+      <div className="max-w-7xl mx-auto mt-5 max-xl:px-6">
+        <div className="bg-white p-8 rounded-lg shadow-sm text-center">
+          <p className="text-gray-600">No se encontró información para este servicio</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si está cargando, mostrar pantalla de carga
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto mt-5 max-xl:px-6">
+        <div className="bg-white p-8 rounded-lg shadow-sm text-center">
+          <p className="text-gray-600">Cargando información del servicio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Obtener color y opciones para la polilínea
+  const color = getColorByState(servicioWithRoutes.estado);
+  const isActive = activeServicio && activeServicio.id === servicioWithRoutes.id;
+
+  // Opciones para la polilínea
+  const polylineOptions = {
+    color: color,
+    weight: isActive ? 5 : 3,
+    opacity: isActive ? 0.9 : 0.7,
+    dashArray: servicioWithRoutes.estado === "planificado" ? "5, 10" : null,
+  };
+
   return (
-    <div className="max-w-7xl mx-auto mt-5">
+    <div className="max-w-7xl mx-auto mt-5 max-xl:px-6">
       <div className="rounded-lg shadow-sm mb-4">
         <h2 className="text-xl font-bold mb-2">Rutas de Servicios</h2>
         <p className="text-gray-600 mb-4">
@@ -304,127 +303,111 @@ export default function ServiceRouteMap() {
 
         {/* Lista de servicios */}
         <div className="servicios-list space-y-3 mb-4">
-          {loading ? (
-            <div className="loading-message p-4 text-center text-gray-500">
-              Cargando servicios y calculando rutas...
-            </div>
-          ) : (
-            servicios.map((servicio) => (
-              <div
-                key={servicio.id}
-                className={`servicio-item p-3 border rounded-md cursor-pointer transition-all hover:shadow-md ${getClassByState(
-                  servicio.estado,
-                )} ${
-                  activeServicio && activeServicio.id === servicio.id
-                    ? "ring-2 ring-offset-2"
-                    : ""
-                }`}
-                style={{
-                  borderLeftWidth: "4px",
-                  borderLeftColor: getColorByState(servicio.estado),
-                }}
-                onClick={() => handleServicioClick(servicio)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium">
-                      {servicio.origen_especifico.split(" - ")[0]} →{" "}
-                      {servicio.destino_especifico.split(" - ")[0]}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      <span className="inline-block mr-3">
-                        <span className="font-medium">ID:</span> {servicio.id}
-                      </span>
-                      <span className="inline-block mr-3">
-                        <span className="font-medium">Tipo:</span>{" "}
-                        {getServiceTypeText(servicio.tipo_servicio)}
-                      </span>
-                      <span className="inline-block">
-                        <span className="font-medium">Distancia:</span>{" "}
-                        {servicio.distancia_km} km
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    className={`estado-badge px-2 py-1 text-xs font-medium rounded-full ${
-                      servicio.estado === "PROGRAMADO"
-                        ? "bg-amber-100 text-amber-800"
-                        : servicio.estado === "EN_CURSO"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {getStatusText(servicio.estado)}
+          <div
+            key={servicioWithRoutes.id}
+            className={`servicio-item p-3 border rounded-md cursor-pointer transition-all hover:shadow-md ${getClassByState(
+              servicioWithRoutes.estado
+            )} ${
+              activeServicio && activeServicio.id === servicioWithRoutes.id
+                ? "ring-2 ring-offset-2"
+                : ""
+            }`}
+            style={{
+              borderLeftWidth: "4px",
+              borderLeftColor: getColorByState(servicioWithRoutes.estado),
+            }}
+            onClick={() => handleServicioClick(servicioWithRoutes)}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-medium">
+                  {servicioWithRoutes.origen_especifico.split(" - ")[0]} →{" "}
+                  {servicioWithRoutes.destino_especifico.split(" - ")[0]}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  <span className="inline-block mr-3">
+                    <span className="font-medium">ID:</span> {servicioWithRoutes.id}
+                  </span>
+                  <span className="inline-block mr-3">
+                    <span className="font-medium">Tipo:</span>{" "}
+                    {getServiceTypeText(servicioWithRoutes.tipo_servicio)}
+                  </span>
+                  <span className="inline-block">
+                    <span className="font-medium">Distancia:</span>{" "}
+                    {servicioWithRoutes.routeDistance} km
                   </span>
                 </div>
+              </div>
+              <span
+                className={`estado-badge px-2 py-1 text-xs font-medium rounded-full ${
+                  servicioWithRoutes.estado === "planificado"
+                    ? "bg-amber-100 text-amber-800"
+                    : servicioWithRoutes.estado === "EN_CURSO"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-blue-100 text-blue-800"
+                }`}
+              >
+                {getStatusText(servicioWithRoutes.estado)}
+              </span>
+            </div>
 
-                {activeServicio && activeServicio.id === servicio.id && (
-                  <div className="servicio-details mt-3 pt-3 border-t border-gray-200">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Origen
-                        </div>
-                        <div className="text-sm">
-                          {servicio.origen_especifico}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Destino
-                        </div>
-                        <div className="text-sm">
-                          {servicio.destino_especifico}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Inicia
-                        </div>
-                        <div className="text-sm">
-                          {formatDate(servicio.fecha_inicio)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Finaliza
-                        </div>
-                        <div className="text-sm">
-                          {formatDate(servicio.fecha_fin)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Valor
-                        </div>
-                        <div className="text-sm font-medium">
-                          {formatCurrency(servicio.valor)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Tiempo estimado
-                        </div>
-                        <div className="text-sm">
-                          {servicio.routeDuration
-                            ? `${servicio.routeDuration} minutos`
-                            : "No disponible"}
-                        </div>
-                      </div>
+            {activeServicio && activeServicio.id === servicioWithRoutes.id && (
+              <div className="servicio-details mt-3 pt-3 border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Origen
                     </div>
-                    {servicio.observaciones && (
-                      <div className="mt-2">
-                        <div className="text-xs font-medium text-gray-500 mb-1">
-                          Observaciones
-                        </div>
-                        <div className="text-sm">{servicio.observaciones}</div>
-                      </div>
-                    )}
+                    <div className="text-sm">
+                      {servicioWithRoutes.origen_especifico}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Destino
+                    </div>
+                    <div className="text-sm">
+                      {servicioWithRoutes.destino_especifico}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Inicia
+                    </div>
+                    <div className="text-sm">
+                      {formatDate(servicioWithRoutes.fecha_inicio)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Finaliza
+                    </div>
+                    <div className="text-sm">
+                      {formatDate(servicioWithRoutes.fecha_fin)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Tiempo estimado
+                    </div>
+                    <div className="text-sm">
+                      {servicioWithRoutes.routeDuration
+                        ? `${servicioWithRoutes.routeDuration} minutos`
+                        : "No disponible"}
+                    </div>
+                  </div>
+                </div>
+                {servicioWithRoutes.observaciones && (
+                  <div className="mt-2">
+                    <div className="text-xs font-medium text-gray-500 mb-1">
+                      Observaciones
+                    </div>
+                    <div className="text-sm">{servicioWithRoutes.observaciones}</div>
                   </div>
                 )}
               </div>
-            ))
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -438,7 +421,7 @@ export default function ServiceRouteMap() {
           boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <style global jsx>{`
+        <style jsx global>{`
           .service-marker-popup .leaflet-popup-content-wrapper {
             border-radius: 8px;
             padding: 0;
@@ -460,7 +443,7 @@ export default function ServiceRouteMap() {
             font-weight: bold;
           }
 
-          .popup-programado {
+          .popup-planificado {
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
           }
 
@@ -494,127 +477,106 @@ export default function ServiceRouteMap() {
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
 
-          {/* Ajustar vista a las rutas */}
+          {/* Ajustar vista a la ruta */}
           <RoutesController
-            activeRouteId={activeServicio ? activeServicio.id : null}
-            routes={servicios}
+            activeRouteId={servicioWithRoutes.id}
+            routes={[servicioWithRoutes]}
           />
 
-          {/* Renderizar rutas y marcadores para cada servicio */}
-          {servicios.map((servicio) => {
-            const color = getColorByState(servicio.estado);
-            const isActive =
-              activeServicio && activeServicio.id === servicio.id;
+          <React.Fragment key={servicioWithRoutes.id}>
+            {/* Polilínea de la ruta */}
+            {servicioWithRoutes.geometry && (
+              <Polyline
+                eventHandlers={{
+                  click: () => handleServicioClick(servicioWithRoutes),
+                }}
+                pathOptions={polylineOptions}
+                positions={servicioWithRoutes.geometry}
+              />
+            )}
 
-            // Opciones para la polilínea
-            const polylineOptions = {
-              color: color,
-              weight: isActive ? 5 : 3,
-              opacity: isActive ? 0.9 : 0.7,
-              dashArray: servicio.estado === "PROGRAMADO" ? "5, 10" : null,
-            };
+            {/* Marcador de origen */}
+            <Marker
+              eventHandlers={{
+                click: () => handleServicioClick(servicioWithRoutes),
+              }}
+              icon={createServiceIcon(color, "origin")}
+              position={servicioWithRoutes.origenCoords}
+            >
+              <Popup className="service-marker-popup">
+                <div>
+                  <div
+                    className={`popup-header popup-${servicioWithRoutes.estado.toLowerCase().replace("_", "-")}`}
+                  >
+                    Origen - {getStatusText(servicioWithRoutes.estado)}
+                  </div>
+                  <div className="popup-content">
+                    <div className="font-medium">
+                      {servicioWithRoutes.origen_especifico}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      ID: {servicioWithRoutes.id}
+                    </div>
 
-            return (
-              <React.Fragment key={servicio.id}>
-                {/* Polilínea de la ruta */}
-                {servicio.geometry && (
-                  <Polyline
-                    eventHandlers={{
-                      click: () => handleServicioClick(servicio),
-                    }}
-                    pathOptions={polylineOptions}
-                    positions={servicio.geometry}
-                  />
-                )}
+                    <div className="popup-divider" />
 
-                {/* Marcador de origen */}
-                <Marker
-                  eventHandlers={{
-                    click: () => handleServicioClick(servicio),
-                  }}
-                  icon={createServiceIcon(color, "origin")}
-                  position={servicio.origenCoords}
-                >
-                  <Popup className="service-marker-popup">
-                    <div>
-                      <div
-                        className={`popup-header popup-${servicio.estado.toLowerCase().replace("_", "-")}`}
-                      >
-                        Origen - {getStatusText(servicio.estado)}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <div className="font-medium">Tipo de servicio</div>
+                        <div>
+                          {getServiceTypeText(servicioWithRoutes.tipo_servicio)}
+                        </div>
                       </div>
-                      <div className="popup-content">
-                        <div className="font-medium">
-                          {servicio.origen_especifico}
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          ID: {servicio.id}
-                        </div>
-
-                        <div className="popup-divider" />
-
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <div className="font-medium">Tipo de servicio</div>
-                            <div>
-                              {getServiceTypeText(servicio.tipo_servicio)}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium">Fecha inicio</div>
-                            <div>
-                              {new Date(
-                                servicio.fecha_inicio,
-                              ).toLocaleDateString()}
-                            </div>
-                          </div>
+                      <div>
+                        <div className="font-medium">Fecha inicio</div>
+                        <div>
+                          {new Date(
+                            servicioWithRoutes.fecha_inicio,
+                          ).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
-                  </Popup>
-                </Marker>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
 
-                {/* Marcador de destino */}
-                <Marker
-                  eventHandlers={{
-                    click: () => handleServicioClick(servicio),
-                  }}
-                  icon={createServiceIcon(color, "destination")}
-                  position={servicio.destinoCoords}
-                >
-                  <Popup className="service-marker-popup">
-                    <div>
-                      <div
-                        className={`popup-header popup-${servicio.estado.toLowerCase().replace("_", "-")}`}
-                      >
-                        Destino - {getStatusText(servicio.estado)}
-                      </div>
-                      <div className="popup-content">
-                        <div className="font-medium">
-                          {servicio.destino_especifico}
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          ID: {servicio.id}
-                        </div>
+            {/* Marcador de destino */}
+            <Marker
+              eventHandlers={{
+                click: () => handleServicioClick(servicioWithRoutes),
+              }}
+              icon={createServiceIcon(color, "destination")}
+              position={servicioWithRoutes.destinoCoords}
+            >
+              <Popup className="service-marker-popup">
+                <div>
+                  <div
+                    className={`popup-header popup-${servicioWithRoutes.estado.toLowerCase().replace("_", "-")}`}
+                  >
+                    Destino - {getStatusText(servicioWithRoutes.estado)}
+                  </div>
+                  <div className="popup-content">
+                    <div className="font-medium">
+                      {servicioWithRoutes.destino_especifico}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      ID: {servicioWithRoutes.id}
+                    </div>
 
-                        <div className="popup-divider" />
+                    <div className="popup-divider" />
 
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <div className="font-medium">Distancia</div>
-                            <div>{servicio.distancia_km} km</div>
-                          </div>
-                          <div>
-                            <div className="font-medium">Valor</div>
-                            <div>{formatCurrency(servicio.valor)}</div>
-                          </div>
-                        </div>
+                    <div className="text-sm">
+                      <div>
+                        <div className="font-medium">Distancia</div>
+                        <div>{servicioWithRoutes.routeDistance} km</div>
                       </div>
                     </div>
-                  </Popup>
-                </Marker>
-              </React.Fragment>
-            );
-          })}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          </React.Fragment>
         </MapContainer>
       </div>
     </div>

@@ -98,7 +98,7 @@ export default function Dashboard() {
                     Activos
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "EN_CURSO").length}
+                    {servicios.filter((s) => s.estado === "en curso").length}
                   </dd>
                 </dl>
               </div>
@@ -116,7 +116,7 @@ export default function Dashboard() {
                     Realizados
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "COMPLETADO").length}
+                    {servicios.filter((s) => s.estado === "completado").length}
                   </dd>
                 </dl>
               </div>
@@ -130,10 +130,10 @@ export default function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Pendientes
+                    Planificados
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "PROGRAMADO").length}
+                    {servicios.filter((s) => s.estado === "planificado").length}
                   </dd>
                 </dl>
               </div>
@@ -151,7 +151,7 @@ export default function Dashboard() {
                     Cancelados
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "CANCELADO").length}
+                    {servicios.filter((s) => s.estado === "cancelado").length}
                   </dd>
                 </dl>
               </div>

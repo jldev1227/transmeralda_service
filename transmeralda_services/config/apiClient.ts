@@ -6,7 +6,7 @@ import axios from "axios";
 const createApiClient = () => {
   const instance = axios.create({
     baseURL:
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/nomina",
+      process.env.NEXT_PUBLIC_API_URL || "http://midominio.local:5000",
     headers: { "Content-Type": "application/json" },
     withCredentials: true, // Esto enviará las cookies automáticamente
   });

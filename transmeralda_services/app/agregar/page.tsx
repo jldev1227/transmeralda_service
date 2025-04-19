@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from 'react';
-import { empresas, vehiculos, conductores, municipiosSort } from '../lib/data'; // Import data
 import Select from 'react-select';
 import { TimeInput } from "@heroui/date-input";
+import { EstadoServicio, Servicio, useService } from '@/context/serviceContext';
 
 // Placeholder icons (keep existing definitions)
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-3h.008v.008H12v-.008ZM12 15h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75v-.008ZM9.75 18h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5v-.008ZM7.5 18h.008v.008H7.5v-.008ZM14.25 15h.008v.008H14.25v-.008ZM14.25 18h.008v.008H14.25v-.008ZM16.5 15h.008v.008H16.5v-.008ZM16.5 18h.008v.008H16.5v-.008Z" /></svg>;
@@ -18,6 +18,8 @@ const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none
 const BuildingOfficeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M8.25 21h7.5M12 6.75a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V7.5a.75.75 0 0 1 .75-.75Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h.008v.008H8.25V6.75Zm0 3.75h.008v.008H8.25v-.008Zm0 3.75h.008v.008H8.25v-.008Zm0 3.75h.008v.008H8.25v-.008Zm3-11.25h.008v.008H11.25V6.75Zm0 3.75h.008v.008H11.25v-.008Zm0 3.75h.008v.008H11.25v-.008Zm0 3.75h.008v.008H11.25v-.008Zm3-11.25h.008v.008H14.25V6.75Zm0 3.75h.008v.008H14.25v-.008Zm0 3.75h.008v.008H14.25v-.008Zm0 3.75h.008v.008H14.25v-.008Z" /></svg>;
 
 export default function Home() {
+  const { municipios, conductores, vehiculos, empresas} = useService()
+  const { setError, registrarServicio } = useService()
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
@@ -51,7 +53,7 @@ export default function Home() {
   const [hourOut, setHourOut] = useState('');
 
   // purpose
-  const [state, setState] = useState('solicitado');
+  const [state, setState] = useState<EstadoServicio>('SOLICITADO');
 
 
   const nextStep = () => {
@@ -62,48 +64,50 @@ export default function Home() {
     setCurrentStep((prev) => (prev > 1 ? prev - 1 : prev));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Mostrar estado de carga
+    setError(null);
+    
+    try {
+      // Crear un objeto de datos que cumpla con la interfaz CrearServicioDTO
+      const servicioData: Servicio = {
+        origen_id: selectedOriginMun, // Asegúrate de que esto sea el UUID del municipio
+        origen_especifico: originSpecific,
+        destino_id: selectedDestMun, // Asegúrate de que esto sea el UUID del municipio
+        destino_especifico: destSpecific.trim(),
+        conductor_id: conductorSelected,
+        vehiculo_id: vehicleSelected,
+        cliente_id: clienteSelected,
+        tipo_servicio: purpose,
+        fecha_inicio: dateRequestToDo, // Fecha de realización como fecha de inicio
+        // Establecer valor y distancia con valores por defecto si no están disponibles
+        distancia_km: 0, // Podrías calcular esto con alguna API de mapas o dejarlo en 0
+        valor: 0, // Este podría ser calculado en el backend basado en alguna tarifa
+        estado: state,
+        observaciones: `Solicitud creada el ${dateRequest}. Hora de salida: ${hourOut}`
+      };
 
-    // Create a complete data object with all required fields
-    const completeData = {
-      origen_municipio_divipola: selectedOriginMun,
-      origen_especifico: originSpecific,
-      destino_municipio_divipola: selectedDestMun,
-      destino_especifico: destSpecific.trim(),
-      fecha_solicitud: dateRequest,
-      fecha_realizacion: dateRequestToDo,
-      cliente_id: clienteSelected,
-      conductor_id: conductorSelected,
-      vehiculo_id: vehicleSelected,
-      proposito: purpose,
-      hora_salida: hourOut,
-      estado: state
-    };
-
-    // Save to localStorage
-    // Generate a unique ID for this submission or use an existing one
-    const submissionId = `trip_request_${Date.now()}`;
-
-    // Get existing trips data or initialize an empty array
-    const existingTrips = JSON.parse(localStorage.getItem('tripRequests') || '[]');
-
-    // Add new trip data to the array
-    existingTrips.push({
-      id: submissionId,
-      ...completeData,
-      timestamp: new Date().toISOString()
-    });
-
-    // Save updated array back to localStorage
-    localStorage.setItem('tripRequests', JSON.stringify(existingTrips));
-
-    console.log("Form Data Submitted and saved to localStorage:", completeData);
-
-    // Optional: Add success notification or redirect
-    // alert("Trip request saved successfully!");
-    // navigate('/trip-requests');
+      console.log(servicioData)
+      
+      // Llamar a la función para registrar el servicio
+      const nuevoServicio = await registrarServicio(servicioData);
+      
+      // Mostrar mensaje de éxito
+      console.log("Servicio registrado exitosamente:", nuevoServicio);
+      
+      // Opcional: Mostrar notificación de éxito
+      alert("¡Servicio registrado exitosamente!");
+      
+    } catch (error) {
+      // Manejar errores
+      console.error("Error al registrar el servicio:", error);
+      
+      // Mostrar mensaje de error
+      setError(error instanceof Error ? error.message : 'Error desconocido al registrar el servicio');
+    }
   };
+
   // --- Step Indicator Component ---
   const StepIndicator = ({ stepNumber, title }: { stepNumber: number, title: string }) => {
     const isActive = currentStep === stepNumber;
@@ -124,10 +128,10 @@ export default function Home() {
     label: `${empresa.Nombre} (NIT: ${empresa.NIT})`,
   }));
 
-  const municipioOptions = municipiosSort.map((municipio) => ({
-    value: municipio["Nombre Municipio"],
-    label: `${municipio["Nombre Municipio"]} (COD: ${municipio["Código Municipio"]})`,
-  }));
+  const municipioOptions = municipios.map((municipio) => ({
+    value: municipio.id,
+    label: `${municipio.nombre_municipio} (DEP: ${municipio.nombre_departamento}) (COD: ${municipio.codigo_municipio})`,
+  })).sort((a, b)=> a.label.localeCompare(b.label));
 
   return (
     <div className="bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
@@ -449,14 +453,14 @@ export default function Home() {
                       className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                       options={conductores.map((conductor) => ({
                         value: conductor.id,
-                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numeroDocumento})`,
+                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
                       }))}
                       placeholder="Seleccione un conductor"
                       value={
                         conductores
                           .map((conductor) => ({
                             value: conductor.id,
-                            label: `${conductor.nombre} ${conductor.apellido} (${conductor.numeroDocumento})`,
+                            label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
                           }))
                           .find((opt) => opt.value === conductorSelected) || null
                       }
@@ -610,7 +614,7 @@ export default function Home() {
               type="button"
               onClick={prevStep}
               disabled={currentStep === 1}
-              className="z-0 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className='border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed'
             >
               Anterior
             </button>
