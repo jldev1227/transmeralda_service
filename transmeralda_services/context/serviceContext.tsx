@@ -40,7 +40,7 @@ export interface SocketEventLog {
 interface ServiceContextType {
   // Datos
   servicios: Servicio[];
-  servicio: Servicio;
+  servicio: Servicio | null;
   municipios: Municipio[]
   conductores: Conductor[]
   vehiculos: Vehiculo[]
@@ -218,7 +218,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   children,
 }) => {
   const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [servicio, setServicio] = useState<Servicio>([]);
+  const [servicio, setServicio] = useState<Servicio | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [conductores, setConductores] = useState<Conductor[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);

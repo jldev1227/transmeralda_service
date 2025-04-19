@@ -107,6 +107,8 @@ const getStatusText = (state) => {
       return "En curso";
     case "completado":
       return "Completado";
+    case "solicitado":
+      return "Solicitado";
     default:
       return state;
   }
@@ -135,16 +137,6 @@ const formatDate = (dateString) => {
   };
 
   return new Date(dateString).toLocaleDateString("es-CO", options);
-};
-
-// Función para formatear valor en pesos colombianos
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 };
 
 export default function ServiceRouteMap() {
@@ -188,6 +180,8 @@ export default function ServiceRouteMap() {
           const response = await fetch(
             `https://router.project-osrm.org/route/v1/driving/${origenCoords[1]},${origenCoords[0]};${destinoCoords[1]},${destinoCoords[0]}?overview=full&geometries=geojson`
           );
+
+          console.log(`https://router.project-osrm.org/route/v1/driving/${origenCoords[1]},${origenCoords[0]};${destinoCoords[1]},${destinoCoords[0]}?overview=full&geometries=geojson`)
 
           if (!response.ok) {
             throw new Error("Error al obtener la ruta");
@@ -298,10 +292,9 @@ export default function ServiceRouteMap() {
       <div className="rounded-lg shadow-sm mb-4">
         <h2 className="text-xl font-bold mb-2">Rutas de Servicios</h2>
         <p className="text-gray-600 mb-4">
-          Visualización de servicios de transporte y mensajería
+          Visualización de servicio de transporte
         </p>
 
-        {/* Lista de servicios */}
         <div className="servicios-list space-y-3 mb-4">
           <div
             key={servicioWithRoutes.id}
@@ -342,9 +335,9 @@ export default function ServiceRouteMap() {
                 className={`estado-badge px-2 py-1 text-xs font-medium rounded-full ${
                   servicioWithRoutes.estado === "planificado"
                     ? "bg-amber-100 text-amber-800"
-                    : servicioWithRoutes.estado === "EN_CURSO"
+                    : servicioWithRoutes.estado === "en curso"
                     ? "bg-emerald-100 text-emerald-800"
-                    : "bg-blue-100 text-blue-800"
+                    : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {getStatusText(servicioWithRoutes.estado)}

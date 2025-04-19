@@ -53,7 +53,7 @@ export default function Home() {
   const [hourOut, setHourOut] = useState('');
 
   // purpose
-  const [state, setState] = useState<EstadoServicio>('SOLICITADO');
+  const [state, setState] = useState<EstadoServicio>('solicitado');
 
 
   const nextStep = () => {

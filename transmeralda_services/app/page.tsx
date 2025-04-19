@@ -6,6 +6,8 @@ import {
   CheckCircleIcon,
   ClipboardSignature,
   ClockIcon,
+  GitPullRequest,
+  GitPullRequestDraft,
   PlusIcon,
   TruckIcon,
 } from "lucide-react";
@@ -68,7 +70,7 @@ export default function Dashboard() {
         </div>
 
         {/* Resumen de estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           <div className="bg-white shadow rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 p-3 rounded-md bg-emerald-100 text-emerald-600">
@@ -152,6 +154,24 @@ export default function Dashboard() {
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
                     {servicios.filter((s) => s.estado === "cancelado").length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 p-3 rounded-md bg-gray-100 text-gray-600">
+                <GitPullRequestDraft className="h-6 w-6" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Solicitados
+                  </dt>
+                  <dd className="text-lg font-semibold text-gray-900">
+                    {servicios.filter((s) => s.estado === "solicitado").length}
                   </dd>
                 </dl>
               </div>

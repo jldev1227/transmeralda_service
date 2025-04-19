@@ -28,7 +28,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
         {children}</main>
       {/* Footer - solo se muestra si NO es la página 404 */}
       {!is404Page && (
-        <footer className="bg-white border-t border-gray-200 py-4">
+        <footer className="bg-white border-t border-gray-200 py-4 mt-10">
           <div className="max-w-7xl mx-auto px-6">
             <p className="text-sm text-gray-500 text-center">
               &copy; {new Date().getFullYear()} Sistema de Gestión de servicios.
