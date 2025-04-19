@@ -8,8 +8,6 @@ export async function POST(request: NextRequest) {
     // Obtiene el cuerpo de la solicitud como JSON
     const { token, service, params } = await request.json();
 
-    console.log(token, service, params);
-
     // Validar que los datos necesarios estén presentes (opcional pero recomendado)
     if ((!token && service !== "token/login") || !service || !params) {
       return NextResponse.json(

@@ -88,13 +88,8 @@ export default function Home() {
         observaciones: `Solicitud creada el ${dateRequest}. Hora de salida: ${hourOut}`
       };
 
-      console.log(servicioData)
-      
       // Llamar a la función para registrar el servicio
       const nuevoServicio = await registrarServicio(servicioData);
-      
-      // Mostrar mensaje de éxito
-      console.log("Servicio registrado exitosamente:", nuevoServicio);
       
       // Opcional: Mostrar notificación de éxito
       alert("¡Servicio registrado exitosamente!");

@@ -29,8 +29,7 @@ const INITIAL_MAP_ZOOM: number = 12;
 const FOCUSED_MAP_ZOOM: number = 16; // Zoom al hacer clic en una tarjeta
 
 // ¡REEMPLAZA ESTE TOKEN POR UNO VÁLIDO!
-const WIALON_API_TOKEN =
-  "00d90c3f86ef574df0f12b5f400c7a3338AD2C1B4EEC8F5BE68CD08DA79F27A88ED3B73F";
+const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN;
 
 // --- Definición del Ícono Personalizado Pulsante (FUERA del componente) ---
 const pulsingGreenIcon = L.divIcon({
@@ -260,7 +259,6 @@ const WialonVehicles = () => {
           );
 
           if (bounds.isValid()) {
-            console.log("Ajustando límites generales:", bounds);
             map.fitBounds(bounds, {
               padding: [50, 50],
               maxZoom: 16,
@@ -281,12 +279,6 @@ const WialonVehicles = () => {
     // Efecto para manejar el "flyTo"
     useEffect(() => {
       if (flyToTarget) {
-        console.log(
-          "Volando a:",
-          flyToTarget.coords,
-          "Zoom:",
-          flyToTarget.zoom,
-        );
         map.flyTo(flyToTarget.coords, flyToTarget.zoom, {
           duration: 1.5, // Duración de la animación en segundos
         });

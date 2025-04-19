@@ -234,7 +234,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       const response = await apiClient.get("/api/servicios");
 
       if (response.data.success) {
-        console.log(response)
         setServicios(response.data.data);
       } else {
         throw new Error(
@@ -359,10 +358,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       setError(null);
       const response = await apiClient.get(`/api/servicios/${id}`);
 
-      console.log(id)
-      console.log(response)
       if (response.data.success) {
-        console.log(response)
         setServicio(response.data.data);
       } else {
         throw new Error(

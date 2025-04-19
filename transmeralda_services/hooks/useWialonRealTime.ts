@@ -31,7 +31,6 @@ export const useWialonRealtime = ({
     try {
       // Limitar intentos de suscripción para evitar bucles infinitos
       if (subscribeAttempts > 2) {
-        console.log("Demasiados intentos de suscripción, pausando...");
         setError(
           new Error(
             "Múltiples intentos de suscripción fallidos. Posible problema con el token de sesión.",
@@ -42,7 +41,6 @@ export const useWialonRealtime = ({
       }
 
       setSubscribeAttempts((prev) => prev + 1);
-      console.log(`Intento de suscripción #${subscribeAttempts + 1}`);
 
       const response = await axios.post("/api/wialon-socket", {
         action: "subscribe",
