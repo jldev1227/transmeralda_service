@@ -44,6 +44,7 @@
     "react-leaflet": "^5.0.0",
     "react-select": "^5.10.1",
     "socket.io-client": "^4.8.1",
+    "tailwindcss-animated": "^2.0.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

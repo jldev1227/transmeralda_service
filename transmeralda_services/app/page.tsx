@@ -6,7 +6,6 @@ import {
   CheckCircleIcon,
   ClipboardSignature,
   ClockIcon,
-  GitPullRequest,
   GitPullRequestDraft,
   PlusIcon,
   TruckIcon,

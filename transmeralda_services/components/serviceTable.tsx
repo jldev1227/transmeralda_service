@@ -16,7 +16,7 @@ interface RowAnimationState {
 
 // Componente principal de tabla de vehículos
 const ServiceTable = ({ services }: { services: Servicio[] }) => {
-  const { municipios, conductores, vehiculos, empresas } = useService()
+  const { municipios, conductores, vehiculos, empresas } = useService();
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(services.length / itemsPerPage);
@@ -207,7 +207,8 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
                       </div>
                       <div className="text-gray-500">
                         <div className="text-gray-900">
-                          {service.origen.nombre_municipio} - {service.origen.nombre_departamento}
+                          {service.origen.nombre_municipio} -{" "}
+                          {service.origen.nombre_departamento}
                         </div>
                         <div className="text-gray-500 text-xs">
                           {limitText(service.origen_especifico, 30)}
@@ -218,7 +219,8 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
                     {/* Información del propietario */}
                     <td className="whitespace-nowrap px-3 py-4 text-sm">
                       <div className="text-gray-900">
-                        {service.destino.nombre_municipio} - {service.destino.nombre_departamento}
+                        {service.destino.nombre_municipio} -{" "}
+                        {service.destino.nombre_departamento}
                       </div>
                       <div className="text-gray-500 text-xs">
                         {limitText(service.destino_especifico, 30)}
@@ -335,10 +337,11 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
             <div>
               <div className="flex space-x-2">
                 <button
-                  className={`px-3 py-1 border rounded-md ${page === 1
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
+                  className={`px-3 py-1 border rounded-md ${
+                    page === 1
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
                   disabled={page === 1}
                   onClick={() => cambiarPagina(page - 1)}
                 >
@@ -372,10 +375,11 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
                     return (
                       <button
                         key={pageNum}
-                        className={`px-3 py-1 border rounded-md ${page === pageNum
-                          ? "bg-emerald-600 text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                          }`}
+                        className={`px-3 py-1 border rounded-md ${
+                          page === pageNum
+                            ? "bg-emerald-600 text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
                         onClick={() => cambiarPagina(pageNum)}
                       >
                         {pageNum}
@@ -385,10 +389,11 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
                 )}
 
                 <button
-                  className={`px-3 py-1 border rounded-md ${page === Math.ceil(services.length / itemsPerPage)
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
+                  className={`px-3 py-1 border rounded-md ${
+                    page === Math.ceil(services.length / itemsPerPage)
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
                   disabled={page === Math.ceil(services.length / itemsPerPage)}
                   onClick={() => cambiarPagina(page + 1)}
                 >

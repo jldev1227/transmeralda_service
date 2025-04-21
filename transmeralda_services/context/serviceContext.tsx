@@ -1,6 +1,14 @@
 "use client";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+  useEffect,
+} from "react";
+
 import { apiClient } from "@/config/apiClient";
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -41,13 +49,14 @@ interface ServiceContextType {
   // Datos
   servicios: Servicio[];
   servicio: Servicio | null;
-  municipios: Municipio[]
-  conductores: Conductor[]
-  vehiculos: Vehiculo[]
-  empresas: Empresa[]
+  municipios: Municipio[];
+  conductores: Conductor[];
+  vehiculos: Vehiculo[];
+  empresas: Empresa[];
+  loading: boolean;
   registrarServicio: (servicioData: CrearServicioDTO) => void;
-  obtenerServicio: (id: string) => void
-  setError: React.Dispatch<React.SetStateAction<string | null>>
+  obtenerServicio: (id: string) => void;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
 
   // Nuevas propiedades para Socket.IO
   socketConnected?: boolean;
@@ -60,11 +69,17 @@ interface ServicesProviderContext {
   children: ReactNode;
 }
 
-export type EstadoServicio = 'solicitado' | 'en curso' | 'completado' | 'planificado' | 'realizado' | 'cancelado';
+export type EstadoServicio =
+  | "solicitado"
+  | "en curso"
+  | "completado"
+  | "planificado"
+  | "realizado"
+  | "cancelado";
 
 // Interface para el modelo Servicio
 export interface Servicio {
-  id: string; // UUID
+  id?: string; // UUID
   origen_id: string; // UUID referencia a municipio
   destino_id: string; // UUID referencia a municipio
   origen_especifico: string;
@@ -81,6 +96,8 @@ export interface Servicio {
   observaciones?: string;
   created_at?: Date | string;
   updated_at?: Date | string;
+  origen: Municipio
+  destino: Municipio
 }
 
 export interface Municipio {
@@ -120,7 +137,6 @@ export interface Vehiculo {
   created_at?: Date | string;
   updated_at?: Date | string;
 }
-
 
 // Interface para Servicio con relaciones cargadas
 export interface ServicioConRelaciones extends Servicio {
@@ -243,8 +259,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -261,15 +277,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setMunicipios(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener municipios",
-        );
+        throw new Error(response.data.message || "Error al obtener municipios");
       }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -293,8 +307,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -311,15 +325,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setVehiculos(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener vehiculos",
-        );
+        throw new Error(response.data.message || "Error al obtener vehiculos");
       }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -336,64 +348,78 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setEmpresas(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener empresas",
-        );
+        throw new Error(response.data.message || "Error al obtener empresas");
       }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Obtener todas las servicios
-  const obtenerServicio = useCallback(async (id: string): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get(`/api/servicios/${id}`);
+  // Dentro de tu hook/context useService
+  const obtenerServicio = useCallback(
+    async (id: string): Promise<Servicio | null> => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (response.data.success) {
-        setServicio(response.data.data);
-      } else {
-        throw new Error(
-          response.data.message || "Error al obtener liquidaciones",
+        const response = await apiClient.get(`/api/servicios/${id}`);
+
+        if (response.data.success) {
+          setServicio(response.data.data);
+          console.log(response.data.data);
+
+          return response.data.data;
+        } else {
+          throw new Error(
+            response.data.message || "Error al obtener la liquidación",
+          );
+        }
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Error al conectar con el servidor",
         );
-      }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  const registrarServicio = async (servicioData: CrearServicioDTO): Promise<ServicioConRelaciones> => {
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const registrarServicio = async (
+    servicioData: CrearServicioDTO,
+  ): Promise<ServicioConRelaciones> => {
     try {
       // Realizar la petición POST al endpoint de servicios
-      const response = await apiClient.post<ApiResponse<ServicioConRelaciones>>('/api/servicios', servicioData);
+      const response = await apiClient.post<ApiResponse<ServicioConRelaciones>>(
+        "/api/servicios",
+        servicioData,
+      );
 
       // Verificar si la operación fue exitosa
       if (response.data.success && response.data.data) {
         return response.data.data;
       } else {
         // Si hay un mensaje de error específico, usarlo
-        throw new Error(response.data.message || 'Error al registrar el servicio');
+        throw new Error(
+          response.data.message || "Error al registrar el servicio",
+        );
       }
     } catch (error) {
       // Manejar errores de red o del servidor
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('Error desconocido al registrar el servicio');
+        throw new Error("Error desconocido al registrar el servicio");
       }
     }
   };
@@ -414,9 +440,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     conductores,
     vehiculos,
     empresas,
+    loading,
     registrarServicio,
     obtenerServicio,
-    setError
+    setError,
   };
 
   return (

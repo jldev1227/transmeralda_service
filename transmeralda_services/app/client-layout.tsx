@@ -24,8 +24,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <div className="relative flex flex-col h-screen">
       <DynamicTitle />
       {!is404Page && <Navbar />}
-      <main className="bg-gray-50 flex-grow">
-        {children}</main>
+      <main className="bg-gray-50 flex-grow">{children}</main>
       {/* Footer - solo se muestra si NO es la página 404 */}
       {!is404Page && (
         <footer className="bg-white border-t border-gray-200 py-4 mt-10">
