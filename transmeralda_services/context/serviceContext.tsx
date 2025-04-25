@@ -9,6 +9,7 @@ import React, {
 } from "react";
 
 import { apiClient } from "@/config/apiClient";
+import { LatLngExpression, LatLngTuple } from "leaflet";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -96,8 +97,13 @@ export interface Servicio {
   observaciones?: string;
   created_at?: Date | string;
   updated_at?: Date | string;
-  origen: Municipio
-  destino: Municipio
+  origen: Municipio;
+  destino: Municipio;
+  origenCoords: LatLngTuple;
+  destinoCoords: LatLngTuple;
+  geometry: LatLngExpression[]
+  routeDistance: string | number
+  routeDuration: number | null
 }
 
 export interface Municipio {
@@ -140,11 +146,42 @@ export interface Vehiculo {
 
 // Interface para Servicio con relaciones cargadas
 export interface ServicioConRelaciones extends Servicio {
-  origen?: Municipio;
-  destino?: Municipio;
-  conductor?: Conductor;
-  vehiculo?: Vehiculo;
-  cliente?: Cliente;
+  origen: Municipio;
+  destino: Municipio;
+  conductor: Conductor;
+  vehiculo: Vehiculo;
+  cliente: Cliente;
+}
+
+export interface VehicleTracking {
+  flags: number;           // 1025
+  item: {
+    cls: number;           // 2
+    id: number;            // 24616231
+    lmsg: {
+      t: number;           // Timestamp (1745587111)
+      f: number;           // Flag (1)
+      tp: string;          // Tipo ('ud')
+      pos: Position;       // Objeto de posición
+      lc: number;          // 0
+    };
+    mu: number;            // 3
+    nm: string;            // "EYX108"
+    pos: Position;         // Objeto de posición
+    uacl: number;          // 19327369763
+  };
+}
+
+export interface Position {
+  c: number;               // 0 (posiblemente counter)
+  f: number;               // 1 (posiblemente flag)
+  lc: number;              // 0 (posiblemente last count)
+  s: number;               // 0 (posiblemente status)
+  sc: number;              // 0 (posiblemente status code)
+  t: number;               // Timestamp (1745587111)
+  x: number;               // Longitud (-71.6594783)
+  y: number;               // Latitud (3.77588)
+  z: number;               // Altitud (0)
 }
 
 export interface Cliente {
@@ -371,8 +408,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         const response = await apiClient.get(`/api/servicios/${id}`);
 
         if (response.data.success) {
+          console.log(response)
           setServicio(response.data.data);
-          console.log(response.data.data);
 
           return response.data.data;
         } else {

@@ -3,37 +3,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import OptimizedMapComponent from '@/components/optimizedMapComponent';
 import { useParams } from 'next/navigation';
-import { useService } from '@/context/serviceContext';
+import { Servicio, ServicioConRelaciones, useService, VehicleTracking } from '@/context/serviceContext';
+import axios from 'axios';
+import ServiceDetailPanel from '@/components/ui/servicioDetailPanel';
+import LoadingPage from '@/components/loadingPage';
+
+// Definición de la interfaz WialonVehicle para TypeScript
+interface WialonVehicle {
+  id: number;
+  nm: string;
+  pos?: {
+    x: number;
+    y: number;
+    t: number;
+    s?: number;
+    c?: number;
+  }
+}
 
 // Componente padre que gestiona la obtención de datos del servicio
 const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
-
   const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || '';
+  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 
-  const params = useParams<{ id: string }>()
-  const { obtenerServicio } = useService()
+  const params = useParams<{ id: string }>();
+  const { servicio, obtenerServicio } = useService();
+  console.log(servicio)
   const [token] = useState(WIALON_API_TOKEN);
-  const [loading, setLoading] = useState(true);
-  const [servicioWithRoutes, setServicioWithRoutes] = useState(null);
-  const [vehicleTracking, setVehicleTracking] = useState(null);
-  const [trackingError, setTrackingError] = useState(null);
-  const [wialonVehicles, setWialonVehicles] = useState<WialonVehicle[]>([]);
+  const [isLoadingService, setIsLoadingService] = useState(false);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
+  const [servicioWithRoutes, setServicioWithRoutes] = useState<Servicio | null>(null);
+  const [vehicleTracking, setVehicleTracking] = useState<VehicleTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string>('');
+  const [wialonVehicles, setWialonVehicles] = useState<WialonVehicle[]>([]);
+  const [mapboxLoaded, setMapboxLoaded] = useState(false);
 
-
-  // Función para obtener datos del servicio
-  const fetchServicioData = async (id: string) => {
-    setLoading(true);
-    try {
-      // Aquí iría tu lógica para obtener los datos
-      await obtenerServicio(id);
-      fetchRouteGeometry()
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching servicio:', error);
-      setLoading(false);
-    }
-  };
+  // Calcular estado de carga general
+  const loading = isLoadingService || isLoadingRoute || isLoadingWialon;
 
   // Función para llamar a la API de Wialon
   const callWialonApi = useCallback(
@@ -62,86 +69,171 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         throw err;
       }
     },
-    [],
+    []
   );
 
-  const fetchRouteGeometry = async () => {
-    setLoading(true);
+  // Función para obtener datos del servicio
+  const fetchServicioData = useCallback(async (id: string) => {
+    setIsLoadingService(true);
     try {
-      if (!servicio) {
-        setLoading(false);
-        return;
+      await obtenerServicio(id);
+    } catch (error) {
+      console.error('Error fetching servicio:', error);
+    } finally {
+      setIsLoadingService(false);
+    }
+  }, [obtenerServicio]);
+
+  // Función para obtener la geometría de la ruta usando Mapbox API
+  const fetchRouteGeometry = useCallback(async () => {
+    if (!servicio || !mapboxLoaded || !MAPBOX_ACCESS_TOKEN) {
+      return;
+    }
+
+    setIsLoadingRoute(true);
+
+    try {
+      // Asegurarse de que las coordenadas existan y sean válidas
+      if (!servicio.origen?.latitud || !servicio.origen?.longitud ||
+        !servicio.destino?.latitud || !servicio.destino?.longitud) {
+        throw new Error("Coordenadas de origen o destino no válidas");
       }
-      const origenCoords = [servicio.origen.latitud, servicio.origen.longitud]
-      const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud]
 
-      try {
-        // Intentar obtener la geometría real de la ruta desde OSRM
-        // Usando la IP local del servidor OSRM
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${origenCoords[1]},${origenCoords[0]};${destinoCoords[1]},${destinoCoords[0]}?overview=full&geometries=geojson`
-        );
+      const origenCoords = [servicio.origen.latitud, servicio.origen.longitud];
+      const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud];
 
-        if (!response.ok) {
-          throw new Error("Error al obtener la ruta");
-        }
+      console.log("Origen:", origenCoords, "Destino:", destinoCoords);
 
-        const data = await response.json();
+      // Construir la URL para la API de Directions de Mapbox
+      // Nota: Mapbox usa formato [longitud, latitud] a diferencia de [latitud, longitud]
+      const originCoords = `${origenCoords[1]},${origenCoords[0]}`; // [lng, lat] format
+      const destCoords = `${destinoCoords[1]},${destinoCoords[0]}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords};${destCoords}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-        if (
-          data.code !== "Ok" ||
-          !data.routes ||
-          data.routes.length === 0
-        ) {
-          throw new Error("No se encontró una ruta");
-        }
+      // Hacer la petición a la API
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error en la respuesta de Mapbox API: ${response.status}`);
+      }
 
-        // Extraer la geometría de la ruta y convertirla al formato [lat, lng]
-        const route = data.routes[0];
-        const coordinates = route.geometry.coordinates.map((coord) => [
-          coord[1],
-          coord[0],
-        ]);
+      const data = await response.json();
 
-        setServicioWithRoutes({
-          ...servicio,
-          origenCoords,
-          destinoCoords,
-          geometry: coordinates,
-          routeDistance: (route.distance / 1000).toFixed(1),
-          routeDuration: Math.round(route.duration / 60),
-        });
-      } catch (error) {
-        console.warn("Error al obtener ruta detallada:", error.message);
+      if (!data.routes || data.routes.length === 0) {
+        throw new Error("No se encontró una ruta válida");
+      }
 
-        // Si hay un error, usar línea recta entre origen y destino
+      // Extraer la geometría de la ruta
+      const route = data.routes[0];
+
+      // Convertir las coordenadas de [lng, lat] a [lat, lng] para mantener compatibilidad con el resto del código
+      const coordinates = route.geometry.coordinates.map(coord => [
+        coord[1], // latitud
+        coord[0]  // longitud
+      ]);
+
+      setServicioWithRoutes({
+        ...servicio,
+        origenCoords,
+        destinoCoords,
+        geometry: coordinates,
+        routeDistance: (route.distance / 1000).toFixed(1),
+        routeDuration: Math.round(route.duration / 60),
+      });
+
+    } catch (error) {
+      console.error("Error:", error.message);
+
+      // Manejar el caso de error utilizando una línea recta
+      if (servicio?.origen?.latitud && servicio?.destino?.latitud) {
+        const origenCoords = [servicio.origen.latitud, servicio.origen.longitud];
+        const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud];
+
         setServicioWithRoutes({
           ...servicio,
           origenCoords,
           destinoCoords,
           geometry: [origenCoords, destinoCoords],
-          routeDistance: servicio.distancia_km,
+          routeDistance: servicio.distancia_km || '0',
           routeDuration: null,
         });
+
+        console.warn("Usando ruta en línea recta como alternativa");
       }
-    } catch (error) {
-      console.error("Error al procesar el servicio:", error);
     } finally {
-      setLoading(false);
+      setIsLoadingRoute(false);
     }
-  };
+  }, [servicio, mapboxLoaded, MAPBOX_ACCESS_TOKEN]);
+
+  // Manejar la carga de los scripts de Mapbox
+  useEffect(() => {
+    if (!MAPBOX_ACCESS_TOKEN) {
+      console.error("Error: No se ha configurado MAPBOX_ACCESS_TOKEN");
+      return;
+    }
+
+    // Comprobar si ya existe el script o CSS de Mapbox en el documento
+    const existingScript = document.querySelector('script[src*="mapbox-gl-js"]');
+    const existingCSS = document.querySelector('link[href*="mapbox-gl-js"]');
+
+    if (existingScript && existingCSS) {
+      setMapboxLoaded(true);
+      return;
+    }
+
+    // Cargar CSS de Mapbox
+    const mapboxCSS = document.createElement('link');
+    mapboxCSS.rel = 'stylesheet';
+    mapboxCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css';
+    document.head.appendChild(mapboxCSS);
+
+    // Cargar script de Mapbox
+    const mapboxScript = document.createElement('script');
+    mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
+    mapboxScript.async = true;
+
+    mapboxScript.onload = () => {
+      setMapboxLoaded(true);
+    };
+
+    document.head.appendChild(mapboxScript);
+
+    return () => {
+      // Limpieza al desmontar
+      if (document.head.contains(mapboxScript)) {
+        document.head.removeChild(mapboxScript);
+      }
+      if (document.head.contains(mapboxCSS)) {
+        document.head.removeChild(mapboxCSS);
+      }
+    };
+  }, [MAPBOX_ACCESS_TOKEN]);
+
+  // Efectos para cargar datos cuando cambia el ID
+  useEffect(() => {
+    if (params.id) {
+      fetchServicioData(params.id);
+    }
+  }, [params.id, fetchServicioData]);
+
+  // Efecto para cargar la geometría de la ruta cuando el servicio cambia y Mapbox está cargado
+  useEffect(() => {
+    if (servicio && mapboxLoaded) {
+      fetchRouteGeometry();
+    }
+  }, [servicio, fetchRouteGeometry, mapboxLoaded]);
 
   // Inicializar y obtener datos de Wialon
   useEffect(() => {
     let isMounted = true;
+
+    // Solo iniciar si tenemos todos los datos necesarios
+    if (!token || !servicioWithRoutes || servicioWithRoutes.estado !== 'en curso') {
+      return;
+    }
+
     setIsLoadingWialon(true);
 
     const initWialon = async () => {
-      if (!token || !servicioWithRoutes || servicioWithRoutes.estado !== 'en curso') {
-        setIsLoadingWialon(false);
-        return;
-      }
-
       try {
         // 1. Login a Wialon
         const loginData = await callWialonApi(token, "token/login", {});
@@ -180,7 +272,7 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         setWialonVehicles(vehicles);
 
         // 3. Buscar vehículo por placa
-        if (servicioWithRoutes.vehiculo_id && servicioWithRoutes.vehiculo.placa) {
+        if (servicioWithRoutes.vehiculo_id && servicioWithRoutes.vehiculo?.placa) {
           const placa = servicioWithRoutes.vehiculo.placa;
           const foundVehicle = vehicles.find(v =>
             v.nm.includes(placa) ||
@@ -229,68 +321,30 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
       }
     };
 
-    if (servicioWithRoutes && servicioWithRoutes.estado === 'en curso') {
-      initWialon();
-    } else {
-      setIsLoadingWialon(false);
-    }
+    initWialon();
 
     return () => {
       isMounted = false;
     };
   }, [token, callWialonApi, servicioWithRoutes]);
 
-  // // Función para obtener datos de tracking
-  // const fetchTrackingData = async (id) => {
-  //   try {
-  //     // Aquí iría tu lógica para obtener tracking
-  //     const response = await fetchTracking(id);
-  //     setVehicleTracking(response);
-  //     setTrackingError(null);
-  //   } catch (error) {
-  //     setVehicleTracking(null);
-  //     setTrackingError("No se pudo obtener la ubicación del vehículo");
-  //   }
-  // };
-
-  // Efectos para cargar datos cuando cambia el ID
-  useEffect(() => {
-    if (params.id) {
-      fetchServicioData(params.id);
-    }
-  }, [params.id]);
-
-  // Efectos para cargar tracking cuando el servicio está en curso
-  useEffect(() => {
-    if (servicioWithRoutes?.estado === 'en curso') {
-      fetchTrackingData(servicioWithRoutes.id);
-
-      // Configurar intervalo para actualizar tracking
-      const trackingInterval = setInterval(() => {
-        fetchTrackingData(servicioWithRoutes.id);
-      }, 30000); // Actualizar cada 30 segundos
-
-      return () => clearInterval(trackingInterval);
-    }
-  }, [servicioWithRoutes]);
-
   // Funciones auxiliares que necesita el mapa
-  const handleServicioClick = (servicio) => {
+  const handleServicioClick = (servicio: ServicioConRelaciones) => {
     // Acción al hacer click en el servicio
     console.log('Servicio clicked:', servicio);
   };
 
-  const getStatusText = (estado) => {
+  const getStatusText = (estado: string) => {
     switch (estado) {
       case 'completado': return 'Completado';
-      case 'en_curso': case 'en curso': return 'En curso';
-      case 'pendiente': return 'Pendiente';
+      case 'en curso': return 'En curso';
+      case 'planificado': return 'Pendiente';
       case 'cancelado': return 'Cancelado';
       default: return estado;
     }
   };
 
-  const getServiceTypeText = (tipo) => {
+  const getServiceTypeText = (tipo: string) => {
     switch (tipo) {
       case 'carga': return 'Carga';
       case 'pasajeros': return 'Pasajeros';
@@ -298,45 +352,38 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
     }
   };
 
-  const createServiceIcon = (color, type) => {
-    // Implementar lógica para crear iconos personalizados
-    return L.divIcon({
-      className: `service-marker-${type}`,
-      html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${type === 'origin' ? 'A' : 'B'}</div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-  };
-
-  const createVehicleIcon = () => {
-    // Implementar lógica para crear un icono de vehículo
-    return L.divIcon({
-      className: 'vehicle-marker',
-      html: '<div style="background-color: #2196F3; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-truck"></i></div>',
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
-    });
-  };
-
-  if (loading) {
-    return <div>Cargando...</div>;
-  }
+  if (loading) return <LoadingPage>Cargando servicio</LoadingPage>
 
   return (
-    <div className="h-screen w-full">
-      {servicioWithRoutes && (
-        <OptimizedMapComponent
-          servicioId={servicioId}
-          servicioWithRoutes={servicioWithRoutes}
-          vehicleTracking={vehicleTracking}
-          trackingError={trackingError}
-          handleServicioClick={handleServicioClick}
-          getStatusText={getStatusText}
-          getServiceTypeText={getServiceTypeText}
-          createServiceIcon={createServiceIcon}
-          createVehicleIcon={createVehicleIcon}
-        />
-      )}
+    <div className="h-screen w-full flex">
+      {/* Panel lateral izquierdo */}
+      <div className="w-1/4 overflow-hidden">
+        {servicioWithRoutes && (
+          <ServiceDetailPanel 
+            servicioWithRoutes={servicioWithRoutes}
+            vehicleTracking={vehicleTracking}
+            isLoadingRoute={isLoadingRoute}
+          />
+        )}
+      </div>
+      
+      {/* Mapa */}
+      <div className="w-3/4">
+        {mapboxLoaded && servicioWithRoutes ? (
+          <OptimizedMapComponent
+            servicioId={servicioId}
+            servicioWithRoutes={servicioWithRoutes}
+            vehicleTracking={vehicleTracking}
+            trackingError={trackingError}
+            handleServicioClick={handleServicioClick}
+            getStatusText={getStatusText}
+            getServiceTypeText={getServiceTypeText}
+            mapboxToken={MAPBOX_ACCESS_TOKEN}
+          />
+        ) : (
+          <LoadingPage>Cargando mapa</LoadingPage>
+        )}
+      </div>
     </div>
   );
 };
