@@ -47,8 +47,9 @@ const OptimizedMapComponent = ({
     if (!servicioWithRoutes) return '#3388ff';
 
     switch (servicioWithRoutes.estado) {
+      case 'solicitado': return '#6a7282';
       case 'completado': return '#4CAF50';
-      case 'en curso': return '#2BA662';
+      case 'en curso': return '#00bc7d';
       case 'planificado': return '#FF9800';
       case 'cancelado': return '#F44336';
       default: return '#3388ff';
@@ -106,7 +107,7 @@ const OptimizedMapComponent = ({
       // Crear nueva instancia del mapa
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11', // Cambia esto por otro estilo
+        style: 'mapbox://styles/mapbox/outdoors-v12', // Cambia esto por otro estilo
         center: initialCenter, // Centro basado en vehículo u origen
         zoom: 12 // Un poco más de zoom para ver mejor el vehículo/origen
       });
@@ -458,7 +459,7 @@ const OptimizedMapComponent = ({
         }
         
         .popup-completado { background-color: #4CAF50; }
-        .popup-en-curso { background-color: #2BA662; }
+        .popup-en-curso { background-color: #00d492; }
         .popup-planificado { background-color: #FF9800; }
         .popup-cancelado { background-color: #F44336; }
         

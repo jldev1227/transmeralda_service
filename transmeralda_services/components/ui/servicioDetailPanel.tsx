@@ -95,9 +95,9 @@ const ServiceDetailPanel = ({
   // Determinar el color del estado
   const getStatusColor = () => {
     switch (servicioWithRoutes.estado) {
-      case 'completado': return 'bg-green-500';
-      case 'en curso': return 'bg-blue-500';
-      case 'planificado': return 'bg-yellow-500';
+      case 'realizado': return 'bg-primary-500';
+      case 'en curso': return 'bg-emerald-500';
+      case 'planificado': return 'bg-amber-500';
       case 'cancelado': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
@@ -112,9 +112,9 @@ const ServiceDetailPanel = ({
       default: return servicioWithRoutes.tipo_servicio;
     }
   };
-  
+
   return (
-    <div className="bg-white shadow-lg">
+    <div className="h-screen bg-white shadow-lg overflow-auto">
       {/* Cabecera con ID y estado */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
         <div className="px-4 py-3">
@@ -192,29 +192,29 @@ const ServiceDetailPanel = ({
         
         {/* Información de progreso (Solo para servicios en curso) */}
         {servicioWithRoutes.estado === 'en curso' && (
-          <div className="bg-blue-50 rounded-lg p-3 mb-4">
-            <h3 className="text-sm font-semibold text-blue-800 mb-2">Progreso del servicio</h3>
+          <div className="bg-emerald-50 rounded-lg p-3 mb-4">
+            <h3 className="text-sm font-semibold text-emerald-800 mb-2">Progreso del servicio</h3>
             
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div>
-                <p className="text-xs text-blue-700">Tiempo transcurrido</p>
-                <p className="text-sm font-medium text-blue-900">
+                <p className="text-xs text-emerald-700">Tiempo transcurrido</p>
+                <p className="text-sm font-medium text-emerald-900">
                   {elapsedTime.hours}h {elapsedTime.minutes}m
                 </p>
               </div>
               <div>
-                <p className="text-xs text-blue-700">Distancia recorrida (est.)</p>
-                <p className="text-sm font-medium text-blue-900">{kmRecorridos} km</p>
+                <p className="text-xs text-emerald-700">Distancia recorrida (est.)</p>
+                <p className="text-sm font-medium text-emerald-900">{kmRecorridos} km</p>
               </div>
             </div>
             
-            <div className="w-full bg-blue-200 rounded-full h-2.5 mt-2">
+            <div className="w-full bg-emerald-200 rounded-full h-2.5 mt-2">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+                className="bg-emerald-600 h-2.5 rounded-full" 
                 style={{ width: `${Math.min((kmRecorridos / parseFloat(servicioWithRoutes.routeDistance)) * 100, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-blue-600 mt-1">
+            <p className="text-xs text-emerald-600 mt-1">
               {Math.round((kmRecorridos / parseFloat(servicioWithRoutes.routeDistance)) * 100)}% completado
             </p>
           </div>
@@ -280,7 +280,9 @@ const ServiceDetailPanel = ({
           {expandedSections.conductor && (
             <div className="mt-2 pl-2 border-l-2 border-gray-200">
               <p className="text-xs text-gray-500">Nombre</p>
-              <p className="text-sm font-medium">{servicioWithRoutes.conductor?.nombre || 'No asignado'}</p>
+              <p className="text-sm font-medium">{`${servicioWithRoutes.conductor?.nombre} ${servicioWithRoutes.conductor?.apellido}` || 'No asignado'}</p>
+              <p className="text-xs text-gray-500 mt-2">{servicioWithRoutes.conductor?.tipo_identificacion || "C.C."}</p>
+              <p className="text-sm font-medium">{servicioWithRoutes.conductor?.numero_identificacion || 'N/A'}</p>
               <p className="text-xs text-gray-500 mt-2">ID</p>
               <p className="text-sm font-medium">{servicioWithRoutes.conductor_id || 'N/A'}</p>
             </div>
