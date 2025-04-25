@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Select from "react-select";
+import SelectReact from "react-select";
 import { TimeInput } from "@heroui/date-input";
 import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
-
-import { EstadoServicio, Servicio, useService } from "@/context/serviceContext";
+import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { Servicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 
 // Placeholder icons (keep existing definitions)
@@ -188,7 +189,7 @@ const BuildingOfficeIcon = () => (
 
 // O si necesitas en formato objeto para TimeValue
 
-export default function Home() {
+export default function Page() {
   const { municipios, conductores, vehiculos, empresas } = useService();
   const { setError, registrarServicio } = useService();
   const [currentStep, setCurrentStep] = useState(1);
@@ -216,6 +217,10 @@ export default function Home() {
   // State for specific address inputs
   const [originSpecific, setOriginSpecific] = useState("");
   const [destSpecific, setDestSpecific] = useState("");
+
+  // States for coordinates
+  const [originCoords, setOriginCoords] = useState({ lat: 0, lng: 0 });
+  const [destCoords, setDestCoords] = useState({ lat: 0, lng: 0 });
 
   useEffect(() => {
     console.log(originSpecific);
@@ -250,10 +255,31 @@ export default function Home() {
   };
 
   // Inicializa con el tipo correcto
-  const [hourOut, setHourOut] = useState<Time | null>(getBogotaTimeValue());
+  const [hourOut, setHourOut] = useState<Time>(getBogotaTimeValue());
 
   // state
-  const [state, setState] = useState<EstadoServicio>("solicitado");
+  const [state, setState] = useState<string>("solicitado");
+
+  // state
+  const [observaciones, setObservaciones] = useState<string>("");
+
+  // Función para manejar el cambio de origen específico con coordenadas
+  const handleOriginSpecificChange = (address: string, coords?: { lat: number, lng: number }) => {
+    setOriginSpecific(address);
+    if (coords) {
+      setOriginCoords(coords);
+      console.log("Origin coordinates set:", coords);
+    }
+  };
+
+  // Función para manejar el cambio de destino específico con coordenadas
+  const handleDestSpecificChange = (address: string, coords?: { lat: number, lng: number }) => {
+    setDestSpecific(address);
+    if (coords) {
+      setDestCoords(coords);
+      console.log("Destination coordinates set:", coords);
+    }
+  };
 
   const nextStep = () => {
     setCurrentStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -265,42 +291,49 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Mostrar estado de carga
     setError(null);
-
+  
     try {
-      // Crear un objeto de datos que cumpla con la interfaz CrearServicioDTO
-      const servicioData: Servicio = {
-        origen_id: selectedOriginMun, // Asegúrate de que esto sea el UUID del municipio
+      // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
+      const servicioData = {
+        origen_id: selectedOriginMun,
+        destino_id: selectedDestMun,
         origen_especifico: originSpecific,
-        destino_id: selectedDestMun, // Asegúrate de que esto sea el UUID del municipio
         destino_especifico: destSpecific.trim(),
+        origen_latitud: originCoords.lat || null,
+        origen_longitud: originCoords.lng || null,
+        destino_latitud: destCoords.lat || null,
+        destino_longitud: destCoords.lng || null,
         conductor_id: conductorSelected,
         vehiculo_id: vehicleSelected,
         cliente_id: clienteSelected,
         tipo_servicio: purpose,
-        fecha_inicio: dateRequestToDo, // Fecha de realización como fecha de inicio
-        // Establecer valor y distancia con valores por defecto si no están disponibles
-        distancia_km: 0, // Podrías calcular esto con alguna API de mapas o dejarlo en 0
-        valor: 0, // Este podría ser calculado en el backend basado en alguna tarifa
+        fecha_inicio: dateRequestToDo,
         estado: state,
-        observaciones: `Solicitud creada el ${dateRequest}. Hora de salida: ${hourOut}`,
+        hora_salida: hourOut instanceof Time 
+          ? `${hourOut.hours.toString().padStart(2, '0')}:${hourOut.minutes.toString().padStart(2, '0')}:00`
+          : hourOut, // Formato correcto para TIME en la base de datos
+        fecha_fin: null, // Este campo lo gestionará el backend cuando el servicio termine
+        distancia_km: 0,
+        valor: 0,
+        observaciones: observaciones || null
       };
-
+  
+      console.log(servicioData);
+  
       // Llamar a la función para registrar el servicio
       await registrarServicio(servicioData);
-
+  
       // Opcional: Mostrar notificación de éxito
       alert("¡Servicio registrado exitosamente!");
     } catch (error) {
       // Manejar errores
       console.error("Error al registrar el servicio:", error);
-
-      // Mostrar mensaje de error
+  
       setError(
         error instanceof Error
           ? error.message
-          : "Error desconocido al registrar el servicio",
+          : "Error desconocido al registrar el servicio"
       );
     }
   };
@@ -374,7 +407,7 @@ export default function Home() {
           {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Client - Changed to Select */}
+              {/* Client - Changed to SelectReact */}
               <div className="relative">
                 <label
                   className="block text-sm font-medium text-gray-700 mb-1"
@@ -386,10 +419,10 @@ export default function Home() {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <BuildingOfficeIcon />
                   </div>
-                  <Select
+                  <SelectReact
                     isSearchable
                     required
-                    className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                    className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                     classNamePrefix="react-select"
                     inputId="client"
                     name="client"
@@ -463,7 +496,7 @@ export default function Home() {
                     </div>
                     <input
                       required
-                      className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2"
+                      className="border-1 text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4"
                       id="requestDate"
                       name="requestDate"
                       type="date"
@@ -485,7 +518,7 @@ export default function Home() {
                     </div>
                     <input
                       required
-                      className="text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2"
+                      className="border-1 text-gray-800 pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4"
                       id="serviceDate"
                       name="serviceDate"
                       type="date"
@@ -514,10 +547,10 @@ export default function Home() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <LocationMarkerIcon />
                     </div>
-                    <Select
+                    <SelectReact
                       isSearchable
                       required
-                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                       classNamePrefix="react-select"
                       inputId="origin"
                       name="origin"
@@ -589,10 +622,10 @@ export default function Home() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <LocationMarkerIcon />
                     </div>
-                    <Select
+                    <SelectReact
                       isSearchable
                       required
-                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                       classNamePrefix="react-select"
                       inputId="destination"
                       name="destination"
@@ -656,10 +689,10 @@ export default function Home() {
               </div>
               <div className="relative">
                 <SearchInputsPlaces
-                  initialDestination={destSpecific}
+                  onOriginChange={(address, coords) => handleOriginSpecificChange(address, coords)}
+                  onDestinationChange={(address, coords) => handleDestSpecificChange(address, coords)}
                   initialOrigin={originSpecific}
-                  onDestinationChange={setDestSpecific}
-                  onOriginChange={setOriginSpecific}
+                  initialDestination={destSpecific}
                 />
               </div>
               {/* Purpose */}
@@ -735,7 +768,7 @@ export default function Home() {
                 Detalles Planificación (Opcional)
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Conductor - Changed to Select */}
+                {/* Conductor - Changed to SelectReact */}
                 <div className="relative">
                   <label
                     className="block text-sm font-medium text-gray-700 mb-1"
@@ -747,9 +780,9 @@ export default function Home() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <UserIcon />
                     </div>
-                    <Select
+                    <SelectReact
                       isSearchable
-                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                       classNamePrefix="react-select"
                       inputId="driver"
                       name="driver"
@@ -817,7 +850,7 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                {/* Vehicle - Changed to Select */}
+                {/* Vehicle - Changed to SelectReact */}
                 <div className="relative">
                   <label
                     className="block text-sm font-medium text-gray-700 mb-1"
@@ -829,9 +862,9 @@ export default function Home() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <TruckIcon />
                     </div>
-                    <Select
+                    <SelectReact
                       isSearchable
-                      className="pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                      className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                       classNamePrefix="react-select"
                       inputId="driver"
                       name="driver"
@@ -907,14 +940,53 @@ export default function Home() {
                     Hora de Salida Planificada
                   </label>
                   <div className="relative bg-white">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <ClockIcon />
-                    </div>
                     <TimeInput
-                      className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 bg-white"
-                      style={{ background: "white" }}
+                      startContent={
+                        <ClockIcon />
+                      }
+                      classNames={{
+                        inputWrapper: [
+                          "!bg-transparent",
+                          "data-[hover=true]:!bg-transparent",
+                          "border-1",
+                          "py-6",
+                          "group-data-[focus=true]:!bg-transparent",
+                          "rounded-md"
+                        ]
+                      }}
                       value={hourOut}
                       onChange={(value) => setHourOut(value)}
+                    // Intenta también con una clase global que definas en tu CSS
+                    />
+                  </div>
+                </div>
+                {/* Observaciones */}
+                <div className="relative md:col-span-2">
+                  <label
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                    htmlFor="departureTime"
+                  >
+                    Observaciones
+                  </label>
+                  <div className="relative bg-white">
+                    <Textarea
+                      placeholder="Escribe las observaciones del servicio"
+                      classNames={{
+                        inputWrapper: [
+                          "!bg-transparent",
+                          "data-[hover=true]:!bg-transparent",
+                          "group-data-[focus=true]:!bg-transparent",
+                          "border-1",
+                          "focus-within:border-emerald-600",
+                          "focus-within:border", // Corregido desde "focus-within:border-1"
+                          "transition-colors",
+                          "duration-300",
+                          "ease-in-out",
+                          "rounded-md"
+                        ],
+                      }}
+                      value={observaciones}
+                      onChange={(e) => setObservaciones(e.target.value)}
                     />
                   </div>
                 </div>
@@ -937,17 +1009,17 @@ export default function Home() {
                 </label>
                 <div className="relative">
                   {/* Optional: Add an icon here */}
-                  <select
-                    className="text-gray-800 pl-3 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 appearance-none"
+                  <Select
+                    className="border-1 text-gray-800 pl-3 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none capitalize"
                     id="status"
                     name="status"
                     value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    onChange={(e) => setState("planificado")}
                   >
-                    <option value="solicitado">Solicitado</option>
-                    <option value="planificado">Planificado</option>
+                    <SelectItem textValue="Solicitado">Solicitado</SelectItem>
+                    <SelectItem textValue="Planificado">Planificado</SelectItem>
                     {/* Other statuses might be set later in the process */}
-                  </select>
+                  </Select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                     <ChevronDownIcon />
                   </div>

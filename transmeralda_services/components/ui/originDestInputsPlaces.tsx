@@ -1,28 +1,34 @@
 "use client";
 
-// components/SearchInputs.tsx
+// components/SearchInputsPlaces.tsx
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid"; // Para generar sessiontoken
 
 import { LocationMarkerIcon } from "@/app/agregar/page";
 
-interface Prediction {
-  place_id: string;
-  description: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text: string;
-    main_text_matched_substrings?: Array<{
-      offset: number;
-      length: number;
-    }>;
+interface AWSPlace {
+  Label: string;
+  Geometry: {
+    Point: [number, number]; // [longitude, latitude]
   };
+  Country: string;
+  Region: string;
+  SubRegion?: string;
+  Municipality?: string;
+  Neighborhood?: string;
+  Street?: string;
+  PostalCode?: string;
+  AddressNumber?: string;
+}
+
+interface AWSSearchResult {
+  Place: AWSPlace;
+  PlaceId: string;
 }
 
 interface SearchInputsPlacesProps {
-  onOriginChange?: (value: string) => void;
-  onDestinationChange?: (value: string) => void;
+  onOriginChange?: (value: string, coords?: { lat: number, lng: number }) => void;
+  onDestinationChange?: (value: string, coords?: { lat: number, lng: number }) => void;
   initialOrigin?: string;
   initialDestination?: string;
 }
@@ -42,8 +48,8 @@ export default function SearchInputsPlaces({
   const [destPlaceId, setDestPlaceId] = useState("");
 
   // Estados para predicciones
-  const [originPredictions, setOriginPredictions] = useState<Prediction[]>([]);
-  const [destPredictions, setDestPredictions] = useState<Prediction[]>([]);
+  const [originPredictions, setOriginPredictions] = useState<AWSSearchResult[]>([]);
+  const [destPredictions, setDestPredictions] = useState<AWSSearchResult[]>([]);
 
   // Estados para loading
   const [loadingOrigin, setLoadingOrigin] = useState(false);
@@ -62,17 +68,9 @@ export default function SearchInputsPlaces({
     lng: number;
   } | null>(null);
 
-  // Session token para agrupar solicitudes (mejora facturación)
-  const [sessionToken, setSessionToken] = useState("");
-
   // Referencias para detectar clics fuera
   const originRef = useRef<HTMLDivElement>(null);
   const destRef = useRef<HTMLDivElement>(null);
-
-  // Generar session token al cargar el componente
-  useEffect(() => {
-    setSessionToken(uuidv4());
-  }, []);
 
   // Debounce para reducir solicitudes
   const debounce = (func: Function, delay: number) => {
@@ -86,29 +84,28 @@ export default function SearchInputsPlaces({
     };
   };
 
-  // Función para obtener predicciones
-  const fetchPredictions = async (input: string, isOrigin: boolean) => {
+  // Función para obtener predicciones de Amazon Location Service
+  const fetchAWSPredictions = async (input: string, isOrigin: boolean) => {
     if (input.length < 3) {
       isOrigin ? setOriginPredictions([]) : setDestPredictions([]);
-
       return;
     }
 
     isOrigin ? setLoadingOrigin(true) : setLoadingDest(true);
 
     try {
-      // Asegúrate de que estás llamando a la ruta correcta
+      // Llamar a la API de Amazon Location Service a través de tu endpoint
       const response = await axios.get(
-        `/api/places/autocomplete?input=${encodeURIComponent(input)}`,
+        `/api/aws/location/search?text=${encodeURIComponent(input)}&country=MX`
       );
 
-      if (response.data.status === "OK") {
+      if (response.data && response.data.Results) {
         isOrigin
-          ? setOriginPredictions(response.data.predictions)
-          : setDestPredictions(response.data.predictions);
+          ? setOriginPredictions(response.data.Results)
+          : setDestPredictions(response.data.Results);
       }
     } catch (error) {
-      console.error("Error fetching predictions:", error);
+      console.error("Error fetching AWS Location predictions:", error);
     } finally {
       isOrigin ? setLoadingOrigin(false) : setLoadingDest(false);
     }
@@ -116,68 +113,61 @@ export default function SearchInputsPlaces({
 
   // Aplicar debounce
   const debouncedFetchOrigin = useRef(
-    debounce((value: string) => fetchPredictions(value, true), 300),
+    debounce((value: string) => fetchAWSPredictions(value, true), 300)
   ).current;
   const debouncedFetchDest = useRef(
-    debounce((value: string) => fetchPredictions(value, false), 300),
+    debounce((value: string) => fetchAWSPredictions(value, false), 300)
   ).current;
 
-  // Función para obtener detalles del lugar y extraer coordenadas
-  const getPlaceDetails = async (placeId: string) => {
-    try {
-      const response = await axios.get(
-        `/api/places/details?place_id=${placeId}&fields=address_component,formatted_address,geometry,name,place_id`,
-      );
+  // Función para obtener el texto principal y secundario para mostrar
+  const getDisplayText = (result: AWSSearchResult) => {
+    // Ahora result.Place contiene la información de dirección
+    const place = result.Place;
+    const label = place.Label;
 
-      if (response.data.status === "OK" && response.data.result) {
-        const details = response.data.result;
+    // Para Amazon Location, podemos dividir la etiqueta por comas
+    // La primera parte suele ser el nombre principal
+    const parts = label.split(',');
+    const mainText = parts[0].trim();
 
-        return {
-          placeId: details.place_id,
-          name: details.name,
-          address: details.formatted_address,
-          location: details.geometry?.location || null, // {lat: 123, lng: 456}
-        };
-      }
+    // El resto es la información secundaria
+    const secondaryText = parts.slice(1).join(',').trim();
 
-      return null;
-    } catch (error) {
-      console.error("Error fetching place details:", error);
-
-      return null;
-    }
+    return { mainText, secondaryText };
   };
 
-  // Modificar la función selectPrediction
-  const selectPrediction = async (
-    prediction: Prediction,
-    isOrigin: boolean,
-  ) => {
+  // Función para seleccionar una predicción
+  const selectPrediction = (result: AWSSearchResult, isOrigin: boolean) => {
+    const place = result.Place;
+    const address = place.Label;
+    const placeId = result.PlaceId;
+    const coordinates = {
+      lat: place.Geometry.Point[1],
+      lng: place.Geometry.Point[0]
+    }; // [lon, lat] -> {lat, lng}
+
     if (isOrigin) {
-      setOriginSpecific(prediction.description);
-      setOriginPlaceId(prediction.place_id);
+      setOriginSpecific(address);
+      setOriginPlaceId(placeId);
       setShowOriginPredictions(false);
+      setOriginCoordinates(coordinates);
 
-      // Obtener detalles del lugar incluyendo coordenadas
-      const details = await getPlaceDetails(prediction.place_id);
-
-      if (details?.location) {
-        onOriginChange(details.address);
-        console.log("Origin coordinates:", details.location);
+      if (onOriginChange) {
+        onOriginChange(address, coordinates);
       }
+
+      console.log("Origin coordinates:", coordinates);
     } else {
-      setDestSpecific(prediction.description);
-      setDestPlaceId(prediction.place_id);
+      setDestSpecific(address);
+      setDestPlaceId(placeId);
       setShowDestPredictions(false);
+      setDestCoordinates(coordinates);
 
-      // Obtener detalles del lugar incluyendo coordenadas
-      const details = await getPlaceDetails(prediction.place_id);
-
-      if (details?.location) {
-        onDestinationChange(details.address);
-        setDestCoordinates(details.location);
-        console.log("Destination coordinates:", details.location);
+      if (onDestinationChange) {
+        onDestinationChange(address, coordinates);
       }
+      
+      console.log("Destination coordinates:", coordinates);
     }
   };
 
@@ -243,7 +233,7 @@ export default function SearchInputsPlaces({
             <LocationMarkerIcon />
           </div>
           <input
-            className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
+            className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
             placeholder="Escribe un origen específico"
             type="text"
             value={originSpecific}
@@ -281,20 +271,19 @@ export default function SearchInputsPlaces({
         {/* Lista de predicciones para origen */}
         {showOriginPredictions && originPredictions.length > 0 && (
           <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-auto">
-            {originPredictions.map((prediction) => (
-              <div
-                key={prediction.place_id}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
-                onClick={() => selectPrediction(prediction, true)}
-              >
-                <div className="font-medium">
-                  {prediction.structured_formatting.main_text}
+            {originPredictions.map((result) => {
+              const { mainText, secondaryText } = getDisplayText(result);
+              return (
+                <div
+                  key={result.PlaceId}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                  onClick={() => selectPrediction(result, true)}
+                >
+                  <div className="font-medium">{mainText}</div>
+                  <div className="text-xs text-gray-500">{secondaryText}</div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {prediction.structured_formatting.secondary_text}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -311,7 +300,7 @@ export default function SearchInputsPlaces({
             <LocationMarkerIcon />
           </div>
           <input
-            className="text-gray-800 pl-10 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
+            className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none outline-emerald-600"
             placeholder="Escribe un destino específico"
             type="text"
             value={destSpecific}
@@ -349,20 +338,19 @@ export default function SearchInputsPlaces({
         {/* Lista de predicciones para destino */}
         {showDestPredictions && destPredictions.length > 0 && (
           <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-auto">
-            {destPredictions.map((prediction) => (
-              <div
-                key={prediction.place_id}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
-                onClick={() => selectPrediction(prediction, false)}
-              >
-                <div className="font-medium">
-                  {prediction.structured_formatting.main_text}
+            {destPredictions.map((result) => {
+              const { mainText, secondaryText } = getDisplayText(result);
+              return (
+                <div
+                  key={result.PlaceId}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+                  onClick={() => selectPrediction(result, false)}
+                >
+                  <div className="font-medium">{mainText}</div>
+                  <div className="text-xs text-gray-500">{secondaryText}</div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {prediction.structured_formatting.secondary_text}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

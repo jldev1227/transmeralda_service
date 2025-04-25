@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
 
 import { apiClient } from "@/config/apiClient";
 import { LatLngExpression, LatLngTuple } from "leaflet";
@@ -55,7 +56,7 @@ interface ServiceContextType {
   vehiculos: Vehiculo[];
   empresas: Empresa[];
   loading: boolean;
-  registrarServicio: (servicioData: CrearServicioDTO) => void;
+  registrarServicio: (servicioData: Servicio) => void;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
@@ -92,6 +93,7 @@ export interface Servicio {
   tipo_servicio: string;
   fecha_inicio: Date | string;
   fecha_fin?: Date | string;
+  hourOut: Time;
   distancia_km: number;
   valor: number;
   observaciones?: string;

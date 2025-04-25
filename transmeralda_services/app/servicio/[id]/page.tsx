@@ -94,13 +94,13 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
 
     try {
       // Asegurarse de que las coordenadas existan y sean válidas
-      if (!servicio.origen?.latitud || !servicio.origen?.longitud ||
-        !servicio.destino?.latitud || !servicio.destino?.longitud) {
+      if (!servicio.origen_latitud || !servicio.origen_longitud ||
+        !servicio.destino_latitud || !servicio.destino_longitud) {
         throw new Error("Coordenadas de origen o destino no válidas");
       }
 
-      const origenCoords = [servicio.origen.latitud, servicio.origen.longitud];
-      const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud];
+      const origenCoords = [servicio.origen_latitud, servicio.origen_longitud];
+      const destinoCoords = [servicio.destino_latitud, servicio.destino_longitud];
 
       console.log("Origen:", origenCoords, "Destino:", destinoCoords);
 
