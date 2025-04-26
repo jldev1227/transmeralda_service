@@ -1,6 +1,16 @@
 "use client";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+  useEffect,
+} from "react";
+import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
+import { LatLngExpression, LatLngTuple } from "leaflet";
+
 import { apiClient } from "@/config/apiClient";
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -27,6 +37,7 @@ export interface Vehiculo {
   id: string;
   placa: string;
   modelo: string;
+  linea: string;
   marca: string;
 }
 
@@ -41,13 +52,14 @@ interface ServiceContextType {
   // Datos
   servicios: Servicio[];
   servicio: Servicio | null;
-  municipios: Municipio[]
-  conductores: Conductor[]
-  vehiculos: Vehiculo[]
-  empresas: Empresa[]
-  registrarServicio: (servicioData: CrearServicioDTO) => void;
-  obtenerServicio: (id: string) => void
-  setError: React.Dispatch<React.SetStateAction<string | null>>
+  municipios: Municipio[];
+  conductores: Conductor[];
+  vehiculos: Vehiculo[];
+  empresas: Empresa[];
+  loading: boolean;
+  registrarServicio: (servicioData: CreateServicioDTO) => void;
+  obtenerServicio: (id: string) => void;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
 
   // Nuevas propiedades para Socket.IO
   socketConnected?: boolean;
@@ -60,11 +72,16 @@ interface ServicesProviderContext {
   children: ReactNode;
 }
 
-export type EstadoServicio = 'solicitado' | 'en curso' | 'completado' | 'planificado' | 'realizado' | 'cancelado';
+export type EstadoServicio =
+  | "solicitado"
+  | "en curso"
+  | "planificado"
+  | "realizado"
+  | "cancelado";
 
 // Interface para el modelo Servicio
 export interface Servicio {
-  id: string; // UUID
+  id?: string; // UUID
   origen_id: string; // UUID referencia a municipio
   destino_id: string; // UUID referencia a municipio
   origen_especifico: string;
@@ -76,11 +93,44 @@ export interface Servicio {
   tipo_servicio: string;
   fecha_inicio: Date | string;
   fecha_fin?: Date | string;
+  hora_salida: string;
   distancia_km: number;
   valor: number;
   observaciones?: string;
   created_at?: Date | string;
   updated_at?: Date | string;
+  origen: Municipio;
+  destino: Municipio;
+  origenCoords: LatLngTuple;
+  destinoCoords: LatLngTuple;
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  geometry: LatLngExpression[];
+  routeDistance: string | number;
+  routeDuration: number | null;
+}
+
+export interface CreateServicioDTO {
+  origen_id: string;
+  destino_id: string;
+  origen_especifico: string;
+  destino_especifico: string;
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  conductor_id: string;
+  vehiculo_id: string;
+  cliente_id: string;
+  tipo_servicio: string;
+  fecha_inicio: Date | string;
+  estado: EstadoServicio;
+  hora_salida: Time | null;
+  fecha_fin?: Date | string;
+  valor: number;
+  observaciones?: string;
 }
 
 export interface Municipio {
@@ -121,14 +171,48 @@ export interface Vehiculo {
   updated_at?: Date | string;
 }
 
-
 // Interface para Servicio con relaciones cargadas
 export interface ServicioConRelaciones extends Servicio {
-  origen?: Municipio;
-  destino?: Municipio;
-  conductor?: Conductor;
-  vehiculo?: Vehiculo;
-  cliente?: Cliente;
+  origen: Municipio;
+  destino: Municipio;
+  conductor: Conductor;
+  vehiculo: Vehiculo;
+  cliente: Cliente;
+}
+
+export interface VehicleTracking {
+  id: number;
+  name: string;
+  flags: number; // 1025
+  position: Position;
+  lastUpdate: Date;
+  item: {
+    cls: number; // 2
+    id: number; // 24616231
+    lmsg: {
+      t: number; // Timestamp (1745587111)
+      f: number; // Flag (1)
+      tp: string; // Tipo ('ud')
+      pos: Position; // Objeto de posición
+      lc: number; // 0
+    };
+    mu: number; // 3
+    nm: string; // "EYX108"
+    pos: Position; // Objeto de posición
+    uacl: number; // 19327369763
+  };
+}
+
+export interface Position {
+  c: number; // 0 (posiblemente counter)
+  f: number; // 1 (posiblemente flag)
+  lc: number; // 0 (posiblemente last count)
+  s: number; // 0 (posiblemente status)
+  sc: number; // 0 (posiblemente status code)
+  t: number; // Timestamp (1745587111)
+  x: number; // Longitud (-71.6594783)
+  y: number; // Latitud (3.77588)
+  z: number; // Altitud (0)
 }
 
 export interface Cliente {
@@ -261,9 +345,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setMunicipios(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener municipios",
-        );
+        throw new Error(response.data.message || "Error al obtener municipios");
       }
     } catch (err: any) {
       setError(
@@ -311,9 +393,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setVehiculos(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener vehiculos",
-        );
+        throw new Error(response.data.message || "Error al obtener vehiculos");
       }
     } catch (err: any) {
       setError(
@@ -336,9 +416,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (response.data.success) {
         setEmpresas(response.data.data);
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener empresas",
-        );
+        throw new Error(response.data.message || "Error al obtener empresas");
       }
     } catch (err: any) {
       setError(
@@ -351,49 +429,65 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   }, []);
 
-  // Obtener todas las servicios
-  const obtenerServicio = useCallback(async (id: string): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get(`/api/servicios/${id}`);
+  // Dentro de tu hook/context useService
+  const obtenerServicio = useCallback(
+    async (id: string): Promise<Servicio | null> => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (response.data.success) {
-        setServicio(response.data.data);
-      } else {
-        throw new Error(
-          response.data.message || "Error al obtener liquidaciones",
+        const response = await apiClient.get(`/api/servicios/${id}`);
+
+        if (response.data.success) {
+          console.log(response);
+          setServicio(response.data.data);
+
+          return response.data.data;
+        } else {
+          throw new Error(
+            response.data.message || "Error al obtener la liquidación",
+          );
+        }
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
         );
-      }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  const registrarServicio = async (servicioData: CrearServicioDTO): Promise<ServicioConRelaciones> => {
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const registrarServicio = async (
+    servicioData: CreateServicioDTO,
+  ): Promise<ServicioConRelaciones> => {
     try {
       // Realizar la petición POST al endpoint de servicios
-      const response = await apiClient.post<ApiResponse<ServicioConRelaciones>>('/api/servicios', servicioData);
+      const response = await apiClient.post<ApiResponse<ServicioConRelaciones>>(
+        "/api/servicios",
+        servicioData,
+      );
 
       // Verificar si la operación fue exitosa
       if (response.data.success && response.data.data) {
         return response.data.data;
       } else {
         // Si hay un mensaje de error específico, usarlo
-        throw new Error(response.data.message || 'Error al registrar el servicio');
+        throw new Error(
+          response.data.message || "Error al registrar el servicio",
+        );
       }
     } catch (error) {
       // Manejar errores de red o del servidor
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error('Error desconocido al registrar el servicio');
+        throw new Error("Error desconocido al registrar el servicio");
       }
     }
   };
@@ -414,9 +508,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     conductores,
     vehiculos,
     empresas,
+    loading,
     registrarServicio,
     obtenerServicio,
-    setError
+    setError,
   };
 
   return (

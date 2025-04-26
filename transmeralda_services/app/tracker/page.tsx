@@ -476,7 +476,7 @@ const WialonVehicles = () => {
           .popup-en-curso {
             background: linear-gradient(135deg, #34d399, #10b981);
           }
-          .popup-completado {
+          .popup-realizado {
             background: linear-gradient(135deg, #60a5fa, #3b82f6);
           }
           .popup-content {

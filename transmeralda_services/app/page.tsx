@@ -6,7 +6,6 @@ import {
   CheckCircleIcon,
   ClipboardSignature,
   ClockIcon,
-  GitPullRequest,
   GitPullRequestDraft,
   PlusIcon,
   TruckIcon,
@@ -70,7 +69,7 @@ export default function Dashboard() {
         </div>
 
         {/* Resumen de estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
           <div className="bg-white shadow rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0 p-3 rounded-md bg-emerald-100 text-emerald-600">
@@ -118,7 +117,7 @@ export default function Dashboard() {
                     Realizados
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "completado").length}
+                    {servicios.filter((s) => s.estado === "realizado").length}
                   </dd>
                 </dl>
               </div>
