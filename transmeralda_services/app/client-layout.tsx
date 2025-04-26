@@ -4,7 +4,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import Navbar from "@/components/ui/navbar";
+// import Navbar from "@/components/ui/navbar";
 import DynamicTitle from "@/components/ui/dynamicTitle";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex flex-col h-screen">
       <DynamicTitle />
-      {!is404Page && <Navbar />}
+      {/* {!is404Page && <Navbar />} */}
       <main className="bg-gray-50 flex-grow">{children}</main>
       {/* Footer - solo se muestra si NO es la página 404 */}
       {!is404Page && (
