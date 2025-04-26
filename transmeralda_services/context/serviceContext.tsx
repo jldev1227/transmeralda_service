@@ -8,9 +8,9 @@ import React, {
   useEffect,
 } from "react";
 import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
+import { LatLngExpression, LatLngTuple } from "leaflet";
 
 import { apiClient } from "@/config/apiClient";
-import { LatLngExpression, LatLngTuple } from "leaflet";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -37,6 +37,7 @@ export interface Vehiculo {
   id: string;
   placa: string;
   modelo: string;
+  linea: string;
   marca: string;
 }
 
@@ -56,7 +57,7 @@ interface ServiceContextType {
   vehiculos: Vehiculo[];
   empresas: Empresa[];
   loading: boolean;
-  registrarServicio: (servicioData: Servicio) => void;
+  registrarServicio: (servicioData: CreateServicioDTO) => void;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
@@ -74,7 +75,6 @@ interface ServicesProviderContext {
 export type EstadoServicio =
   | "solicitado"
   | "en curso"
-  | "completado"
   | "planificado"
   | "realizado"
   | "cancelado";
@@ -93,7 +93,7 @@ export interface Servicio {
   tipo_servicio: string;
   fecha_inicio: Date | string;
   fecha_fin?: Date | string;
-  hourOut: Time;
+  hora_salida: string;
   distancia_km: number;
   valor: number;
   observaciones?: string;
@@ -103,9 +103,34 @@ export interface Servicio {
   destino: Municipio;
   origenCoords: LatLngTuple;
   destinoCoords: LatLngTuple;
-  geometry: LatLngExpression[]
-  routeDistance: string | number
-  routeDuration: number | null
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  geometry: LatLngExpression[];
+  routeDistance: string | number;
+  routeDuration: number | null;
+}
+
+export interface CreateServicioDTO {
+  origen_id: string;
+  destino_id: string;
+  origen_especifico: string;
+  destino_especifico: string;
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  conductor_id: string;
+  vehiculo_id: string;
+  cliente_id: string;
+  tipo_servicio: string;
+  fecha_inicio: Date | string;
+  estado: EstadoServicio;
+  hora_salida: Time | null;
+  fecha_fin?: Date | string;
+  valor: number;
+  observaciones?: string;
 }
 
 export interface Municipio {
@@ -156,34 +181,38 @@ export interface ServicioConRelaciones extends Servicio {
 }
 
 export interface VehicleTracking {
-  flags: number;           // 1025
+  id: number;
+  name: string;
+  flags: number; // 1025
+  position: Position;
+  lastUpdate: Date;
   item: {
-    cls: number;           // 2
-    id: number;            // 24616231
+    cls: number; // 2
+    id: number; // 24616231
     lmsg: {
-      t: number;           // Timestamp (1745587111)
-      f: number;           // Flag (1)
-      tp: string;          // Tipo ('ud')
-      pos: Position;       // Objeto de posición
-      lc: number;          // 0
+      t: number; // Timestamp (1745587111)
+      f: number; // Flag (1)
+      tp: string; // Tipo ('ud')
+      pos: Position; // Objeto de posición
+      lc: number; // 0
     };
-    mu: number;            // 3
-    nm: string;            // "EYX108"
-    pos: Position;         // Objeto de posición
-    uacl: number;          // 19327369763
+    mu: number; // 3
+    nm: string; // "EYX108"
+    pos: Position; // Objeto de posición
+    uacl: number; // 19327369763
   };
 }
 
 export interface Position {
-  c: number;               // 0 (posiblemente counter)
-  f: number;               // 1 (posiblemente flag)
-  lc: number;              // 0 (posiblemente last count)
-  s: number;               // 0 (posiblemente status)
-  sc: number;              // 0 (posiblemente status code)
-  t: number;               // Timestamp (1745587111)
-  x: number;               // Longitud (-71.6594783)
-  y: number;               // Latitud (3.77588)
-  z: number;               // Altitud (0)
+  c: number; // 0 (posiblemente counter)
+  f: number; // 1 (posiblemente flag)
+  lc: number; // 0 (posiblemente last count)
+  s: number; // 0 (posiblemente status)
+  sc: number; // 0 (posiblemente status code)
+  t: number; // Timestamp (1745587111)
+  x: number; // Longitud (-71.6594783)
+  y: number; // Latitud (3.77588)
+  z: number; // Altitud (0)
 }
 
 export interface Cliente {
@@ -298,8 +327,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -321,8 +350,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -346,8 +375,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -369,8 +398,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -392,8 +421,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -410,7 +439,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         const response = await apiClient.get(`/api/servicios/${id}`);
 
         if (response.data.success) {
-          console.log(response)
+          console.log(response);
           setServicio(response.data.data);
 
           return response.data.data;
@@ -422,8 +451,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
         );
 
         return null;
@@ -435,7 +464,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   );
 
   const registrarServicio = async (
-    servicioData: CrearServicioDTO,
+    servicioData: CreateServicioDTO,
   ): Promise<ServicioConRelaciones> => {
     try {
       // Realizar la petición POST al endpoint de servicios

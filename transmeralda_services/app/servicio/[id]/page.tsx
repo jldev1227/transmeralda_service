@@ -1,12 +1,19 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import OptimizedMapComponent from '@/components/optimizedMapComponent';
-import { useParams } from 'next/navigation';
-import { Servicio, ServicioConRelaciones, useService, VehicleTracking } from '@/context/serviceContext';
-import axios from 'axios';
-import ServiceDetailPanel from '@/components/ui/servicioDetailPanel';
-import LoadingPage from '@/components/loadingPage';
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import axios from "axios";
+
+import OptimizedMapComponent from "@/components/optimizedMapComponent";
+import {
+  Servicio,
+  ServicioConRelaciones,
+  useService,
+  VehicleTracking,
+} from "@/context/serviceContext";
+import ServiceDetailPanel from "@/components/ui/servicioDetailPanel";
+import LoadingPage from "@/components/loadingPage";
+import { LatLngTuple } from "leaflet";
 
 // Definición de la interfaz WialonVehicle para TypeScript
 interface WialonVehicle {
@@ -18,26 +25,31 @@ interface WialonVehicle {
     t: number;
     s?: number;
     c?: number;
-  }
+  };
 }
 
 // Componente padre que gestiona la obtención de datos del servicio
 const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
-  const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || '';
-  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+  const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
+  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
   const params = useParams<{ id: string }>();
   const { servicio, obtenerServicio } = useService();
-  console.log(servicio)
+
+  console.log(servicio);
   const [token] = useState(WIALON_API_TOKEN);
   const [isLoadingService, setIsLoadingService] = useState(false);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
-  const [servicioWithRoutes, setServicioWithRoutes] = useState<Servicio | null>(null);
-  const [vehicleTracking, setVehicleTracking] = useState<VehicleTracking | null>(null);
-  const [trackingError, setTrackingError] = useState<string>('');
+  const [servicioWithRoutes, setServicioWithRoutes] = useState<ServicioConRelaciones | null>(
+    null,
+  );
+  const [vehicleTracking, setVehicleTracking] =
+    useState<VehicleTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string>("");
   const [wialonVehicles, setWialonVehicles] = useState<WialonVehicle[]>([]);
   const [mapboxLoaded, setMapboxLoaded] = useState(false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
 
   // Calcular estado de carga general
   const loading = isLoadingService || isLoadingRoute || isLoadingWialon;
@@ -58,31 +70,36 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
 
       try {
         const response = await axios.post("/api/wialon-api", payload);
+
         if (response.data && response.data.error) {
           throw new Error(
             `Error Wialon API (${response.data.error}): ${response.data.reason || service}`,
           );
         }
+
         return response.data;
       } catch (err) {
         console.error(`Error llamando a ${service} via /api/wialon-api:`, err);
         throw err;
       }
     },
-    []
+    [],
   );
 
   // Función para obtener datos del servicio
-  const fetchServicioData = useCallback(async (id: string) => {
-    setIsLoadingService(true);
-    try {
-      await obtenerServicio(id);
-    } catch (error) {
-      console.error('Error fetching servicio:', error);
-    } finally {
-      setIsLoadingService(false);
-    }
-  }, [obtenerServicio]);
+  const fetchServicioData = useCallback(
+    async (id: string) => {
+      setIsLoadingService(true);
+      try {
+        await obtenerServicio(id);
+      } catch (error) {
+        console.error("Error fetching servicio:", error);
+      } finally {
+        setIsLoadingService(false);
+      }
+    },
+    [obtenerServicio],
+  );
 
   // Función para obtener la geometría de la ruta usando Mapbox API
   const fetchRouteGeometry = useCallback(async () => {
@@ -94,13 +111,20 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
 
     try {
       // Asegurarse de que las coordenadas existan y sean válidas
-      if (!servicio.origen_latitud || !servicio.origen_longitud ||
-        !servicio.destino_latitud || !servicio.destino_longitud) {
+      if (
+        !servicio.origen_latitud ||
+        !servicio.origen_longitud ||
+        !servicio.destino_latitud ||
+        !servicio.destino_longitud
+      ) {
         throw new Error("Coordenadas de origen o destino no válidas");
       }
 
-      const origenCoords = [servicio.origen_latitud, servicio.origen_longitud];
-      const destinoCoords = [servicio.destino_latitud, servicio.destino_longitud];
+      const origenCoords : LatLngTuple = [servicio.origen_latitud, servicio.origen_longitud];
+      const destinoCoords : LatLngTuple = [
+        servicio.destino_latitud,
+        servicio.destino_longitud,
+      ];
 
       console.log("Origen:", origenCoords, "Destino:", destinoCoords);
 
@@ -112,8 +136,11 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
 
       // Hacer la petición a la API
       const response = await fetch(url);
+
       if (!response.ok) {
-        throw new Error(`Error en la respuesta de Mapbox API: ${response.status}`);
+        throw new Error(
+          `Error en la respuesta de Mapbox API: ${response.status}`,
+        );
       }
 
       const data = await response.json();
@@ -126,9 +153,9 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
       const route = data.routes[0];
 
       // Convertir las coordenadas de [lng, lat] a [lat, lng] para mantener compatibilidad con el resto del código
-      const coordinates = route.geometry.coordinates.map(coord => [
+      const coordinates = route.geometry.coordinates.map((coord) => [
         coord[1], // latitud
-        coord[0]  // longitud
+        coord[0], // longitud
       ]);
 
       setServicioWithRoutes({
@@ -139,21 +166,26 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         routeDistance: (route.distance / 1000).toFixed(1),
         routeDuration: Math.round(route.duration / 60),
       });
-
-    } catch (error) {
+    } catch (error : any) {
       console.error("Error:", error.message);
 
       // Manejar el caso de error utilizando una línea recta
       if (servicio?.origen?.latitud && servicio?.destino?.latitud) {
-        const origenCoords = [servicio.origen.latitud, servicio.origen.longitud];
-        const destinoCoords = [servicio.destino.latitud, servicio.destino.longitud];
+        const origenCoords : LatLngTuple = [
+          servicio.origen.latitud,
+          servicio.origen.longitud,
+        ];
+        const destinoCoords : LatLngTuple = [
+          servicio.destino.latitud,
+          servicio.destino.longitud,
+        ];
 
         setServicioWithRoutes({
           ...servicio,
           origenCoords,
           destinoCoords,
           geometry: [origenCoords, destinoCoords],
-          routeDistance: servicio.distancia_km || '0',
+          routeDistance: servicio.distancia_km || "0",
           routeDuration: null,
         });
 
@@ -168,27 +200,35 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
   useEffect(() => {
     if (!MAPBOX_ACCESS_TOKEN) {
       console.error("Error: No se ha configurado MAPBOX_ACCESS_TOKEN");
+
       return;
     }
 
     // Comprobar si ya existe el script o CSS de Mapbox en el documento
-    const existingScript = document.querySelector('script[src*="mapbox-gl-js"]');
+    const existingScript = document.querySelector(
+      'script[src*="mapbox-gl-js"]',
+    );
     const existingCSS = document.querySelector('link[href*="mapbox-gl-js"]');
 
     if (existingScript && existingCSS) {
       setMapboxLoaded(true);
+
       return;
     }
 
     // Cargar CSS de Mapbox
-    const mapboxCSS = document.createElement('link');
-    mapboxCSS.rel = 'stylesheet';
-    mapboxCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css';
+    const mapboxCSS = document.createElement("link");
+
+    mapboxCSS.rel = "stylesheet";
+    mapboxCSS.href =
+      "https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css";
     document.head.appendChild(mapboxCSS);
 
     // Cargar script de Mapbox
-    const mapboxScript = document.createElement('script');
-    mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
+    const mapboxScript = document.createElement("script");
+
+    mapboxScript.src =
+      "https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js";
     mapboxScript.async = true;
 
     mapboxScript.onload = () => {
@@ -227,7 +267,11 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
     let isMounted = true;
 
     // Solo iniciar si tenemos todos los datos necesarios
-    if (!token || !servicioWithRoutes || servicioWithRoutes.estado !== 'en curso') {
+    if (
+      !token ||
+      !servicioWithRoutes ||
+      servicioWithRoutes.estado !== "en curso"
+    ) {
       return;
     }
 
@@ -237,6 +281,7 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
       try {
         // 1. Login a Wialon
         const loginData = await callWialonApi(token, "token/login", {});
+
         if (!loginData?.eid) {
           throw new Error("Login fallido: No se obtuvo Session ID");
         }
@@ -245,22 +290,18 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         const sid = loginData.eid;
 
         // 2. Obtener lista de vehículos
-        const vehiclesData = await callWialonApi(
-          sid,
-          "core/search_items",
-          {
-            spec: {
-              itemsType: "avl_unit",
-              propName: "sys_name",
-              propValueMask: "*",
-              sortType: "sys_name",
-            },
-            force: 1,
-            flags: 1,
-            from: 0,
-            to: 1000,
+        const vehiclesData = await callWialonApi(sid, "core/search_items", {
+          spec: {
+            itemsType: "avl_unit",
+            propName: "sys_name",
+            propValueMask: "*",
+            sortType: "sys_name",
           },
-        );
+          force: 1,
+          flags: 1,
+          from: 0,
+          to: 1000,
+        });
 
         if (!isMounted) return;
 
@@ -269,42 +310,46 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         }
 
         const vehicles: WialonVehicle[] = vehiclesData.items;
+
         setWialonVehicles(vehicles);
 
         // 3. Buscar vehículo por placa
-        if (servicioWithRoutes.vehiculo_id && servicioWithRoutes.vehiculo?.placa) {
+        if (
+          servicioWithRoutes.vehiculo_id &&
+          servicioWithRoutes.vehiculo?.placa
+        ) {
           const placa = servicioWithRoutes.vehiculo.placa;
-          const foundVehicle = vehicles.find(v =>
-            v.nm.includes(placa) ||
-            v.nm.toLowerCase() === placa.toLowerCase()
+          const foundVehicle = vehicles.find(
+            (v) =>
+              v.nm.includes(placa) ||
+              v.nm.toLowerCase() === placa.toLowerCase(),
           );
 
           if (foundVehicle) {
             // 4. Obtener posición del vehículo
-            const vehicleData = await callWialonApi(
-              sid,
-              "core/search_item",
-              {
-                id: foundVehicle.id,
-                flags: 1025
-              }
-            );
+            const vehicleData = await callWialonApi(sid, "core/search_item", {
+              id: foundVehicle.id,
+              flags: 1025,
+            });
 
             if (!isMounted) return;
 
             if (vehicleData?.item?.pos) {
               const { pos } = vehicleData.item;
+
               setVehicleTracking({
                 id: foundVehicle.id,
                 name: foundVehicle.nm,
                 position: pos,
-                lastUpdate: new Date(pos.t * 1000)
+                lastUpdate: new Date(pos.t * 1000),
               });
             } else {
               setTrackingError("El vehículo no está transmitiendo su posición");
             }
           } else {
-            setTrackingError(`Vehículo con placa ${placa} no encontrado en la flota de wialon`);
+            setTrackingError(
+              `Vehículo con placa ${placa} no encontrado en la flota de wialon`,
+            );
           }
         } else {
           setTrackingError("No hay información de placa del vehículo");
@@ -312,7 +357,9 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
       } catch (error) {
         if (isMounted) {
           console.error("Error en la integración con Wialon:", error);
-          setTrackingError(error instanceof Error ? error.message : "Error desconocido");
+          setTrackingError(
+            error instanceof Error ? error.message : "Error desconocido",
+          );
         }
       } finally {
         if (isMounted) {
@@ -331,60 +378,96 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
   // Funciones auxiliares que necesita el mapa
   const handleServicioClick = (servicio: ServicioConRelaciones) => {
     // Acción al hacer click en el servicio
-    console.log('Servicio clicked:', servicio);
+    console.log("Servicio clicked:", servicio);
   };
 
   const getStatusText = (estado: string) => {
     switch (estado) {
-      case 'completado': return 'Completado';
-      case 'en curso': return 'En curso';
-      case 'planificado': return 'Pendiente';
-      case 'cancelado': return 'Cancelado';
-      default: return estado;
+      case "realizado":
+        return "Realizado";
+      case "en curso":
+        return "En curso";
+      case "planificado":
+        return "Pendiente";
+      case "cancelado":
+        return "Cancelado";
+      default:
+        return estado;
     }
   };
 
   const getServiceTypeText = (tipo: string) => {
     switch (tipo) {
-      case 'carga': return 'Carga';
-      case 'pasajeros': return 'Pasajeros';
-      default: return tipo;
+      case "carga":
+        return "Carga";
+      case "pasajeros":
+        return "Pasajeros";
+      default:
+        return tipo;
     }
   };
 
-  if (loading) return <LoadingPage>Cargando servicio</LoadingPage>
+  if (loading) return <LoadingPage>Cargando servicio</LoadingPage>;
 
   return (
-    <div className="h-screen w-full flex">
-      {/* Panel lateral izquierdo */}
-      <div className="w-1/4 overflow-hidden">
-        {servicioWithRoutes && (
-          <ServiceDetailPanel 
-            servicioWithRoutes={servicioWithRoutes}
-            vehicleTracking={vehicleTracking}
-            isLoadingRoute={isLoadingRoute}
-          />
-        )}
-      </div>
-      
-      {/* Mapa */}
-      <div className="w-3/4">
-        {mapboxLoaded && servicioWithRoutes ? (
-          <OptimizedMapComponent
-            servicioId={servicioId}
-            servicioWithRoutes={servicioWithRoutes}
-            vehicleTracking={vehicleTracking}
-            trackingError={trackingError}
-            handleServicioClick={handleServicioClick}
-            getStatusText={getStatusText}
-            getServiceTypeText={getServiceTypeText}
-            mapboxToken={MAPBOX_ACCESS_TOKEN}
-          />
-        ) : (
-          <LoadingPage>Cargando mapa</LoadingPage>
-        )}
-      </div>
+    <div className="h-screen w-full grid grid-cols-1 md:grid-cols-4 relative">
+    {/* Botón flotante para mostrar el panel (solo en móvil) */}
+    <button
+      onClick={() => setIsPanelVisible(true)}
+      className={`md:hidden fixed top-32 left-4 z-20 bg-white shadow-lg p-3 rounded-full transition-opacity duration-300 ${
+        isPanelVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+    >
+      {/* Ícono de flecha hacia abajo */}
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-6 w-6 text-emerald-600" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="currentColor"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M19 9l-7 7-7-7" 
+        />
+      </svg>
+    </button>
+
+    {/* Panel lateral izquierdo */}
+    <div className={`max-sm:absolute z-10 md:col-span-1 overflow-hidden 
+      max-sm:inset-x-0 max-sm:top-0 max-sm:transition-transform max-sm:duration-500 max-sm:ease-in-out
+      ${isPanelVisible ? 'max-sm:translate-y-0' : 'max-sm:-translate-y-full'}`}
+    >
+      {servicioWithRoutes && (
+        <ServiceDetailPanel
+          isLoadingRoute={isLoadingRoute}
+          servicioWithRoutes={servicioWithRoutes}
+          vehicleTracking={vehicleTracking}
+          onClose={() => setIsPanelVisible(false)} // Pasa la función para cerrar
+        />
+      )}
     </div>
+
+    {/* Mapa */}
+    <div className="md:col-span-3">
+      {mapboxLoaded && servicioWithRoutes ? (
+        <OptimizedMapComponent
+          getServiceTypeText={getServiceTypeText}
+          getStatusText={getStatusText}
+          handleServicioClick={handleServicioClick}
+          mapboxToken={MAPBOX_ACCESS_TOKEN}
+          servicioId={servicioId}
+          servicioWithRoutes={servicioWithRoutes}
+          trackingError={trackingError}
+          vehicleTracking={vehicleTracking}
+        />
+      ) : (
+        <LoadingPage>Cargando mapa</LoadingPage>
+      )}
+    </div>
+  </div>
   );
 };
 

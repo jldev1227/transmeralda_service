@@ -44,7 +44,7 @@ const ServiceTable = ({ services }: { services: Servicio[] }) => {
         return "bg-red-100 text-red-800";
       case "planificado":
         return "bg-amber-100 text-amber-800";
-      case "completado":
+      case "realizado":
         return "bg-primary-100 text-primary-800";
       default:
         return "bg-gray-100 text-gray-800";

@@ -6,7 +6,8 @@ import { TimeInput } from "@heroui/date-input";
 import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Servicio, useService } from "@/context/serviceContext";
+
+import { CreateServicioDTO, EstadoServicio, Servicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 
 // Placeholder icons (keep existing definitions)
@@ -245,26 +246,26 @@ export default function Page() {
     // Obtener el string formateado
     const timeString = formatter.format(now);
 
-    // Dividir y convertir a números
-    const [hours, minutes] = timeString
-      .split(":")
-      .map((num) => parseInt(num, 10));
+    const [hours, minutes] = timeString.split(':').map(Number);
 
     // Crear un objeto Time que cumpla con el tipo esperado
     return new Time(hours, minutes, 0);
   };
 
   // Inicializa con el tipo correcto
-  const [hourOut, setHourOut] = useState<Time>(getBogotaTimeValue());
+  const [hourOut, setHourOut] = useState<string | null>(null);
 
   // state
-  const [state, setState] = useState<string>("solicitado");
+  const [state, setState] = useState<EstadoServicio>("solicitado");
 
   // state
   const [observaciones, setObservaciones] = useState<string>("");
 
   // Función para manejar el cambio de origen específico con coordenadas
-  const handleOriginSpecificChange = (address: string, coords?: { lat: number, lng: number }) => {
+  const handleOriginSpecificChange = (
+    address: string,
+    coords?: { lat: number; lng: number },
+  ) => {
     setOriginSpecific(address);
     if (coords) {
       setOriginCoords(coords);
@@ -273,7 +274,10 @@ export default function Page() {
   };
 
   // Función para manejar el cambio de destino específico con coordenadas
-  const handleDestSpecificChange = (address: string, coords?: { lat: number, lng: number }) => {
+  const handleDestSpecificChange = (
+    address: string,
+    coords?: { lat: number; lng: number },
+  ) => {
     setDestSpecific(address);
     if (coords) {
       setDestCoords(coords);
@@ -292,10 +296,11 @@ export default function Page() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-  
+
+
     try {
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
-      const servicioData = {
+      const servicioData: CreateServicioDTO = {
         origen_id: selectedOriginMun,
         destino_id: selectedDestMun,
         origen_especifico: originSpecific,
@@ -308,32 +313,36 @@ export default function Page() {
         vehiculo_id: vehicleSelected,
         cliente_id: clienteSelected,
         tipo_servicio: purpose,
-        fecha_inicio: dateRequestToDo,
+        fecha_inicio: dateRequest,
         estado: state,
-        hora_salida: hourOut instanceof Time 
-          ? `${hourOut.hours.toString().padStart(2, '0')}:${hourOut.minutes.toString().padStart(2, '0')}:00`
-          : hourOut, // Formato correcto para TIME en la base de datos
-        fecha_fin: null, // Este campo lo gestionará el backend cuando el servicio termine
-        distancia_km: 0,
+        // Opción 2: Convierte el objeto Time a string al asignarlo
+        hora_salida: (() => {
+          const timeObj = getBogotaTimeValue();
+          if (timeObj) {
+            return `${timeObj.hour.toString().padStart(2, '0')}:${timeObj.minute.toString().padStart(2, '0')}:${timeObj.second.toString().padStart(2, '0')}`;
+          }
+          return null;
+        })(),
+        distancia_km: 20,
         valor: 0,
-        observaciones: observaciones || null
+        observaciones: observaciones,
       };
-  
-      console.log(servicioData);
-  
+
+      console.log(servicioData, hourOut)
+
       // Llamar a la función para registrar el servicio
       await registrarServicio(servicioData);
-  
+
       // Opcional: Mostrar notificación de éxito
       alert("¡Servicio registrado exitosamente!");
     } catch (error) {
       // Manejar errores
       console.error("Error al registrar el servicio:", error);
-  
+
       setError(
         error instanceof Error
           ? error.message
-          : "Error desconocido al registrar el servicio"
+          : "Error desconocido al registrar el servicio",
       );
     }
   };
@@ -689,10 +698,14 @@ export default function Page() {
               </div>
               <div className="relative">
                 <SearchInputsPlaces
-                  onOriginChange={(address, coords) => handleOriginSpecificChange(address, coords)}
-                  onDestinationChange={(address, coords) => handleDestSpecificChange(address, coords)}
-                  initialOrigin={originSpecific}
                   initialDestination={destSpecific}
+                  initialOrigin={originSpecific}
+                  onDestinationChange={(address, coords) =>
+                    handleDestSpecificChange(address, coords)
+                  }
+                  onOriginChange={(address, coords) =>
+                    handleOriginSpecificChange(address, coords)
+                  }
                 />
               </div>
               {/* Purpose */}
@@ -941,9 +954,6 @@ export default function Page() {
                   </label>
                   <div className="relative bg-white">
                     <TimeInput
-                      startContent={
-                        <ClockIcon />
-                      }
                       classNames={{
                         inputWrapper: [
                           "!bg-transparent",
@@ -951,12 +961,12 @@ export default function Page() {
                           "border-1",
                           "py-6",
                           "group-data-[focus=true]:!bg-transparent",
-                          "rounded-md"
-                        ]
+                          "rounded-md",
+                        ],
                       }}
-                      value={hourOut}
-                      onChange={(value) => setHourOut(value)}
-                    // Intenta también con una clase global que definas en tu CSS
+                      startContent={<ClockIcon />}
+                      defaultValue={new Time(6, 0)}
+                      onChange={setHourOut}
                     />
                   </div>
                 </div>
@@ -970,7 +980,6 @@ export default function Page() {
                   </label>
                   <div className="relative bg-white">
                     <Textarea
-                      placeholder="Escribe las observaciones del servicio"
                       classNames={{
                         inputWrapper: [
                           "!bg-transparent",
@@ -982,9 +991,10 @@ export default function Page() {
                           "transition-colors",
                           "duration-300",
                           "ease-in-out",
-                          "rounded-md"
+                          "rounded-md",
                         ],
                       }}
+                      placeholder="Escribe las observaciones del servicio"
                       value={observaciones}
                       onChange={(e) => setObservaciones(e.target.value)}
                     />
@@ -1010,19 +1020,27 @@ export default function Page() {
                 <div className="relative">
                   {/* Optional: Add an icon here */}
                   <Select
-                    className="border-1 text-gray-800 pl-3 pr-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-4 appearance-none capitalize"
                     id="status"
                     name="status"
-                    value={state}
-                    onChange={(e) => setState("planificado")}
+                    selectedKeys={[state]}  // Cambia value por selectedKeys
+                    onSelectionChange={(keys) => {
+                      const selectedValue = Array.from(keys)[0] as EstadoServicio;
+                      setState(selectedValue);
+                    }}
+                    classNames={{
+                      trigger: [
+                        "!bg-transparent",
+                        "data-[hover=true]:!bg-transparent",
+                        "border-1",
+                        "py-6",
+                        "group-data-[focus=true]:!bg-transparent",
+                        "rounded-md",
+                      ],
+                    }}
                   >
-                    <SelectItem textValue="Solicitado">Solicitado</SelectItem>
-                    <SelectItem textValue="Planificado">Planificado</SelectItem>
-                    {/* Other statuses might be set later in the process */}
+                    <SelectItem key="solicitado" textValue="Solicitado">Solicitado</SelectItem>
+                    <SelectItem key="planificado" textValue="Planificado">Planificado</SelectItem>
                   </Select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <ChevronDownIcon />
-                  </div>
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
                   El estado inicial suele ser 'Solicitado' o 'Planificado'.

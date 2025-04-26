@@ -1,17 +1,20 @@
 // /api/aws/location/search/route.ts
-import { NextResponse } from 'next/server';
-import { LocationClient, SearchPlaceIndexForTextCommand } from "@aws-sdk/client-location";
+import { NextResponse } from "next/server";
+import {
+  LocationClient,
+  SearchPlaceIndexForTextCommand,
+} from "@aws-sdk/client-location";
 
 export async function GET(request) {
   // Extraer parámetros de la URL
   const { searchParams } = new URL(request.url);
-  const text = searchParams.get('text');
+  const text = searchParams.get("text");
   const country = "COL"; // Colombia por defecto
-  
+
   if (!text) {
     return NextResponse.json(
-      { error: 'El parámetro de búsqueda (text) es requerido' },
-      { status: 400 }
+      { error: "El parámetro de búsqueda (text) es requerido" },
+      { status: 400 },
     );
   }
 
@@ -20,11 +23,11 @@ export async function GET(request) {
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   const region = process.env.AWS_REGION;
   const placeIndexName = process.env.AWS_LOCATION_PLACE_INDEX;
-  
+
   if (!accessKeyId || !secretAccessKey || !region || !placeIndexName) {
     return NextResponse.json(
-      { error: 'Error de configuración: Credenciales o índice no disponibles' },
-      { status: 500 }
+      { error: "Error de configuración: Credenciales o índice no disponibles" },
+      { status: 500 },
     );
   }
 
@@ -34,8 +37,8 @@ export async function GET(request) {
       region,
       credentials: {
         accessKeyId,
-        secretAccessKey
-      }
+        secretAccessKey,
+      },
     });
 
     // Configurar los parámetros para la búsqueda
@@ -44,26 +47,26 @@ export async function GET(request) {
       Text: text,
       FilterCountries: [country],
       MaxResults: 5,
-      Language: 'es'
+      Language: "es",
     };
 
     // Ejecutar la búsqueda
     const command = new SearchPlaceIndexForTextCommand(params);
     const response = await locationClient.send(command);
 
-    console.log(response)
+    console.log(response);
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error al consultar Amazon Location Service:', error);
-    
+    console.error("Error al consultar Amazon Location Service:", error);
+
     return NextResponse.json(
-      { 
-        error: 'Error al consultar el servicio de geocodificación',
+      {
+        error: "Error al consultar el servicio de geocodificación",
         details: error.message,
-        code: error.Code || error.$metadata?.httpStatusCode
+        code: error.Code || error.$metadata?.httpStatusCode,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

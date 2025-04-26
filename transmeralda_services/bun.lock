@@ -6,7 +6,7 @@
       "dependencies": {
         "@aws-sdk/client-location": "^3.797.0",
         "@aws-sdk/credential-provider-node": "^3.797.0",
-        "@heroui/button": "2.2.17",
+        "@heroui/button": "^2.2.17",
         "@heroui/card": "^2.2.16",
         "@heroui/code": "2.2.12",
         "@heroui/date-input": "^2.3.16",
@@ -31,6 +31,8 @@
         "framer-motion": "11.13.1",
         "intl-messageformat": "^10.5.0",
         "leaflet": "^1.9.4",
+        "lodash": "^4.17.21",
+        "lodash.debounce": "^4.0.8",
         "lucide-react": "^0.487.0",
         "mapbox-gl": "^3.11.1",
         "next": "15.0.4",
@@ -1120,6 +1122,10 @@
     "lines-and-columns": ["lines-and-columns@1.2.4", "", {}, "sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg=="],
 
     "locate-path": ["locate-path@6.0.0", "", { "dependencies": { "p-locate": "^5.0.0" } }, "sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw=="],
+
+    "lodash": ["lodash@4.17.21", "", {}, "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="],
+
+    "lodash.debounce": ["lodash.debounce@4.0.8", "", {}, "sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow=="],
 
     "lodash.merge": ["lodash.merge@4.6.2", "", {}, "sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ=="],
 

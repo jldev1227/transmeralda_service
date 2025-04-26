@@ -1,30 +1,36 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Servicio, VehicleTracking } from '@/context/serviceContext';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import mapboxgl from "mapbox-gl";
+
+import { Servicio, ServicioConRelaciones, VehicleTracking } from "@/context/serviceContext";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 interface OptimizedMapComponentProps {
   servicioId: string;
   servicioWithRoutes: Servicio;
-  vehicleTracking: VehicleTracking;
+  vehicleTracking: VehicleTracking | null;
   trackingError: string;
-  handleServicioClick: (servicio: Servicio) => void;
+  handleServicioClick: (servicio: ServicioConRelaciones) => void;
   getStatusText: (status: string) => string;
   getServiceTypeText: (text: string) => string;
   mapboxToken: string;
 }
 
 const OptimizedMapComponent = ({
-  servicioId,
   servicioWithRoutes,
   vehicleTracking,
   trackingError,
   handleServicioClick,
   getStatusText,
   getServiceTypeText,
-  mapboxToken
+  mapboxToken,
 }: OptimizedMapComponentProps) => {
   // Referencias para el div del mapa y la instancia del mapa
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -37,29 +43,35 @@ const OptimizedMapComponent = ({
 
   // Estado para seguimiento de carga del mapa
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState<string>('');
+  const [mapError, setMapError] = useState<string>("");
 
   // Caché para servicios consultados
   const serviceCache = useRef(new Map());
 
   // Color para la polilínea basado en el estado
   const color = useMemo(() => {
-    if (!servicioWithRoutes) return '#3388ff';
+    if (!servicioWithRoutes) return "#3388ff";
 
     switch (servicioWithRoutes.estado) {
-      case 'solicitado': return '#6a7282';
-      case 'completado': return '#4CAF50';
-      case 'en curso': return '#00bc7d';
-      case 'planificado': return '#FF9800';
-      case 'cancelado': return '#F44336';
-      default: return '#3388ff';
+      case "solicitado":
+        return "#6a7282";
+      case "realizado":
+        return "#155dfc";
+      case "en curso":
+        return "#00bc7d";
+      case "planificado":
+        return "#FF9800";
+      case "cancelado":
+        return "#F44336";
+      default:
+        return "#3388ff";
     }
   }, [servicioWithRoutes]);
 
   // Guardar el servicio en caché
   useEffect(() => {
     if (servicioWithRoutes) {
-      console.log(servicioWithRoutes)
+      console.log(servicioWithRoutes);
       if (!serviceCache.current.has(servicioWithRoutes.id)) {
         serviceCache.current.set(servicioWithRoutes.id, servicioWithRoutes);
       }
@@ -69,9 +81,11 @@ const OptimizedMapComponent = ({
   // Limitar el tamaño de la caché (opcional)
   useEffect(() => {
     const MAX_CACHE_SIZE = 1; // Número máximo de servicios en caché
+
     if (serviceCache.current.size > MAX_CACHE_SIZE) {
       // Eliminamos el elemento más antiguo
       const firstKey = serviceCache.current.keys().next().value;
+
       serviceCache.current.delete(firstKey);
     }
   }, [servicioWithRoutes]);
@@ -80,6 +94,7 @@ const OptimizedMapComponent = ({
   useEffect(() => {
     if (!mapboxToken) {
       setMapError("Token de Mapbox no configurado");
+
       return;
     }
 
@@ -90,9 +105,12 @@ const OptimizedMapComponent = ({
   const getInitialCenter = useCallback(() => {
     // Si hay coordenadas de origen, centrar en el origen
     if (servicioWithRoutes?.origenCoords) {
-      return [servicioWithRoutes.origenCoords[1], servicioWithRoutes.origenCoords[0]]; // [lng, lat]
+      return [
+        servicioWithRoutes.origenCoords[1],
+        servicioWithRoutes.origenCoords[0],
+      ]; // [lng, lat]
     }
-    
+
     // Por defecto, centro aproximado de Antioquia
     return [-75.5812, 6.2442];
   }, [vehicleTracking, servicioWithRoutes]);
@@ -103,23 +121,22 @@ const OptimizedMapComponent = ({
 
     try {
       const initialCenter = getInitialCenter();
-      
+
       // Crear nueva instancia del mapa
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/outdoors-v12', // Cambia esto por otro estilo
+        style: "mapbox://styles/mapbox/outdoors-v12", // Cambia esto por otro estilo
         center: initialCenter, // Centro basado en vehículo u origen
-        zoom: 12 // Un poco más de zoom para ver mejor el vehículo/origen
+        zoom: 12, // Un poco más de zoom para ver mejor el vehículo/origen
       });
 
       // Añadir controles al mapa
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      
+      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+
       // Marcar como cargado cuando el mapa esté listo
-      map.current.on('load', () => {
+      map.current.on("load", () => {
         setIsMapLoaded(true);
       });
-      
     } catch (error) {
       console.error("Error al inicializar Mapbox:", error);
       setMapError("Error al inicializar el mapa");
@@ -133,21 +150,20 @@ const OptimizedMapComponent = ({
     };
   }, [mapboxToken]);
 
-
   // Función para crear popups para los marcadores
-  const createPopupHTML = (type: 'origen' | 'destino') => {
-    if (!servicioWithRoutes) return '';
+  const createPopupHTML = (type: "origen" | "destino") => {
+    if (!servicioWithRoutes) return "";
 
-    const isOrigin = type === 'origen';
+    const isOrigin = type === "origen";
 
     return `
       <div class="marker-popup">
         <div class="popup-header popup-${servicioWithRoutes.estado.toLowerCase().replace(" ", "-")}">
-          ${isOrigin ? 'Origen' : 'Destino'} - ${getStatusText(servicioWithRoutes.estado || '')}
+          ${isOrigin ? "Origen" : "Destino"} - ${getStatusText(servicioWithRoutes.estado || "")}
         </div>
         <div class="popup-content">
           <div class="font-medium">
-            ${isOrigin ? servicioWithRoutes.origen_especifico || '' : servicioWithRoutes.destino_especifico || ''}
+            ${isOrigin ? servicioWithRoutes.origen_especifico || "" : servicioWithRoutes.destino_especifico || ""}
           </div>
           <div class="text-sm text-gray-500 mt-1">
             ID: ${servicioWithRoutes.id}
@@ -155,25 +171,25 @@ const OptimizedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${isOrigin ?
-        `<div class="grid grid-cols-2 gap-2 text-sm">
+          ${
+            isOrigin
+              ? `<div class="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio</div>
-                <div>${getServiceTypeText(servicioWithRoutes.tipo_servicio || '')}</div>
+                <div>${getServiceTypeText(servicioWithRoutes.tipo_servicio || "")}</div>
               </div>
               <div>
                 <div class="font-medium">Fecha inicio</div>
                 <div>${new Date(servicioWithRoutes.fecha_inicio).toLocaleDateString()}</div>
               </div>
             </div>`
-        :
-        `<div class="text-sm">
+              : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${servicioWithRoutes.routeDistance} km</div>
               </div>
             </div>`
-      }
+          }
         </div>
       </div>
     `;
@@ -182,24 +198,25 @@ const OptimizedMapComponent = ({
   // Función para crear un marcador con popup
   const createMarker = (
     lngLat: [number, number],
-    type: 'origen' | 'destino',
-    popupContent: string
+    type: "origen" | "destino",
+    popupContent: string,
   ) => {
     if (!map.current) return null;
 
     // Crear elemento para el marcador personalizado
-    const el = document.createElement('div');
+    const el = document.createElement("div");
+
     el.className = `custom-marker marker-${type}`;
     el.style.backgroundColor = color;
-    el.style.width = '24px';
-    el.style.height = '24px';
-    el.style.borderRadius = '50%';
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.style.color = 'white';
-    el.style.fontWeight = 'bold';
-    el.innerText = type === 'origen' ? 'A' : 'B';
+    el.style.width = "24px";
+    el.style.height = "24px";
+    el.style.borderRadius = "50%";
+    el.style.display = "flex";
+    el.style.alignItems = "center";
+    el.style.justifyContent = "center";
+    el.style.color = "white";
+    el.style.fontWeight = "bold";
+    el.innerText = type === "origen" ? "A" : "B";
 
     // Crear popup para el marcador
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
@@ -211,7 +228,7 @@ const OptimizedMapComponent = ({
       .addTo(map.current);
 
     // Añadir evento de click
-    el.addEventListener('click', () => {
+    el.addEventListener("click", () => {
       handleServicioClick(servicioWithRoutes);
     });
 
@@ -223,16 +240,17 @@ const OptimizedMapComponent = ({
     if (!map.current || !vehicleTracking) return null;
 
     // Crear elemento para el marcador de vehículo
-    const el = document.createElement('div');
-    el.className = 'vehicle-marker';
-    el.style.width = '38px';
-    el.style.height = '38px';
+    const el = document.createElement("div");
+
+    el.className = "vehicle-marker";
+    el.style.width = "38px";
+    el.style.height = "38px";
     el.style.backgroundImage = "url('/assets/marker.png')";
-    el.style.backgroundSize = 'cover';
-    el.style.backgroundPosition = 'center';
-    el.style.borderRadius = '50%';
-    el.style.border = '2px solid #ffffff';
-    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    el.style.backgroundSize = "cover";
+    el.style.backgroundPosition = "center";
+    el.style.borderRadius = "50%";
+    el.style.border = "2px solid #ffffff";
+    el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
 
     // Crear contenido del popup
     const popupContent = `
@@ -274,49 +292,61 @@ const OptimizedMapComponent = ({
     }
 
     // Limpiar capa de ruta existente si existe
-    if (map.current.getSource('route')) {
-      map.current.removeLayer('route');
-      map.current.removeSource('route');
+    if (map.current.getSource("route")) {
+      map.current.removeLayer("route");
+      map.current.removeSource("route");
     }
 
-    
     // Determinar si debemos mostrar ruta completa o solo desde vehículo al destino
-    const isVehicleActive = servicioWithRoutes.estado === 'en curso' && vehicleTracking && vehicleTracking.position;
-    
+    const isVehicleActive =
+      servicioWithRoutes.estado === "en curso" &&
+      vehicleTracking &&
+      vehicleTracking.position;
 
     if (servicioWithRoutes.geometry && servicioWithRoutes.geometry.length > 0) {
       let coordinates;
-      
+
       if (isVehicleActive) {
         // Si el servicio está en curso y hay vehículo, mostrar ruta desde vehículo hasta destino
-        const vehiclePosition = [vehicleTracking.position.x, vehicleTracking.position.y]; // [lng, lat]
-        const destinoPosition = [servicioWithRoutes.destinoCoords[1], servicioWithRoutes.destinoCoords[0]]; // [lng, lat]
-        
+        const vehiclePosition = [
+          vehicleTracking.position.x,
+          vehicleTracking.position.y,
+        ]; // [lng, lat]
+        const destinoPosition = [
+          servicioWithRoutes.destinoCoords[1],
+          servicioWithRoutes.destinoCoords[0],
+        ]; // [lng, lat]
+
         // Usamos la API de Directions de Mapbox para obtener la ruta desde el vehículo hasta el destino
         // Esto se podría optimizar con un hook useEffect separado que reaccione a cambios en la posición
         // del vehículo, pero por simplicidad lo dejamos integrado aquí
-        fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${vehiclePosition[0]},${vehiclePosition[1]};${destinoPosition[0]},${destinoPosition[1]}?geometries=geojson&access_token=${mapboxToken}`)
-          .then(response => response.json())
-          .then(data => {
+        fetch(
+          `https://api.mapbox.com/directions/v5/mapbox/driving/${vehiclePosition[0]},${vehiclePosition[1]};${destinoPosition[0]},${destinoPosition[1]}?geometries=geojson&access_token=${mapboxToken}`,
+        )
+          .then((response) => response.json())
+          .then((data) => {
             if (data.routes && data.routes.length > 0) {
               // Si la solicitud tiene éxito, usamos la ruta devuelta
               coordinates = data.routes[0].geometry.coordinates;
-              
+
               // Añadir la ruta al mapa
               addRouteToMap(coordinates);
-              
+
               // Ajustar el mapa a los límites de la ruta
-              const bounds = coordinates.reduce((bounds, coord) => {
-                return bounds.extend(coord);
-              }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-              
+              const bounds = coordinates.reduce(
+                (bounds, coord) => {
+                  return bounds.extend(coord);
+                },
+                new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+              );
+
               map.current.fitBounds(bounds, {
                 padding: 50,
-                maxZoom: 15
+                maxZoom: 15,
               });
             }
           })
-          .catch(error => {
+          .catch((error) => {
             console.error("Error al obtener ruta desde vehículo:", error);
             // En caso de error, usamos una línea recta desde el vehículo hasta el destino
             coordinates = [vehiclePosition, destinoPosition];
@@ -324,76 +354,110 @@ const OptimizedMapComponent = ({
           });
       } else {
         // Si no hay vehículo activo o el servicio no está en curso, mostrar ruta completa original
-        coordinates = servicioWithRoutes.geometry.map(coord => [coord[1], coord[0]]); // Convertir a [lng, lat]
+        coordinates = servicioWithRoutes.geometry.map((coord) => [
+          coord[1],
+          coord[0],
+        ]); // Convertir a [lng, lat]
         addRouteToMap(coordinates);
-        
+
         // Ajustar el mapa a los límites de la ruta
-        const bounds = coordinates.reduce((bounds, coord) => {
-          return bounds.extend(coord);
-        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-        
+        const bounds = coordinates.reduce(
+          (bounds, coord) => {
+            return bounds.extend(coord);
+          },
+          new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+        );
+
         map.current.fitBounds(bounds, {
           padding: 50,
-          maxZoom: 15
+          maxZoom: 15,
         });
       }
-      
+
       // Crear marcadores para origen y destino
       if (servicioWithRoutes.origenCoords) {
-        const lngLat: [number, number] = [servicioWithRoutes.origenCoords[1], servicioWithRoutes.origenCoords[0]];
-        markersRef.current.origen = createMarker(lngLat, 'origen', createPopupHTML('origen'));
+        const lngLat: [number, number] = [
+          servicioWithRoutes.origenCoords[1],
+          servicioWithRoutes.origenCoords[0],
+        ];
+
+        markersRef.current.origen = createMarker(
+          lngLat,
+          "origen",
+          createPopupHTML("origen"),
+        );
       }
 
       if (servicioWithRoutes.destinoCoords) {
-        const lngLat: [number, number] = [servicioWithRoutes.destinoCoords[1], servicioWithRoutes.destinoCoords[0]];
-        markersRef.current.destino = createMarker(lngLat, 'destino', createPopupHTML('destino'));
+        const lngLat: [number, number] = [
+          servicioWithRoutes.destinoCoords[1],
+          servicioWithRoutes.destinoCoords[0],
+        ];
+
+        markersRef.current.destino = createMarker(
+          lngLat,
+          "destino",
+          createPopupHTML("destino"),
+        );
       }
     }
-  }, [servicioWithRoutes, isMapLoaded, color, handleServicioClick, getStatusText, getServiceTypeText, vehicleTracking, mapboxToken]);
+  }, [
+    servicioWithRoutes,
+    isMapLoaded,
+    color,
+    handleServicioClick,
+    getStatusText,
+    getServiceTypeText,
+    vehicleTracking,
+    mapboxToken,
+  ]);
 
-
-   // Función auxiliar para añadir una ruta al mapa
-   const addRouteToMap = (coordinates) => {
+  // Función auxiliar para añadir una ruta al mapa
+  const addRouteToMap = (coordinates) => {
     if (!map.current) return;
-    
-    map.current.addSource('route', {
-      type: 'geojson',
+
+    map.current.addSource("route", {
+      type: "geojson",
       data: {
-        type: 'Feature',
+        type: "Feature",
         properties: {},
         geometry: {
-          type: 'LineString',
-          coordinates
-        }
-      }
+          type: "LineString",
+          coordinates,
+        },
+      },
     });
 
     map.current.addLayer({
-      id: 'route',
-      type: 'line',
-      source: 'route',
+      id: "route",
+      type: "line",
+      source: "route",
       layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
+        "line-join": "round",
+        "line-cap": "round",
       },
       paint: {
-        'line-color': color,
-        'line-width': 5,
-        'line-opacity': 0.7
-      }
+        "line-color": color,
+        "line-width": 5,
+        "line-opacity": 0.7,
+      },
     });
 
     // Añadir evento click a la ruta
-    map.current.on('click', 'route', () => {
+    map.current.on("click", "route", () => {
       handleServicioClick(servicioWithRoutes);
     });
   };
 
   // Actualizar marcador del vehículo y centrar el mapa si es necesario
   useEffect(() => {
-    if (!isMapLoaded || !map.current ||
-      servicioWithRoutes?.estado !== 'en curso' ||
-      !vehicleTracking || !vehicleTracking.position) {
+    if (
+      !isMapLoaded ||
+      !map.current ||
+      servicioWithRoutes?.estado !== "en curso" ||
+      !vehicleTracking ||
+      !vehicleTracking.position
+    ) {
       return;
     }
 
@@ -404,13 +468,20 @@ const OptimizedMapComponent = ({
     }
 
     // Crear nuevo marcador de vehículo
-    const lngLat: [number, number] = [vehicleTracking.position.x, vehicleTracking.position.y];
+    const lngLat: [number, number] = [
+      vehicleTracking.position.x,
+      vehicleTracking.position.y,
+    ];
+
     markersRef.current.vehicle = createVehicleMarker(lngLat);
-  
   }, [vehicleTracking, servicioWithRoutes, isMapLoaded]);
 
   if (!servicioWithRoutes) {
-    return <div className="h-full w-full flex items-center justify-center">No hay datos del servicio</div>;
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        No hay datos del servicio
+      </div>
+    );
   }
 
   return (
@@ -421,10 +492,7 @@ const OptimizedMapComponent = ({
         </div>
       )}
 
-      <div
-        ref={mapContainer}
-        className="h-full w-full"
-      >
+      <div ref={mapContainer} className="h-full w-full">
         {!isMapLoaded && (
           <div className="h-full w-full flex items-center justify-center">
             Cargando mapa...
@@ -433,36 +501,46 @@ const OptimizedMapComponent = ({
       </div>
 
       {/* Mensaje de error de tracking (solo si está en curso y hay error) */}
-      {servicioWithRoutes?.estado === 'en curso' && trackingError && !vehicleTracking && (
-        <div className="absolute bottom-2 left-2 right-2 z-[1000] bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
-          <span className="font-medium">Información:</span> {trackingError}
-        </div>
-      )}
+      {servicioWithRoutes?.estado === "en curso" &&
+        trackingError &&
+        !vehicleTracking && (
+          <div className="absolute bottom-2 left-2 right-2 z-[1000] bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
+            <span className="font-medium">Información:</span> {trackingError}
+          </div>
+        )}
 
       {/* Estilos adicionales para los popups */}
-      <style jsx global>{`
+      <style global jsx>{`
         .marker-popup .popup-header {
           padding: 8px;
           color: white;
           font-weight: bold;
           border-radius: 4px 4px 0 0;
         }
-        
+
         .marker-popup .popup-content {
           padding: 8px;
         }
-        
+
         .marker-popup .popup-divider {
           height: 1px;
           background-color: #e5e7eb;
           margin: 8px 0;
         }
-        
-        .popup-completado { background-color: #4CAF50; }
-        .popup-en-curso { background-color: #00d492; }
-        .popup-planificado { background-color: #FF9800; }
-        .popup-cancelado { background-color: #F44336; }
-        
+
+        .popup-realizado {
+          background-color: #155dfc;
+        }
+        .popup-en-curso {
+          background-color: #00d492;
+        }
+        .popup-planificado {
+          background-color: #ff9800;
+        }
+        .popup-cancelado {
+          background-color: #f44336;
+        }
+
         .vehicle-popup {
           padding: 8px;
         }

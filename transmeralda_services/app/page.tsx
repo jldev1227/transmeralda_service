@@ -117,7 +117,7 @@ export default function Dashboard() {
                     Realizados
                   </dt>
                   <dd className="text-lg font-semibold text-gray-900">
-                    {servicios.filter((s) => s.estado === "completado").length}
+                    {servicios.filter((s) => s.estado === "realizado").length}
                   </dd>
                 </dl>
               </div>
