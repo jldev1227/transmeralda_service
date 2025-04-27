@@ -50,7 +50,7 @@ export interface SocketEventLog {
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
-  servicios: Servicio[];
+  servicios: ServicioConRelaciones[];
   servicio: Servicio | null;
   municipios: Municipio[];
   conductores: Conductor[];
@@ -60,6 +60,16 @@ interface ServiceContextType {
   registrarServicio: (servicioData: CreateServicioDTO) => void;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+
+  // Tracking de vehículos y servicios seleccionados
+  vehicleTracking?: VehicleTracking | null;
+  trackingError?: string;
+  selectedServicio?: ServicioConRelaciones | null;
+  serviciosWithRoutes?: ServicioConRelaciones[];
+  setServiciosWithRoutes?: React.Dispatch<React.SetStateAction<ServicioConRelaciones[]>>;
+  selectServicio?: (servicio: ServicioConRelaciones) => void;
+  clearSelectedServicio?: () => void;
+  setSelectedServicio?: React.Dispatch<React.SetStateAction<ServicioConRelaciones | null>>;
 
   // Nuevas propiedades para Socket.IO
   socketConnected?: boolean;
@@ -301,7 +311,7 @@ const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   children,
 }) => {
-  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [conductores, setConductores] = useState<Conductor[]>([]);
@@ -500,6 +510,39 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     obtenerEmpresas();
   }, []);
 
+  // Estado para rastreo de vehículos y servicios seleccionados
+  const [vehicleTracking, setVehicleTracking] = useState<VehicleTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string>('');
+  const [selectedServicio, setSelectedServicio] = useState<ServicioConRelaciones | null>(null);
+  const [serviciosWithRoutes, setServiciosWithRoutes] = useState<ServicioConRelaciones[]>([]);
+
+  // Seleccionar un servicio para mostrar detalles y tracking
+  const selectServicio = useCallback(async (servicio: ServicioConRelaciones) => {
+    setSelectedServicio(servicio);
+    
+    // Si el servicio está en curso, intentar obtener tracking del vehículo
+    if (servicio.estado === 'en curso' && servicio.vehiculo?.placa) {
+      setTrackingError('');
+      try {
+        // Aquí se implementaría la lógica para obtener el tracking del vehículo
+        // Por ahora dejamos esto como un placeholder
+        setVehicleTracking(null);
+      } catch (error) {
+        console.error("Error al obtener tracking del vehículo:", error);
+        setTrackingError('No se pudo obtener información del vehículo.');
+      }
+    } else {
+      setVehicleTracking(null);
+    }
+  }, []);
+
+  // Limpiar la selección de servicio
+  const clearSelectedServicio = useCallback(() => {
+    setSelectedServicio(null);
+    setVehicleTracking(null);
+    setTrackingError('');
+  }, []);
+
   // Valor del contexto
   const value: ServiceContextType = {
     servicios,
@@ -512,6 +555,15 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     registrarServicio,
     obtenerServicio,
     setError,
+    // Añadir estados y métodos de tracking
+    vehicleTracking,
+    trackingError,
+    selectedServicio,
+    serviciosWithRoutes,
+    setServiciosWithRoutes,
+    selectServicio,
+    clearSelectedServicio,
+    setSelectedServicio
   };
 
   return (

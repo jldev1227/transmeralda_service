@@ -276,7 +276,7 @@ const OptimizedMapComponent = ({
       .addTo(map.current);
   };
 
-  // Actualizar mapa cuando cambien los datos
+  // Actualizar mapa cuando cambien los datos       
   useEffect(() => {
     if (!isMapLoaded || !map.current || !servicioWithRoutes) return;
 
@@ -296,6 +296,8 @@ const OptimizedMapComponent = ({
       map.current.removeLayer("route");
       map.current.removeSource("route");
     }
+
+    console.log(isMapLoaded)
 
     // Determinar si debemos mostrar ruta completa o solo desde vehículo al destino
     const isVehicleActive =
