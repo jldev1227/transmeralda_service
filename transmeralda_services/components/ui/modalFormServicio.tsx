@@ -359,28 +359,43 @@ export default function ModalFormServicio() {
     } else if (currentStep === 2) {
       // Step 2: Journey Details validation
       if (!selectedOriginMun) {
-        alert("Por favor seleccione un origen");
-
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor seleccione un origen",
+          color: "danger",
+        });
         return;
       }
       if (!selectedDestMun) {
-        alert("Por favor seleccione un destino");
-
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor seleccione un destino",
+          color: "danger",
+        });
         return;
       }
       if (!originSpecific) {
-        alert("Por favor ingrese una dirección de origen específica");
-
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor ingrese una dirección de origen específica",
+          color: "danger",
+        });
         return;
       }
       if (!destSpecific) {
-        alert("Por favor ingrese una dirección de destino específica");
-
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor ingrese una dirección de destino específica",
+          color: "danger",
+        });
         return;
       }
       if (!purpose) {
-        alert("Por favor seleccione un propósito para el servicio");
-
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor seleccione un propósito para el servicio",
+          color: "danger",
+        });
         return;
       }
     } else if (currentStep === 3) {

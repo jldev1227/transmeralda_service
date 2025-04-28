@@ -17,7 +17,7 @@ import {
 } from "@/context/serviceContext";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Button } from "@heroui/button";
+import { Button, PressEvent } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { PlusIcon } from "lucide-react";
 
@@ -181,19 +181,20 @@ const EnhancedMapComponent = ({
         const vehicleMarkers: VehicleMarkerData[] = [];
 
         for (const servicio of serviciosEnCurso) {
-          if (servicio.vehiculo?.placa) {
-            const vehicleData = vehiclesData.items.find(
-              (v: { nm: string }) =>
-                v.nm.includes(servicio.vehiculo.placa) ||
-                v.nm.toLowerCase() === servicio.vehiculo.placa.toLowerCase(),
-            );
+          // Skip services without vehicle information
+          if (!servicio.vehiculo || !servicio.vehiculo.placa) continue;
+          
+          const vehicleData = vehiclesData.items.find(
+            (v: { nm: string }) =>
+              v.nm.includes(servicio.vehiculo.placa) ||
+              v.nm.toLowerCase() === servicio.vehiculo.placa.toLowerCase(),
+          );
 
-            if (vehicleData?.pos) {
-              vehicleMarkers.push({
-                vehicle: vehicleData,
-                service: servicio,
-              });
-            }
+          if (vehicleData?.pos) {
+            vehicleMarkers.push({
+              vehicle: vehicleData,
+              service: servicio,
+            });
           }
         }
 
@@ -901,6 +902,11 @@ const EnhancedMapComponent = ({
       }, 100); // Short delay to ensure state is updated
     }
   };
+  
+  const handleButtonPress = (e: PressEvent) => {
+    handleModalAdd();
+  };
+  
 
   return (
     <div className="h-full w-full relative">
@@ -954,37 +960,45 @@ const EnhancedMapComponent = ({
               </div>
             </div>
 
-            <div>
-              <span className="text-sm text-gray-500">Cliente</span>
-              <div className="font-medium">
-                {selectedServicio.cliente.Nombre}
+            {selectedServicio.cliente && (
+              <div>
+                <span className="text-sm text-gray-500">Cliente</span>
+                <div className="font-medium">
+                  {selectedServicio.cliente.Nombre}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <span className="text-sm text-gray-500">Vehiculo</span>
-              <div className="font-medium">
-                {selectedServicio.vehiculo.placa}{" "}
-                {selectedServicio.vehiculo.linea}{" "}
-                {selectedServicio.vehiculo.modelo}
+            {selectedServicio.vehiculo && (
+              <div>
+                <span className="text-sm text-gray-500">Vehiculo</span>
+                <div className="font-medium">
+                  {selectedServicio.vehiculo.placa}{" "}
+                  {selectedServicio.vehiculo.linea}{" "}
+                  {selectedServicio.vehiculo.modelo}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <span className="text-sm text-gray-500">Conductor</span>
-              <div className="font-medium">
-                {selectedServicio.conductor.nombre}{" "}
-                {selectedServicio.conductor.apellido}{" "}
-              </div>
-            </div>
+            {selectedServicio.conductor && (
+              <>
+                <div>
+                  <span className="text-sm text-gray-500">Conductor</span>
+                  <div className="font-medium">
+                    {selectedServicio.conductor.nombre}{" "}
+                    {selectedServicio.conductor.apellido}{" "}
+                  </div>
+                </div>
 
-            <div>
-              <span className="text-sm text-gray-500">Identificación</span>
-              <div className="font-medium">
-                {selectedServicio.conductor.tipo_identificacion}{" "}
-                {selectedServicio.conductor.numero_identificacion}
-              </div>
-            </div>
+                <div>
+                  <span className="text-sm text-gray-500">Identificación</span>
+                  <div className="font-medium">
+                    {selectedServicio.conductor.tipo_identificacion}{" "}
+                    {selectedServicio.conductor.numero_identificacion}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div>
               <span className="text-sm text-gray-500">
@@ -1077,7 +1091,7 @@ const EnhancedMapComponent = ({
             isIconOnly
             className="text-sm font-medium bg-white h-12 w-12"
             radius="sm"
-            onPress={() => handleModalAdd}
+            onPress={handleButtonPress}
           >
             <PlusIcon color="#00bc7d" />
           </Button>

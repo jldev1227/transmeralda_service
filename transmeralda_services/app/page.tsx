@@ -14,6 +14,7 @@ import {
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
+import { ShieldCheck, ShieldCheckIcon, Verified } from "lucide-react";
 
 interface MapboxRoute {
   distance: number;
@@ -419,20 +420,22 @@ const AdvancedDashboard = () => {
       >
         {/* Panel header with handle for mobile */}
         <div className="p-3 md:p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
-          <div className="space-y-2">
+          <div className="w-full space-y-2">
             <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
             {socketConnected ? (
               <Alert
-                className="py-2"
-                variant="faded"
-                color="success"
-                title="Obteniendo cambios en tiempo real"
-              />
+              className="py-2"
+              variant="faded"
+              color="success"
+              radius="sm"
+              title="Obteniendo cambios en tiempo real"
+            />
             ) : (
               <Alert
                 className="py-2"
                 variant="faded"
                 color="danger"
+                radius="sm"
                 title="Desconectado de conexión en tiempo real"
               />
             )}
