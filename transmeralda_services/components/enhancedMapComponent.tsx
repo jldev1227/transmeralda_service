@@ -11,7 +11,6 @@ import React, {
 import mapboxgl from "mapbox-gl";
 
 import {
-  Servicio,
   ServicioConRelaciones,
   useService,
   VehicleTracking,
@@ -21,6 +20,9 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { PlusIcon } from "lucide-react";
+
+import LoadingComponent from "./ui/LoadingComponent";
+
 import { formatearFecha } from "@/helpers";
 
 interface EnhancedMapComponentProps {
@@ -28,7 +30,7 @@ interface EnhancedMapComponentProps {
   selectedServicio: ServicioConRelaciones | null;
   vehicleTracking: VehicleTracking | null;
   trackingError: string;
-  handleServicioClick: (servicio: ServicioConRelaciones) => void;
+  handleSelectServicio: (servicio: ServicioConRelaciones) => void;
   getStatusText: (status: string) => string;
   getServiceTypeText: (text: string) => string;
   mapboxToken: string;
@@ -42,8 +44,8 @@ interface EnhancedMapComponentProps {
 }
 
 interface VehicleMarkerData {
-  vehicle: any;
-  service: Servicio;
+  vehicle: Vehicle;
+  service: ServicioConRelaciones;
   marker?: mapboxgl.Marker;
 }
 
@@ -54,12 +56,41 @@ interface MarkersRef {
   activeVehicles: Map<string, mapboxgl.Marker>;
 }
 
+// Interfaces para el objeto vehicle
+interface Position {
+  t: number;
+  f: number;
+  lc: number;
+  y: number;
+  x: number;
+  // Puede tener más propiedades
+}
+
+interface LastMessage {
+  t: number;
+  f: number;
+  tp: string;
+  pos: Position;
+  i: number;
+  // Puede tener más propiedades
+}
+
+interface Vehicle {
+  cls: number;
+  id: number;
+  lmsg: LastMessage;
+  mu: number;
+  nm: string;
+  pos: Position;
+  uacl: number;
+}
+
 const EnhancedMapComponent = ({
   servicios,
   selectedServicio,
   vehicleTracking,
   trackingError,
-  handleServicioClick,
+  handleSelectServicio,
   getStatusText,
   getServiceTypeText,
   mapboxToken,
@@ -67,7 +98,7 @@ const EnhancedMapComponent = ({
   wialonToken,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
-  const { handleModalAdd } = useService()
+  const { handleModalAdd } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkersRef>({
@@ -152,14 +183,10 @@ const EnhancedMapComponent = ({
         for (const servicio of serviciosEnCurso) {
           if (servicio.vehiculo?.placa) {
             const vehicleData = vehiclesData.items.find(
-              (v : {
-                nm: string;
-              }) =>
+              (v: { nm: string }) =>
                 v.nm.includes(servicio.vehiculo.placa) ||
                 v.nm.toLowerCase() === servicio.vehiculo.placa.toLowerCase(),
             );
-
-            console.log(vehicleData)
 
             if (vehicleData?.pos) {
               vehicleMarkers.push({
@@ -223,7 +250,10 @@ const EnhancedMapComponent = ({
     };
   }, [mapboxToken]);
 
-  const createPulsingVehicleMarker = (vehicleData: any, service: Servicio) => {
+  const createPulsingVehicleMarker = (
+    vehicleData: any,
+    service: ServicioConRelaciones,
+  ) => {
     if (!map.current) return null;
 
     const el = document.createElement("div");
@@ -273,7 +303,7 @@ const EnhancedMapComponent = ({
     });
 
     el.addEventListener("dblclick", () => {
-      handleServicioClick(service);
+      handleSelectServicio(service);
     });
 
     return marker;
@@ -300,7 +330,7 @@ const EnhancedMapComponent = ({
     markersRef.current.activeVehicles.clear();
 
     // Create markers for all active vehicles
-    activeVehiclesData.forEach((data) => {
+    activeVehiclesData.forEach((data: VehicleMarkerData) => {
       const marker = createPulsingVehicleMarker(data.vehicle, data.service);
 
       if (marker) {
@@ -332,80 +362,6 @@ const EnhancedMapComponent = ({
     isMapLoaded,
     activeVehiclesData,
     selectedServicio,
-    createPulsingVehicleMarker,
-  ]);
-
-  useEffect(() => {
-    if (!isMapLoaded || !map.current) return;
-
-    const wasServiceSelected = prevSelectedServicioRef.current !== null;
-    const isServiceSelected = selectedServicio !== null;
-
-    // Update reference for next render
-    prevSelectedServicioRef.current = selectedServicio;
-
-    // If we're still looking at a selected service, don't show the overview
-    if (isServiceSelected) {
-      // Clear existing active vehicle markers when selecting a service
-      markersRef.current.activeVehicles.forEach((marker) => marker.remove());
-      markersRef.current.activeVehicles.clear();
-      markersCreatedRef.current = false;
-
-      return;
-    }
-
-    // Special handling for when transitioning from service view to overview
-    if (wasServiceSelected && !isServiceSelected) {
-      // Make sure the map properly resets when closing a service view
-      if (map.current) {
-        // Reset marker creation flag to allow fresh creation
-        markersCreatedRef.current = false;
-
-        setTimeout(() => {
-          if (!map.current || selectedServicio) return; // Double-check state
-
-          // Create markers for all active vehicles
-          markersRef.current.activeVehicles.forEach((marker) =>
-            marker.remove(),
-          );
-          markersRef.current.activeVehicles.clear();
-
-          activeVehiclesData.forEach((data) => {
-            const marker = createPulsingVehicleMarker(
-              data.vehicle,
-              data.service,
-            );
-
-            if (marker) {
-              markersRef.current.activeVehicles.set(
-                data.vehicle.id.toString(),
-                marker,
-              );
-            }
-          });
-          markersCreatedRef.current = true;
-
-          // Re-center the map if needed
-          if (activeVehiclesData.length > 0) {
-            const bounds = new mapboxgl.LngLatBounds();
-
-            activeVehiclesData.forEach((data) => {
-              bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
-            });
-
-            map.current.fitBounds(bounds, {
-              padding: 100,
-              maxZoom: 14,
-            });
-          }
-        }, 150); // Short delay to ensure state is fully updated
-      }
-    }
-  }, [
-    activeVehiclesData,
-    isMapLoaded,
-    selectedServicio,
-    handleServicioClick,
     createPulsingVehicleMarker,
   ]);
 
@@ -593,29 +549,29 @@ const EnhancedMapComponent = ({
   useEffect(() => {
     // Validación inicial
     if (!isMapLoaded || !map.current || !selectedServicio) return;
-  
+
     // Limpiar marcadores y rutas previas
     clearMapObjects();
-  
+
     // Crear bounds para ajustar la vista del mapa
     const bounds = new mapboxgl.LngLatBounds();
-    
+
     // Función para añadir coordenadas a los bounds de manera segura
     const extendBounds = (lng: number, lat: number) => {
       if (isFinite(lng) && isFinite(lat)) {
         bounds.extend([lng, lat]);
       }
     };
-  
+
     // Función para crear y mostrar una ruta en el mapa
     const createRoute = async (
-      sourceId: string, 
-      originCoords: [number, number], 
+      sourceId: string,
+      originCoords: [number, number],
       destCoords: [number, number],
-      routeColor: string = color
+      routeColor: string = color,
     ) => {
       if (!map.current) return;
-      
+
       try {
         // Agregar source con línea recta temporal
         map.current.addSource(sourceId, {
@@ -629,7 +585,7 @@ const EnhancedMapComponent = ({
             },
           },
         });
-  
+
         // Agregar capa para visualizar la ruta
         map.current.addLayer({
           id: sourceId,
@@ -645,10 +601,13 @@ const EnhancedMapComponent = ({
             "line-opacity": 0.8,
           },
         });
-  
+
         // Obtener la ruta real desde Mapbox y actualizar
-        const routeCoordinates = await fetchMapboxRoute(originCoords, destCoords);
-        
+        const routeCoordinates = await fetchMapboxRoute(
+          originCoords,
+          destCoords,
+        );
+
         // Actualizar la fuente con las coordenadas reales de la ruta
         if (map.current.getSource(sourceId)) {
           (map.current.getSource(sourceId) as mapboxgl.GeoJSONSource).setData({
@@ -659,10 +618,10 @@ const EnhancedMapComponent = ({
               coordinates: routeCoordinates,
             },
           });
-          
+
           // Actualizar bounds con todos los puntos de la ruta
-          routeCoordinates.forEach(coord => extendBounds(coord[0], coord[1]));
-          
+          routeCoordinates.forEach((coord) => extendBounds(coord[0], coord[1]));
+
           // Ajustar la vista del mapa
           fitMapToBounds();
         }
@@ -670,53 +629,66 @@ const EnhancedMapComponent = ({
         console.error(`Error al crear/actualizar ruta ${sourceId}:`, error);
       }
     };
-    
+
     // Función para ajustar la vista del mapa a los límites actuales
     const fitMapToBounds = () => {
       if (!map.current || bounds.isEmpty()) return;
-      
+
       map.current.fitBounds(bounds, {
         padding: 70,
         maxZoom: 14,
       });
     };
-  
+
     // 1. Crear marcador de origen (punto A)
     if (selectedServicio.origen_latitud && selectedServicio.origen_longitud) {
       const lngLat: [number, number] = [
         selectedServicio.origen_longitud,
         selectedServicio.origen_latitud,
       ];
-  
-      markersRef.current.origen = createMarker(
-        lngLat,
-        "origen",
-        createPopupHTML("origen"),
-      );
-  
+
+      if (!markersRef) return;
+
+      const marker = createMarker(lngLat, "origen", createPopupHTML("origen"));
+
+      // Verificar si el marcador no es null antes de asignarlo
+      if (marker !== null) {
+        markersRef.current.origen = marker;
+      }
+
       extendBounds(lngLat[0], lngLat[1]);
     }
-  
+
     // 2. Crear marcador de destino (punto B)
     if (selectedServicio.destino_latitud && selectedServicio.destino_longitud) {
       const lngLat: [number, number] = [
         selectedServicio.destino_longitud,
         selectedServicio.destino_latitud,
       ];
-  
-      markersRef.current.destino = createMarker(
+
+      if (!markersRef) return;
+
+      const marker = createMarker(
         lngLat,
         "destino",
         createPopupHTML("destino"),
       );
-  
+
+      // Verificar si el marcador no es null antes de asignarlo
+      if (marker !== null) {
+        markersRef.current.destino = marker;
+      }
+
       extendBounds(lngLat[0], lngLat[1]);
     }
-  
+
     // 3. Mostrar ruta según el estado del servicio
     if (selectedServicio.estado === "en curso" && vehicleTracking?.position) {
       // Para servicios 'en curso' con vehículo activo, mostrar ruta desde vehículo al destino
-      if (selectedServicio.destino_latitud && selectedServicio.destino_longitud) {
+      if (
+        selectedServicio.destino_latitud &&
+        selectedServicio.destino_longitud
+      ) {
         const vehiclePosition: [number, number] = [
           vehicleTracking.position.x,
           vehicleTracking.position.y,
@@ -725,17 +697,22 @@ const EnhancedMapComponent = ({
           selectedServicio.destino_longitud,
           selectedServicio.destino_latitud,
         ];
-  
+
         // Añadir posición del vehículo a los límites
         extendBounds(vehiclePosition[0], vehiclePosition[1]);
-        
+
         // Crear ruta desde vehículo hasta destino
-        createRoute("active-route", vehiclePosition, destinationPosition, "#00bc7d");
+        createRoute(
+          "active-route",
+          vehiclePosition,
+          destinationPosition,
+          "#00bc7d",
+        );
       }
     } else if (
-      selectedServicio.origen_latitud && 
-      selectedServicio.origen_longitud && 
-      selectedServicio.destino_latitud && 
+      selectedServicio.origen_latitud &&
+      selectedServicio.origen_longitud &&
+      selectedServicio.destino_latitud &&
       selectedServicio.destino_longitud
     ) {
       // Para otros estados, mostrar la ruta planeada completa
@@ -747,24 +724,17 @@ const EnhancedMapComponent = ({
         selectedServicio.destino_longitud,
         selectedServicio.destino_latitud,
       ];
-  
+
       // Crear ruta desde origen hasta destino
       createRoute("route", originPosition, destinationPosition);
     }
-  
+
     // 4. Ajustar mapa inicialmente (se volverá a ajustar cuando las rutas se actualicen)
     fitMapToBounds();
-  
+
     // 5. Mostrar panel de detalles
     setDetallesVisible(true);
-    
-  }, [
-    selectedServicio,
-    isMapLoaded,
-    color,
-    vehicleTracking,
-    mapboxToken,
-  ]);
+  }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
     if (
@@ -789,7 +759,13 @@ const EnhancedMapComponent = ({
       vehicleTracking.position.y,
     ];
 
-    markersRef.current.vehicle = createVehicleMarker(vehiclePosition);
+    if (!markersRef) return;
+
+    const marker = createVehicleMarker(vehiclePosition);
+
+    if (marker !== null) {
+      markersRef.current.vehicle = marker;
+    }
 
     // Actualizar la ruta activa si existe
     if (
@@ -858,17 +834,6 @@ const EnhancedMapComponent = ({
     fetchMapboxRoute,
   ]);
 
-  const formatDate = (date: Date | string) => {
-    if (!date) return "-";
-    const d = new Date(date);
-
-    return d.toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
   const formatTime = (date: Date | string) => {
     if (!date) return "-";
     const d = new Date(date);
@@ -906,7 +871,7 @@ const EnhancedMapComponent = ({
         markersRef.current.activeVehicles.clear();
 
         // Create markers for all active vehicles
-        activeVehiclesData.forEach((data) => {
+        activeVehiclesData.forEach((data: VehicleMarkerData) => {
           const marker = createPulsingVehicleMarker(data.vehicle, data.service);
 
           if (marker) {
@@ -937,8 +902,6 @@ const EnhancedMapComponent = ({
     }
   };
 
-  console.log(selectedServicio)
-
   return (
     <div className="h-full w-full relative">
       {mapError && (
@@ -947,12 +910,8 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div ref={mapContainer} className="h-full w-full">
-        {!isMapLoaded && (
-          <div className="h-full w-full flex items-center justify-center">
-            Cargando mapa...
-          </div>
-        )}
+      <div ref={mapContainer} className="h-full w-full relative">
+        {!isMapLoaded && <LoadingComponent>Cargando mapa</LoadingComponent>}
       </div>
 
       {selectedServicio && detallesVisible && (
@@ -1017,7 +976,6 @@ const EnhancedMapComponent = ({
                 {selectedServicio.conductor.nombre}{" "}
                 {selectedServicio.conductor.apellido}{" "}
               </div>
-             
             </div>
 
             <div>
@@ -1029,14 +987,18 @@ const EnhancedMapComponent = ({
             </div>
 
             <div>
-              <span className="text-sm text-gray-500">Fecha y Hora de Solicitud</span>
+              <span className="text-sm text-gray-500">
+                Fecha y Hora de Solicitud
+              </span>
               <div className="font-medium">
                 {formatearFecha(selectedServicio.fecha_solicitud)}
               </div>
             </div>
-          
+
             <div>
-              <span className="text-sm text-gray-500">Fecha y Hora de Realización</span>
+              <span className="text-sm text-gray-500">
+                Fecha y Hora de Realización
+              </span>
               <div className="font-medium">
                 {formatearFecha(selectedServicio.fecha_realizacion)}
               </div>
@@ -1111,8 +1073,13 @@ const EnhancedMapComponent = ({
 
       <div className="absolute bottom-10 right-5">
         <Tooltip content="Agregar servicio" radius="sm">
-          <Button onPress={handleModalAdd} radius="sm" isIconOnly className="text-sm font-medium bg-white h-12 w-12" href={"/agregar"}>
-            <PlusIcon color="#00bc7d"/>
+          <Button
+            isIconOnly
+            className="text-sm font-medium bg-white h-12 w-12"
+            radius="sm"
+            onPress={() => handleModalAdd}
+          >
+            <PlusIcon color="#00bc7d" />
           </Button>
         </Tooltip>
       </div>

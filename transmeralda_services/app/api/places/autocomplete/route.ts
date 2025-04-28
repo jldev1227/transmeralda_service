@@ -6,7 +6,6 @@ import axios from "axios";
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export async function GET(request: NextRequest) {
-  console.log(request);
   try {
     // Get query parameters from the URL
     const searchParams = request.nextUrl.searchParams;

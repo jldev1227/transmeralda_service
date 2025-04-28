@@ -53,7 +53,6 @@ export const useWialonWebSocket = ({
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log("WebSocket conectado");
         setState((prev) => ({
           ...prev,
           isConnected: true,
@@ -89,7 +88,6 @@ export const useWialonWebSocket = ({
       };
 
       ws.onclose = () => {
-        console.log("WebSocket desconectado");
         setState((prev) => ({
           ...prev,
           isConnected: false,
@@ -122,7 +120,7 @@ export const useWialonWebSocket = ({
   const disconnect = useCallback(() => {
     if (
       socket &&
-      [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)
+      (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
     ) {
       socket.close();
     }

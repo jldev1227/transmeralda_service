@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
 
 import EnhancedMapComponent from "@/components/enhancedMapComponent";
 import {
-  Servicio,
   useService,
   VehicleTracking,
   ServicioConRelaciones,
@@ -15,19 +14,6 @@ import {
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
-
-// Type definitions
-interface WialonVehicle {
-  id: number;
-  nm: string;
-  pos?: {
-    x: number;
-    y: number;
-    t: number;
-    s?: number;
-    c?: number;
-  };
-}
 
 interface MapboxRoute {
   distance: number;
@@ -46,12 +32,6 @@ interface Filters {
   tipoServicio: string;
 }
 
-interface MarkerRefs {
-  origen?: mapboxgl.Marker;
-  destino?: mapboxgl.Marker;
-  vehicle?: mapboxgl.Marker;
-}
-
 // Helper functions
 const statusColors = {
   solicitado: "#6a7282",
@@ -66,27 +46,6 @@ const getStatusColor = (estado: string): string => {
   return (
     statusColors[estado as keyof typeof statusColors] || statusColors.default
   );
-};
-
-const formatDate = (date: Date | string): string => {
-  if (!date) return "-";
-  const d = new Date(date);
-
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const formatTime = (date: Date | string): string => {
-  if (!date) return "-";
-  const d = new Date(date);
-
-  return d.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 };
 
 const statusTextMap: Record<string, string> = {
@@ -113,28 +72,20 @@ const getServiceTypeText = (tipo: string): string => {
 
 // Main Dashboard Component
 const AdvancedDashboard = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<MarkerRefs>({});
-
   const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
   const [token] = useState(WIALON_API_TOKEN);
 
   // State
   const { servicios } = useService();
-  const [selectedServicio, setSelectedServicio] = useState<Servicio | null>(
-    null,
-  );
+  const [selectedServicio, setSelectedServicio] =
+    useState<ServicioConRelaciones | null>(null);
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
     useState<VehicleTracking | null>(null);
-  const [loading, setLoading] = useState(false);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [trackingError, setTrackingError] = useState<string>("");
-  const [wialonVehicles, setWialonVehicles] = useState<WialonVehicle[]>([]);
 
   // Filters
   const [filters, setFilters] = useState<Filters>({
@@ -230,7 +181,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                    servicio.vehiculo.placa.toLowerCase(),
+                      servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -392,44 +343,16 @@ const AdvancedDashboard = () => {
 
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
-  // Función que se ejecutará al cambiar de slide
-  const handleSlideChange = (oldIndex, newIndex) => {
-    console.log(`Cambiado del slide ${oldIndex} al slide ${newIndex}`);
-    // Aquí puedes poner cualquier lógica personalizada
-  };
-
-  // Función que se ejecuta antes de cada cambio de slide
-  const handleBeforeChange = (oldIndex, newIndex) => {
-    console.log(`A punto de cambiar del slide ${oldIndex} al slide ${newIndex}`);
-    // Lógica previa al cambio de slide
-  };
-
-  // Función que se ejecuta después de cada cambio de slide
-  const handleAfterChange = (index) => {
-    console.log(`Ahora el slide activo es ${index}`);
-    // Lógica posterior al cambio de slide
-  };
-
-  // Configuración del slider
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    beforeChange: handleBeforeChange,
-    afterChange: handleAfterChange,
-    onInit: () => console.log('Slider inicializado'),
-  };
-
   return (
     <div className="h-screen relative overflow-hidden">
       {/* Main map panel - takes full width/height when sidebar is closed */}
-      <div className={`h-full w-full transition-all duration-300 ${isPanelOpen ? 'md:pl-[370px]' : ''}`}>
+      <div
+        className={`h-full w-full transition-all duration-300 ${isPanelOpen ? "md:pl-[370px]" : ""}`}
+      >
         <EnhancedMapComponent
           getServiceTypeText={getServiceTypeText}
           getStatusText={getStatusText}
-          handleServicioClick={handleSelectServicio}
+          handleSelectServicio={handleSelectServicio}
           mapboxToken={MAPBOX_ACCESS_TOKEN}
           selectedServicio={servicioWithRoutes}
           servicios={servicios}
@@ -448,30 +371,40 @@ const AdvancedDashboard = () => {
         onClick={() => setIsPanelOpen(!isPanelOpen)}
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? 'rotate-180' : ''}`}
+          className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? "rotate-180" : ""}`}
           fill="none"
-          viewBox="0 0 24 24"
           stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            d="M19 9l-7 7-7-7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
         </svg>
       </button>
 
       {/* Fixed toggle button for desktop */}
       <button
         className="hidden md:flex fixed top-4 left-[370px] z-50 bg-white h-8 w-8 items-center justify-center rounded-r-md shadow-md transition-all duration-300"
-        style={{ left: isPanelOpen ? '370px' : '0' }}
+        style={{ left: isPanelOpen ? "370px" : "0" }}
         onClick={() => setIsPanelOpen(!isPanelOpen)}
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-5 w-5 transition-transform duration-300 ${!isPanelOpen ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 transition-transform duration-300 ${!isPanelOpen ? "rotate-180" : ""}`}
           fill="none"
-          viewBox="0 0 24 24"
           stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <path
+            d="M15 19l-7-7 7-7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
         </svg>
       </button>
 
@@ -479,9 +412,11 @@ const AdvancedDashboard = () => {
       <div
         className={`absolute transition-all duration-300 ease-in-out bg-white shadow-lg 
                    md:h-full md:w-[370px] md:fixed md:top-0 md:left-0
-                   ${isPanelOpen
-            ? 'top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0'
-            : 'top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0'}`}
+                   ${
+                     isPanelOpen
+                       ? "top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0"
+                       : "top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0"
+                   }`}
       >
         {/* Panel header with handle for mobile */}
         <div className="p-3 md:p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
@@ -491,13 +426,18 @@ const AdvancedDashboard = () => {
             onClick={() => setIsPanelOpen(!isPanelOpen)}
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? '' : 'rotate-180'}`}
+              className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? "" : "rotate-180"}`}
               fill="none"
-              viewBox="0 0 24 24"
               stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              <path
+                d="M5 15l7-7 7 7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+              />
             </svg>
           </button>
         </div>
@@ -578,21 +518,19 @@ const AdvancedDashboard = () => {
 
           {/* Service list */}
           <div className="p-3 md:p-4">
-            {loading ? (
-              <div className="text-center py-4">Cargando...</div>
-            ) : filteredServicios.length === 0 ? (
+            {filteredServicios.length === 0 ? (
               <div className="text-center py-4 text-gray-500">
                 No se encontraron servicios
               </div>
             ) : (
               <ServiciosListCards
-        filteredServicios={filteredServicios}
-        selectedServicio={selectedServicio}
-        handleSelectServicio={handleSelectServicio}
-        getStatusColor={getStatusColor}
-        getStatusText={getStatusText}
-        formatearFecha={formatearFecha}
-      />
+                filteredServicios={filteredServicios}
+                formatearFecha={formatearFecha}
+                getStatusColor={getStatusColor}
+                getStatusText={getStatusText}
+                handleSelectServicio={handleSelectServicio}
+                selectedServicio={selectedServicio}
+              />
             )}
           </div>
         </div>
@@ -606,7 +544,7 @@ const AdvancedDashboard = () => {
         .vehicle-marker:hover {
           transform: scale(1.1);
         }
-        
+
         @media (max-width: 768px) {
           /* Mobile drag handle appearance */
           .panel-drag-handle {

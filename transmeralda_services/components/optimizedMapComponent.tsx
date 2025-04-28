@@ -75,7 +75,6 @@ const OptimizedMapComponent = ({
   // Guardar el servicio en caché
   useEffect(() => {
     if (servicioWithRoutes) {
-      console.log(servicioWithRoutes);
       if (!serviceCache.current.has(servicioWithRoutes.id)) {
         serviceCache.current.set(servicioWithRoutes.id, servicioWithRoutes);
       }
@@ -300,8 +299,6 @@ const OptimizedMapComponent = ({
       map.current.removeLayer("route");
       map.current.removeSource("route");
     }
-
-    console.log(isMapLoaded);
 
     // Determinar si debemos mostrar ruta completa o solo desde vehículo al destino
     const isVehicleActive =

@@ -62,7 +62,10 @@ interface ServiceContextType {
   empresas: Empresa[];
   loading: boolean;
   registrarServicio: (servicioData: CreateServicioDTO) => void;
-  actualizarServicio: (id: string, servicioData: CreateServicioDTO) => Promise<ServicioConRelaciones>;
+  actualizarServicio: (
+    id: string,
+    servicioData: CreateServicioDTO,
+  ) => Promise<ServicioConRelaciones>;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
@@ -174,8 +177,9 @@ export interface Municipio {
 export interface Conductor {
   id: string; // UUID
   nombre: string;
-  email: string;
-  telefono?: string;
+  apellido: string;
+  tipo_identificacion: string;
+  numero_identificacion: string;
   created_at?: Date | string;
   updated_at?: Date | string;
 }
@@ -337,7 +341,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [modalAgregar, setModalAgregar] = useState(false);
   const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
     servicio: null,
-    isEditing: false
+    isEditing: false,
   });
 
   // Obtener todas las servicios
@@ -469,7 +473,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         const response = await apiClient.get(`/api/servicios/${id}`);
 
         if (response.data.success) {
-          console.log(response);
           setServicio(response.data.data);
 
           return response.data.data;
@@ -521,7 +524,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       }
     }
   };
-  
+
   const actualizarServicio = async (
     id: string,
     servicioData: CreateServicioDTO,
@@ -551,17 +554,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       }
     }
   };
-  
+
   const actualizarEstadoServicio = async (
     id: string,
     estado: EstadoServicio,
   ): Promise<ServicioConRelaciones> => {
     try {
       // Realizar la petición PATCH al endpoint de servicios
-      const response = await apiClient.patch<ApiResponse<ServicioConRelaciones>>(
-        `/api/servicios/${id}/estado`,
-        { estado },
-      );
+      const response = await apiClient.patch<
+        ApiResponse<ServicioConRelaciones>
+      >(`/api/servicios/${id}/estado`, { estado });
 
       // Verificar si la operación fue exitosa
       if (response.data.success && response.data.data) {
@@ -577,7 +579,9 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (error instanceof Error) {
         throw error;
       } else {
-        throw new Error("Error desconocido al actualizar el estado del servicio");
+        throw new Error(
+          "Error desconocido al actualizar el estado del servicio",
+        );
       }
     }
   };
@@ -589,7 +593,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       setTimeout(() => {
         setServicioEditar({
           servicio: null,
-          isEditing: false
+          isEditing: false,
         });
       }, 300);
     } else {
@@ -597,18 +601,18 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       if (servicio) {
         setServicioEditar({
           servicio: servicio,
-          isEditing: true
+          isEditing: true,
         });
       } else {
         setServicioEditar({
           servicio: null,
-          isEditing: false
+          isEditing: false,
         });
       }
     }
-    
+
     setModalAgregar(!modalAgregar);
-  }
+  };
 
   useEffect(() => {
     obtenerServicios();
@@ -679,7 +683,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     selectServicio,
     clearSelectedServicio,
     setSelectedServicio,
-
 
     // Modals state
     modalAgregar,

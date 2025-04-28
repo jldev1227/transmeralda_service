@@ -70,7 +70,6 @@ const ServiceDetailPanel = ({
 
     // Si el servicio está en curso, calcular tiempo transcurrido
     if (servicioWithRoutes.estado === "en curso") {
-      console.log(hourOut, currentTime);
       const totalMinutes = differenceInMinutes(currentTime, hourOut);
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;

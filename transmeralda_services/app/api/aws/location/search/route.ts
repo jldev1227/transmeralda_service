@@ -1,11 +1,8 @@
-// /api/aws/location/search/route.ts
-import { NextResponse } from "next/server";
-import {
-  LocationClient,
-  SearchPlaceIndexForTextCommand,
-} from "@aws-sdk/client-location";
+import { NextResponse } from 'next/server';
+import { LocationClient, SearchPlaceIndexForTextCommand } from '@aws-sdk/client-location';
 
-export async function GET(request) {
+// Definir el tipo para la request de Next.js
+export async function GET(request: Request) {
   // Extraer parámetros de la URL
   const { searchParams } = new URL(request.url);
   const text = searchParams.get("text");
@@ -54,17 +51,24 @@ export async function GET(request) {
     const command = new SearchPlaceIndexForTextCommand(params);
     const response = await locationClient.send(command);
 
-    console.log(response);
-
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error al consultar Amazon Location Service:", error);
+
+    // Manejar el error con el tipo correcto
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    const errorCode = 
+      error instanceof Error && 'Code' in error 
+        ? (error as any).Code 
+        : error instanceof Error && '$metadata' in error 
+          ? (error as any).$metadata?.httpStatusCode 
+          : undefined;
 
     return NextResponse.json(
       {
         error: "Error al consultar el servicio de geocodificación",
-        details: error.message,
-        code: error.Code || error.$metadata?.httpStatusCode,
+        details: errorMessage,
+        code: errorCode,
       },
       { status: 500 },
     );

@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useEffect, useState } from "react";
 import SelectReact from "react-select";
 import { getLocalTimeZone } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
@@ -12,13 +7,14 @@ import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime } from "@internationalized/date";
+import { addToast } from "@heroui/toast";
+
 import {
   CreateServicioDTO,
   EstadoServicio,
   useService,
 } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
-import { addToast } from "@heroui/toast";
 
 const UserIcon = () => (
   <svg
@@ -74,22 +70,7 @@ const TruckIcon = () => (
     />
   </svg>
 );
-const ClockIcon = () => (
-  <svg
-    className="w-5 h-5 text-gray-400"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+
 const WrenchScrewdriverIcon = () => (
   <svg
     className="w-5 h-5 text-gray-400"
@@ -167,20 +148,41 @@ const BuildingOfficeIcon = () => (
 );
 
 export default function ModalFormServicio() {
-  const { municipios, conductores, vehiculos, empresas, modalAgregar, handleModalAdd, servicioEditar } = useService();
-  const { setError, registrarServicio, actualizarServicio, actualizarEstadoServicio } = useService();
+  const {
+    municipios,
+    conductores,
+    vehiculos,
+    empresas,
+    modalAgregar,
+    handleModalAdd,
+    servicioEditar,
+  } = useService();
+  const {
+    setError,
+    registrarServicio,
+    actualizarServicio,
+    actualizarEstadoServicio,
+  } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { servicio, isEditing } = servicioEditar;
-  
+
   // Función para limpiar todos los estados del formulario
   const resetFormStates = () => {
     setCurrentStep(1);
     setCliente("");
     setConductorSelected("");
     setVehicleSelected("");
-    setFechaSolicitud(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
-    setFechaRealizacion(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
+    setFechaSolicitud(
+      parseZonedDateTime(
+        `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+      ),
+    );
+    setFechaRealizacion(
+      parseZonedDateTime(
+        `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+      ),
+    );
     setSelectedOriginMun("");
     setSelectedDestMun("");
     setOriginSpecific("");
@@ -202,10 +204,18 @@ export default function ModalFormServicio() {
   const [vehicleSelected, setVehicleSelected] = useState("");
 
   // State for date request
-  const [fechaSolicitud, setFechaSolicitud] = useState(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
+  const [fechaSolicitud, setFechaSolicitud] = useState(
+    parseZonedDateTime(
+      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+    ),
+  );
 
   // State for date to do request
-  const [fechaRealizacion, setFechaRealizacion] = useState(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
+  const [fechaRealizacion, setFechaRealizacion] = useState(
+    parseZonedDateTime(
+      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+    ),
+  );
 
   // State for selected locations
   const [selectedOriginMun, setSelectedOriginMun] = useState("");
@@ -228,59 +238,65 @@ export default function ModalFormServicio() {
   // state
   const [observaciones, setObservaciones] = useState<string>("");
 
-  console.log(servicio)
-  
   // Estado para controlar si se puede editar el servicio
   const [isReadOnly, setIsReadOnly] = useState(false);
-  
+
   // Cargar datos del servicio cuando estamos en modo edición
   useEffect(() => {
     // Si el modal está abierto y es para editar
     if (modalAgregar && isEditing && servicio) {
       // Determinar si el servicio está en estado no editable
-      const isServiceReadOnly = servicio.estado === 'realizado' || servicio.estado === 'cancelado';
+      const isServiceReadOnly =
+        servicio.estado === "realizado" || servicio.estado === "cancelado";
+
       setIsReadOnly(isServiceReadOnly);
-      
+
       // Llenar los campos con la información del servicio
       setCliente(servicio.cliente_id || "");
       setConductorSelected(servicio.conductor_id || "");
       setVehicleSelected(servicio.vehiculo_id || "");
-      
+
       // Convertir fechas a objetos ZonedDateTime
       if (servicio.fecha_solicitud) {
         const fechaSolDate = new Date(servicio.fecha_solicitud);
-        setFechaSolicitud(parseZonedDateTime(
-          `${fechaSolDate.toISOString().split('T')[0]}T${fechaSolDate.toTimeString().split(' ')[0]}[America/Bogota]`
-        ));
+
+        setFechaSolicitud(
+          parseZonedDateTime(
+            `${fechaSolDate.toISOString().split("T")[0]}T${fechaSolDate.toTimeString().split(" ")[0]}[America/Bogota]`,
+          ),
+        );
       }
-      
+
       if (servicio.fecha_realizacion) {
         const fechaRealDate = new Date(servicio.fecha_realizacion);
-        setFechaRealizacion(parseZonedDateTime(
-          `${fechaRealDate.toISOString().split('T')[0]}T${fechaRealDate.toTimeString().split(' ')[0]}[America/Bogota]`
-        ));
+
+        setFechaRealizacion(
+          parseZonedDateTime(
+            `${fechaRealDate.toISOString().split("T")[0]}T${fechaRealDate.toTimeString().split(" ")[0]}[America/Bogota]`,
+          ),
+        );
       }
-      
+
       setSelectedOriginMun(servicio.origen_id || "");
       setSelectedDestMun(servicio.destino_id || "");
       setOriginSpecific(servicio.origen_especifico || "");
       setDestSpecific(servicio.destino_especifico || "");
-      
+
       // Coordenadas
       if (servicio.origen_latitud && servicio.origen_longitud) {
-        setOriginCoords({ 
-          lat: servicio.origen_latitud, 
-          lng: servicio.origen_longitud 
+        setOriginCoords({
+          lat: servicio.origen_latitud,
+          lng: servicio.origen_longitud,
         });
       }
-      
+
       if (servicio.destino_latitud && servicio.destino_longitud) {
-        setDestCoords({ 
-          lat: servicio.destino_latitud, 
-          lng: servicio.destino_longitud 
+        setDestCoords({
+          lat: servicio.destino_latitud,
+          lng: servicio.destino_longitud,
         });
       }
-      
+
       setPurpose(servicio.tipo_servicio || "");
       setState(servicio.estado || "solicitado");
       setObservaciones(servicio.observaciones || "");
@@ -310,35 +326,32 @@ export default function ModalFormServicio() {
     setDestSpecific(address);
     if (coords) {
       setDestCoords(coords);
-      console.log("Destination coordinates set:", coords);
     }
   };
 
-    // Función para convertir un objeto ZonedDateTime a formato para la base de datos
-    const convertirFechaParaDB = (zonedDateTime) => {
-      if (!zonedDateTime) return null;
-      
-      // Convertir a objeto Date de JavaScript
-      const jsDate = zonedDateTime.toDate(zonedDateTime.timeZone);
-      
-      // Para MySQL/PostgreSQL puedes usar directamente el objeto Date
-      // o la representación ISO si prefieres
-      return jsDate;
-    };
-  
+  // Función para convertir un objeto ZonedDateTime a formato para la base de datos
+  const convertirFechaParaDB = (zonedDateTime) => {
+    if (!zonedDateTime) return null;
+
+    // Convertir a objeto Date de JavaScript
+    const jsDate = zonedDateTime.toDate(zonedDateTime.timeZone);
+
+    // Para MySQL/PostgreSQL puedes usar directamente el objeto Date
+    // o la representación ISO si prefieres
+    return jsDate;
+  };
 
   const nextStep = () => {
     // Validate required fields based on current step
     if (currentStep === 1) {
       // Step 1: Basic Info validation
       if (!clienteSelected || !fechaSolicitud || !fechaRealizacion) {
-
-        console.log(clienteSelected, fechaSolicitud, "ss", fechaRealizacion)
         addToast({
           title: "Campos requeridos",
           description: "Por favor diligencie todos los campos",
           color: "danger",
-        })
+        });
+
         return;
       }
       // Date validations can be added here if needed
@@ -346,22 +359,27 @@ export default function ModalFormServicio() {
       // Step 2: Journey Details validation
       if (!selectedOriginMun) {
         alert("Por favor seleccione un origen");
+
         return;
       }
       if (!selectedDestMun) {
         alert("Por favor seleccione un destino");
+
         return;
       }
       if (!originSpecific) {
         alert("Por favor ingrese una dirección de origen específica");
+
         return;
       }
       if (!destSpecific) {
         alert("Por favor ingrese una dirección de destino específica");
+
         return;
       }
       if (!purpose) {
         alert("Por favor seleccione un propósito para el servicio");
+
         return;
       }
     } else if (currentStep === 3) {
@@ -399,13 +417,9 @@ export default function ModalFormServicio() {
         fecha_solicitud: convertirFechaParaDB(fechaSolicitud),
         fecha_realizacion: convertirFechaParaDB(fechaRealizacion),
         estado: state,
-        // Opción 2: Convierte el objeto Time a string al asignarlo
-        distancia_km: 20,
         valor: 0,
         observaciones: observaciones,
       };
-
-      console.log(servicioData);
 
       if (isEditing && servicio?.id) {
         // Si estamos editando, actualizamos el servicio existente
@@ -424,25 +438,33 @@ export default function ModalFormServicio() {
           color: "success",
         });
       }
-      
+
       // Cerrar el modal después de la operación exitosa
       handleModalAdd();
       resetFormStates();
     } catch (error) {
       // Manejar errores
-      console.error(isEditing ? "Error al actualizar el servicio:" : "Error al registrar el servicio:", error);
+      console.error(
+        isEditing
+          ? "Error al actualizar el servicio:"
+          : "Error al registrar el servicio:",
+        error,
+      );
 
       setError(
         error instanceof Error
           ? error.message
-          : isEditing 
+          : isEditing
             ? "Error desconocido al actualizar el servicio"
             : "Error desconocido al registrar el servicio",
       );
-      
+
       addToast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Error al procesar el servicio",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Error al procesar el servicio",
         color: "danger",
       });
     }
@@ -489,22 +511,23 @@ export default function ModalFormServicio() {
 
   return (
     <>
-      <Modal 
-        isOpen={modalAgregar} 
-        size={"5xl"} 
+      <Modal
+        isOpen={modalAgregar}
+        size={"5xl"}
         onClose={() => {
           handleModalAdd();
           resetFormStates();
-        }}>
+        }}
+      >
         <ModalContent className="p-6">
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                {isEditing 
-                  ? isReadOnly 
-                    ? `Ver detalles de servicio (${servicio?.estado})` 
-                    : 'Editar servicio' 
-                  : 'Registro de servicio'}
+                {isEditing
+                  ? isReadOnly
+                    ? `Ver detalles de servicio (${servicio?.estado})`
+                    : "Editar servicio"
+                  : "Registro de servicio"}
               </ModalHeader>
               <ModalBody className="space-y-4">
                 {/* Step Progress Bar - solo mostrar si no estamos en modo solo lectura */}
@@ -531,68 +554,130 @@ export default function ModalFormServicio() {
                   {isReadOnly ? (
                     <div className="space-y-6 animate-fadeIn">
                       <div className="space-y-6">
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información Básica</h3>
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                          Información Básica
+                        </h3>
                         {/* Cliente */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Cliente</p>
-                            <p className="text-md">{empresas.find(e => e.id === servicio?.cliente_id)?.Nombre || "No asignado"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Estado</p>
-                            <p className="text-md capitalize">{servicio?.estado}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Fecha de Solicitud</p>
-                            <p className="text-md">{servicio?.fecha_solicitud ? new Date(servicio.fecha_solicitud).toLocaleString() : "No definida"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Fecha de Realización</p>
-                            <p className="text-md">{servicio?.fecha_realizacion ? new Date(servicio.fecha_realizacion).toLocaleString() : "No definida"}</p>
-                          </div>
-                        </div>
-                        
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Origen y Destino</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Origen</p>
-                            <p className="text-md">{servicio?.origen_especifico}</p>
-                            <p className="text-sm text-gray-500">{municipios.find(m => m.id === servicio?.origen_id)?.nombre_municipio || "No especificado"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Destino</p>
-                            <p className="text-md">{servicio?.destino_especifico}</p>
-                            <p className="text-sm text-gray-500">{municipios.find(m => m.id === servicio?.destino_id)?.nombre_municipio || "No especificado"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Propósito</p>
-                            <p className="text-md capitalize">{servicio?.tipo_servicio || "No especificado"}</p>
-                          </div>
-                        </div>
-                        
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Asignaciones</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Conductor</p>
+                            <p className="text-sm font-medium text-gray-500">
+                              Cliente
+                            </p>
                             <p className="text-md">
-                              {conductores.find(c => c.id === servicio?.conductor_id) 
-                                ? `${conductores.find(c => c.id === servicio?.conductor_id)?.nombre} ${conductores.find(c => c.id === servicio?.conductor_id)?.apellido}`
+                              {empresas.find(
+                                (e) => e.id === servicio?.cliente_id,
+                              )?.Nombre || "No asignado"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Estado
+                            </p>
+                            <p className="text-md capitalize">
+                              {servicio?.estado}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Fecha de Solicitud
+                            </p>
+                            <p className="text-md">
+                              {servicio?.fecha_solicitud
+                                ? new Date(
+                                    servicio.fecha_solicitud,
+                                  ).toLocaleString()
+                                : "No definida"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Fecha de Realización
+                            </p>
+                            <p className="text-md">
+                              {servicio?.fecha_realizacion
+                                ? new Date(
+                                    servicio.fecha_realizacion,
+                                  ).toLocaleString()
+                                : "No definida"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                          Origen y Destino
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Origen
+                            </p>
+                            <p className="text-md">
+                              {servicio?.origen_especifico}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {municipios.find(
+                                (m) => m.id === servicio?.origen_id,
+                              )?.nombre_municipio || "No especificado"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Destino
+                            </p>
+                            <p className="text-md">
+                              {servicio?.destino_especifico}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {municipios.find(
+                                (m) => m.id === servicio?.destino_id,
+                              )?.nombre_municipio || "No especificado"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Propósito
+                            </p>
+                            <p className="text-md capitalize">
+                              {servicio?.tipo_servicio || "No especificado"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                          Asignaciones
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">
+                              Conductor
+                            </p>
+                            <p className="text-md">
+                              {conductores.find(
+                                (c) => c.id === servicio?.conductor_id,
+                              )
+                                ? `${conductores.find((c) => c.id === servicio?.conductor_id)?.nombre} ${conductores.find((c) => c.id === servicio?.conductor_id)?.apellido}`
                                 : "No asignado"}
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">Vehículo</p>
+                            <p className="text-sm font-medium text-gray-500">
+                              Vehículo
+                            </p>
                             <p className="text-md">
-                              {vehiculos.find(v => v.id === servicio?.vehiculo_id)
-                                ? `${vehiculos.find(v => v.id === servicio?.vehiculo_id)?.placa} (${vehiculos.find(v => v.id === servicio?.vehiculo_id)?.marca})`
+                              {vehiculos.find(
+                                (v) => v.id === servicio?.vehiculo_id,
+                              )
+                                ? `${vehiculos.find((v) => v.id === servicio?.vehiculo_id)?.placa} (${vehiculos.find((v) => v.id === servicio?.vehiculo_id)?.marca})`
                                 : "No asignado"}
                             </p>
                           </div>
                         </div>
-                        
+
                         {servicio?.observaciones && (
                           <>
-                            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Observaciones</h3>
+                            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                              Observaciones
+                            </h3>
                             <p className="text-md">{servicio.observaciones}</p>
                           </>
                         )}
@@ -602,689 +687,714 @@ export default function ModalFormServicio() {
                     <>
                       {/* Step 1: Basic Info */}
                       {currentStep === 1 && (
-                    <div className="space-y-6 animate-fadeIn">
-                      {/* Client - Changed to SelectReact */}
-                      <div className="relative">
-                        <label
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                          htmlFor="client"
-                        >
-                          Cliente
-                        </label>
-                        <div className="relative shadow-sm rounded-md">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <BuildingOfficeIcon />
+                        <div className="space-y-6 animate-fadeIn">
+                          {/* Client - Changed to SelectReact */}
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="client"
+                            >
+                              Cliente
+                            </label>
+                            <div className="relative shadow-sm rounded-md">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <BuildingOfficeIcon />
+                              </div>
+                              <SelectReact
+                                isSearchable
+                                required
+                                className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                classNamePrefix="react-select"
+                                inputId="client"
+                                name="client"
+                                options={empresaOptions}
+                                placeholder="Seleccione una empresa"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    border: "none",
+                                    boxShadow: state.isFocused
+                                      ? "0 0 0 1px #059669"
+                                      : undefined,
+                                    "&:hover": { borderColor: "#059669" },
+                                    backgroundColor: "white",
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    zIndex: 50,
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    color: state.isSelected
+                                      ? "#059669"
+                                      : "#1f2937",
+                                    backgroundColor: state.isFocused
+                                      ? "#f0fdf4"
+                                      : "white",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  dropdownIndicator: (base) => ({
+                                    ...base,
+                                    color: "#374151",
+                                    paddingRight: "0rem",
+                                  }),
+                                  indicatorSeparator: () => ({
+                                    display: "none",
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                }}
+                                value={
+                                  empresaOptions.find(
+                                    (opt) => opt.value === clienteSelected,
+                                  ) || null
+                                }
+                                onChange={(option) =>
+                                  setCliente(option ? option.value : "")
+                                }
+                              />
+                            </div>
                           </div>
-                          <SelectReact
-                            isSearchable
-                            required
-                            className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                            classNamePrefix="react-select"
-                            inputId="client"
-                            name="client"
-                            options={empresaOptions}
-                            placeholder="Seleccione una empresa"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                border: "none",
-                                boxShadow: state.isFocused
-                                  ? "0 0 0 1px #059669"
-                                  : undefined,
-                                "&:hover": { borderColor: "#059669" },
-                                backgroundColor: "white",
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                color: "#9ca3af",
-                                fontSize: "0.875rem",
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                color: "#1f2937",
-                                fontSize: "0.875rem",
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                zIndex: 50,
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                color: state.isSelected
-                                  ? "#059669"
-                                  : "#1f2937",
-                                backgroundColor: state.isFocused
-                                  ? "#f0fdf4"
-                                  : "white",
-                                fontSize: "0.875rem",
-                              }),
-                              dropdownIndicator: (base) => ({
-                                ...base,
-                                color: "#374151",
-                                paddingRight: "0rem",
-                              }),
-                              indicatorSeparator: () => ({ display: "none" }),
-                              input: (base) => ({
-                                ...base,
-                                color: "#1f2937",
-                                fontSize: "0.875rem",
-                              }),
-                            }}
-                            value={
-                              empresaOptions.find(
-                                (opt) => opt.value === clienteSelected,
-                              ) || null
-                            }
-                            onChange={(option) =>
-                              setCliente(option ? option.value : "")
-                            }
-                          />
-                        </div>
-                      </div>
-                      {/* Dates */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="requestDate"
-                          >
-                            Fecha y hora de solicitud
-                          </label>
-                          <div className="relative space-y-2">
-                            <DateInput
-                              hideTimeZone
-                              granularity="minute"
-                              defaultValue={parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`)}
-                              classNames={{
-                                inputWrapper: [
-                                  "!bg-transparent",
-                                  "data-[hover=true]:!bg-transparent",
-                                  "border-1",
-                                  "py-7",
-                                  "group-data-[focus=true]:!bg-transparent",
-                                  "rounded-md",
-                                ],
-                              }}
-                              value={fechaSolicitud}
-                              onChange={setFechaSolicitud}
-                            />
-                            <p className="text-default-500 text-sm">
-                              Fecha: {fechaSolicitud ? new Intl.DateTimeFormat('es-CO', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }).format(fechaSolicitud.toDate(getLocalTimeZone())) : "--"}
-                            </p>
+                          {/* Dates */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="requestDate"
+                              >
+                                Fecha y hora de solicitud
+                              </label>
+                              <div className="relative space-y-2">
+                                <DateInput
+                                  hideTimeZone
+                                  classNames={{
+                                    inputWrapper: [
+                                      "!bg-transparent",
+                                      "data-[hover=true]:!bg-transparent",
+                                      "border-1",
+                                      "py-7",
+                                      "group-data-[focus=true]:!bg-transparent",
+                                      "rounded-md",
+                                    ],
+                                  }}
+                                  defaultValue={parseZonedDateTime(
+                                    `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                  )}
+                                  granularity="minute"
+                                  value={fechaSolicitud}
+                                  onChange={setFechaSolicitud}
+                                />
+                                <p className="text-default-500 text-sm">
+                                  Fecha:{" "}
+                                  {fechaSolicitud
+                                    ? new Intl.DateTimeFormat("es-CO", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(
+                                        fechaSolicitud.toDate(
+                                          getLocalTimeZone(),
+                                        ),
+                                      )
+                                    : "--"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="serviceDate"
+                              >
+                                Fecha y hora de realización
+                              </label>
+                              <div className="relative space-y-2">
+                                <DateInput
+                                  hideTimeZone
+                                  classNames={{
+                                    inputWrapper: [
+                                      "!bg-transparent",
+                                      "data-[hover=true]:!bg-transparent",
+                                      "border-1",
+                                      "py-7",
+                                      "group-data-[focus=true]:!bg-transparent",
+                                      "rounded-md",
+                                    ],
+                                  }}
+                                  defaultValue={parseZonedDateTime(
+                                    `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                  )}
+                                  granularity="minute"
+                                  value={fechaRealizacion}
+                                  onChange={setFechaRealizacion}
+                                />
+                                <p className="text-default-500 text-sm">
+                                  Fecha:{" "}
+                                  {fechaRealizacion
+                                    ? new Intl.DateTimeFormat("es-CO", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(
+                                        fechaRealizacion.toDate(
+                                          getLocalTimeZone("CO"),
+                                        ),
+                                      )
+                                    : "--"}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="serviceDate"
-                          >
-                            Fecha y hora de realización
-                          </label>
-                          <div className="relative space-y-2">
-                            <DateInput
-                              hideTimeZone
-                              granularity="minute"
-                              defaultValue={parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`)}
-                              classNames={{
-                                inputWrapper: [
-                                  "!bg-transparent",
-                                  "data-[hover=true]:!bg-transparent",
-                                  "border-1",
-                                  "py-7",
-                                  "group-data-[focus=true]:!bg-transparent",
-                                  "rounded-md",
-                                ],
-                              }}
-                              value={fechaRealizacion}
-                              onChange={setFechaRealizacion}
-                            />
-                            <p className="text-default-500 text-sm">
-                              Fecha: {fechaRealizacion ? new Intl.DateTimeFormat('es-CO', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }).format(fechaRealizacion.toDate(getLocalTimeZone("CO"))) : "--"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
 
-                  {/* Step 2: Journey Details */}
-                  {currentStep === 2 && (
-                    <div className="space-y-6 animate-fadeIn">
-                      {/* Location */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="origin"
-                          >
-                            Origen del Trayecto
-                          </label>
-                          <div className="relative shadow-sm rounded-md">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <LocationMarkerIcon />
+                      {/* Step 2: Journey Details */}
+                      {currentStep === 2 && (
+                        <div className="space-y-6 animate-fadeIn">
+                          {/* Location */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="origin"
+                              >
+                                Origen del Trayecto
+                              </label>
+                              <div className="relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <LocationMarkerIcon />
+                                </div>
+                                <SelectReact
+                                  isSearchable
+                                  required
+                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="origin"
+                                  name="origin"
+                                  options={municipioOptions}
+                                  placeholder="Seleccione un origen"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 50,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    municipioOptions.find(
+                                      (opt) => opt.value === selectedOriginMun,
+                                    ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setSelectedOriginMun(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
                             </div>
-                            <SelectReact
-                              isSearchable
-                              required
-                              className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                              classNamePrefix="react-select"
-                              inputId="origin"
-                              name="origin"
-                              options={municipioOptions}
-                              placeholder="Seleccione un origen"
-                              styles={{
-                                control: (base, state) => ({
-                                  ...base,
-                                  border: "none",
-                                  boxShadow: state.isFocused
-                                    ? "0 0 0 1px #059669"
-                                    : undefined,
-                                  "&:hover": { borderColor: "#059669" },
-                                  backgroundColor: "white",
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: "#9ca3af",
-                                  fontSize: "0.875rem",
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  zIndex: 50,
-                                }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  color: state.isSelected
-                                    ? "#059669"
-                                    : "#1f2937",
-                                  backgroundColor: state.isFocused
-                                    ? "#f0fdf4"
-                                    : "white",
-                                  fontSize: "0.875rem",
-                                }),
-                                dropdownIndicator: (base) => ({
-                                  ...base,
-                                  color: "#374151",
-                                  paddingRight: "0rem",
-                                }),
-                                indicatorSeparator: () => ({
-                                  display: "none",
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                              }}
-                              value={
-                                municipioOptions.find(
-                                  (opt) => opt.value === selectedOriginMun,
-                                ) || null
-                              }
-                              onChange={(option) =>
-                                setSelectedOriginMun(
-                                  option ? option.value : "",
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="destination"
-                          >
-                            Destino del Trayecto
-                          </label>
-                          <div className="relative  shadow-sm rounded-md">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <LocationMarkerIcon />
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="destination"
+                              >
+                                Destino del Trayecto
+                              </label>
+                              <div className="relative  shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <LocationMarkerIcon />
+                                </div>
+                                <SelectReact
+                                  isSearchable
+                                  required
+                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="destination"
+                                  name="destination"
+                                  options={municipioOptions}
+                                  placeholder="Seleccione un destino"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 50,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    municipioOptions.find(
+                                      (opt) => opt.value === selectedDestMun,
+                                    ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setSelectedDestMun(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
                             </div>
-                            <SelectReact
-                              isSearchable
-                              required
-                              className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                              classNamePrefix="react-select"
-                              inputId="destination"
-                              name="destination"
-                              options={municipioOptions}
-                              placeholder="Seleccione un destino"
-                              styles={{
-                                control: (base, state) => ({
-                                  ...base,
-                                  border: "none",
-                                  boxShadow: state.isFocused
-                                    ? "0 0 0 1px #059669"
-                                    : undefined,
-                                  "&:hover": { borderColor: "#059669" },
-                                  backgroundColor: "white",
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: "#9ca3af",
-                                  fontSize: "0.875rem",
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  zIndex: 50,
-                                }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  color: state.isSelected
-                                    ? "#059669"
-                                    : "#1f2937",
-                                  backgroundColor: state.isFocused
-                                    ? "#f0fdf4"
-                                    : "white",
-                                  fontSize: "0.875rem",
-                                }),
-                                dropdownIndicator: (base) => ({
-                                  ...base,
-                                  color: "#374151",
-                                  paddingRight: "0rem",
-                                }),
-                                indicatorSeparator: () => ({
-                                  display: "none",
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                              }}
-                              value={
-                                municipioOptions.find(
-                                  (opt) => opt.value === selectedDestMun,
-                                ) || null
+                          </div>
+                          <div className="relative">
+                            <SearchInputsPlaces
+                              initialDestination={destSpecific}
+                              initialOrigin={originSpecific}
+                              onDestinationChange={(address, coords) =>
+                                handleDestSpecificChange(address, coords)
                               }
-                              onChange={(option) =>
-                                setSelectedDestMun(option ? option.value : "")
+                              onOriginChange={(address, coords) =>
+                                handleOriginSpecificChange(address, coords)
                               }
                             />
                           </div>
-                        </div>
-                      </div>
-                      <div className="relative">
-                        <SearchInputsPlaces
-                          initialDestination={destSpecific}
-                          initialOrigin={originSpecific}
-                          onDestinationChange={(address, coords) =>
-                            handleDestSpecificChange(address, coords)
-                          }
-                          onOriginChange={(address, coords) =>
-                            handleOriginSpecificChange(address, coords)
-                          }
-                        />
-                      </div>
-                      {/* Purpose */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Propósito del Servicio
-                        </label>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <div className="flex items-center">
-                            <input
-                              required
-                              checked={purpose === "personal"}
-                              className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                              id="purpose-personnel"
-                              name="purpose"
-                              type="radio"
-                              value="personal"
-                              onChange={() => setPurpose("personal")}
-                            />
-                            <label
-                              className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                              htmlFor="purpose-personnel"
-                            >
-                              <UsersIcon />
-                              Recoger Personal
+                          {/* Purpose */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Propósito del Servicio
                             </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              checked={purpose === "herramienta"}
-                              className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                              id="purpose-tools"
-                              name="purpose"
-                              type="radio"
-                              value="herramienta"
-                              onChange={() => setPurpose("herramienta")}
-                            />
-                            <label
-                              className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                              htmlFor="purpose-tools"
-                            >
-                              <WrenchScrewdriverIcon />
-                              Llevar Herramienta
-                            </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              checked={purpose === "vehiculo"}
-                              className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                              id="purpose-vehicle"
-                              name="purpose"
-                              type="radio"
-                              value="vehiculo"
-                              onChange={() => setPurpose("vehiculo")}
-                            />
-                            <label
-                              className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                              htmlFor="purpose-vehicle"
-                            >
-                              <TruckIcon />
-                              Posicionar Vehículo
-                            </label>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                              <div className="flex items-center">
+                                <input
+                                  required
+                                  checked={purpose === "personal"}
+                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                  id="purpose-personnel"
+                                  name="purpose"
+                                  type="radio"
+                                  value="personal"
+                                  onChange={() => setPurpose("personal")}
+                                />
+                                <label
+                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
+                                  htmlFor="purpose-personnel"
+                                >
+                                  <UsersIcon />
+                                  Recoger Personal
+                                </label>
+                              </div>
+                              <div className="flex items-center">
+                                <input
+                                  checked={purpose === "herramienta"}
+                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                  id="purpose-tools"
+                                  name="purpose"
+                                  type="radio"
+                                  value="herramienta"
+                                  onChange={() => setPurpose("herramienta")}
+                                />
+                                <label
+                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
+                                  htmlFor="purpose-tools"
+                                >
+                                  <WrenchScrewdriverIcon />
+                                  Llevar Herramienta
+                                </label>
+                              </div>
+                              <div className="flex items-center">
+                                <input
+                                  checked={purpose === "vehiculo"}
+                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                  id="purpose-vehicle"
+                                  name="purpose"
+                                  type="radio"
+                                  value="vehiculo"
+                                  onChange={() => setPurpose("vehiculo")}
+                                />
+                                <label
+                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
+                                  htmlFor="purpose-vehicle"
+                                >
+                                  <TruckIcon />
+                                  Posicionar Vehículo
+                                </label>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
 
-                  {/* Step 3: Planning (Optional) */}
-                  {currentStep === 3 && (
-                    <div className="space-y-6 animate-fadeIn">
-                      <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
-                        Detalles Planificación (Opcional)
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Conductor - Changed to SelectReact */}
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="driver"
-                          >
-                            Conductor Asignado
-                          </label>
-                          <div className="relative shadow-sm rounded-md">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <UserIcon />
-                            </div>
-                            <SelectReact
-                              isSearchable
-                              className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                              classNamePrefix="react-select"
-                              inputId="driver"
-                              name="driver"
-                              options={conductores.map((conductor) => ({
-                                value: conductor.id,
-                                label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                              }))}
-                              placeholder="Seleccione un conductor"
-                              styles={{
-                                control: (base, state) => ({
-                                  ...base,
-                                  border: "none",
-                                  boxShadow: state.isFocused
-                                    ? "0 0 0 1px #059669"
-                                    : undefined,
-                                  "&:hover": { borderColor: "#059669" },
-                                  backgroundColor: "white",
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: "#9ca3af",
-                                  fontSize: "0.875rem",
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  zIndex: 50,
-                                }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  color: state.isSelected
-                                    ? "#059669"
-                                    : "#1f2937",
-                                  backgroundColor: state.isFocused
-                                    ? "#f0fdf4"
-                                    : "white",
-                                  fontSize: "0.875rem",
-                                }),
-                                dropdownIndicator: (base) => ({
-                                  ...base,
-                                  color: "#374151",
-                                  paddingRight: "0rem",
-                                }),
-                                indicatorSeparator: () => ({
-                                  display: "none",
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                              }}
-                              value={
-                                conductores
-                                  .map((conductor) => ({
+                      {/* Step 3: Planning (Optional) */}
+                      {currentStep === 3 && (
+                        <div className="space-y-6 animate-fadeIn">
+                          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
+                            Detalles Planificación (Opcional)
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Conductor - Changed to SelectReact */}
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="driver"
+                              >
+                                Conductor Asignado
+                              </label>
+                              <div className="relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <UserIcon />
+                                </div>
+                                <SelectReact
+                                  isSearchable
+                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={conductores.map((conductor) => ({
                                     value: conductor.id,
                                     label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                                  }))
-                                  .find(
-                                    (opt) => opt.value === conductorSelected,
-                                  ) || null
-                              }
-                              onChange={(option) =>
-                                setConductorSelected(
-                                  option ? option.value : "",
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-                        {/* Vehicle - Changed to SelectReact */}
-                        <div className="relative">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="vehicle"
-                          >
-                            Vehículo Asignado
-                          </label>
-                          <div className="relative shadow-sm rounded-md">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <TruckIcon />
+                                  }))}
+                                  placeholder="Seleccione un conductor"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 50,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    conductores
+                                      .map((conductor) => ({
+                                        value: conductor.id,
+                                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                      }))
+                                      .find(
+                                        (opt) =>
+                                          opt.value === conductorSelected,
+                                      ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setConductorSelected(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
                             </div>
-                            <SelectReact
-                              isSearchable
-                              className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                              classNamePrefix="react-select"
-                              inputId="driver"
-                              name="driver"
-                              options={vehiculos.map((vehiculo) => ({
-                                value: vehiculo.id,
-                                label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                              }))}
-                              placeholder="Seleccione un vehiculo"
-                              styles={{
-                                control: (base, state) => ({
-                                  ...base,
-                                  border: "none",
-                                  boxShadow: state.isFocused
-                                    ? "0 0 0 1px #059669"
-                                    : undefined,
-                                  "&:hover": { borderColor: "#059669" },
-                                  backgroundColor: "white",
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: "#9ca3af",
-                                  fontSize: "0.875rem",
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  zIndex: 50,
-                                }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  color: state.isSelected
-                                    ? "#059669"
-                                    : "#1f2937",
-                                  backgroundColor: state.isFocused
-                                    ? "#f0fdf4"
-                                    : "white",
-                                  fontSize: "0.875rem",
-                                }),
-                                dropdownIndicator: (base) => ({
-                                  ...base,
-                                  color: "#374151",
-                                  paddingRight: "0rem",
-                                }),
-                                indicatorSeparator: () => ({
-                                  display: "none",
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: "#1f2937",
-                                  fontSize: "0.875rem",
-                                }),
-                              }}
-                              value={
-                                vehiculos
-                                  .map((vehiculo) => ({
+                            {/* Vehicle - Changed to SelectReact */}
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="vehicle"
+                              >
+                                Vehículo Asignado
+                              </label>
+                              <div className="relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <TruckIcon />
+                                </div>
+                                <SelectReact
+                                  isSearchable
+                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={vehiculos.map((vehiculo) => ({
                                     value: vehiculo.id,
                                     label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                  }))
-                                  .find(
-                                    (opt) => opt.value === vehicleSelected,
-                                  ) || null
-                              }
-                              onChange={(option) =>
-                                setVehicleSelected(option ? option.value : "")
-                              }
-                            />
+                                  }))}
+                                  placeholder="Seleccione un vehiculo"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 50,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    vehiculos
+                                      .map((vehiculo) => ({
+                                        value: vehiculo.id,
+                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                      }))
+                                      .find(
+                                        (opt) => opt.value === vehicleSelected,
+                                      ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setVehicleSelected(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            {/* Observaciones */}
+                            <div className="relative md:col-span-2">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="departureTime"
+                              >
+                                Observaciones
+                              </label>
+                              <div className="relative bg-white">
+                                <Textarea
+                                  classNames={{
+                                    inputWrapper: [
+                                      "!bg-transparent",
+                                      "data-[hover=true]:!bg-transparent",
+                                      "group-data-[focus=true]:!bg-transparent",
+                                      "border-1",
+                                      "focus-within:border-emerald-600",
+                                      "focus-within:border", // Corregido desde "focus-within:border-1"
+                                      "transition-colors",
+                                      "duration-300",
+                                      "ease-in-out",
+                                      "rounded-md",
+                                    ],
+                                  }}
+                                  placeholder="Escribe las observaciones del servicio"
+                                  value={observaciones}
+                                  onChange={(e) =>
+                                    setObservaciones(e.target.value)
+                                  }
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
+                      )}
 
-                        {/* Observaciones */}
-                        <div className="relative md:col-span-2">
-                          <label
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                            htmlFor="departureTime"
-                          >
-                            Observaciones
-                          </label>
-                          <div className="relative bg-white">
-                            <Textarea
-                              classNames={{
-                                inputWrapper: [
-                                  "!bg-transparent",
-                                  "data-[hover=true]:!bg-transparent",
-                                  "group-data-[focus=true]:!bg-transparent",
-                                  "border-1",
-                                  "focus-within:border-emerald-600",
-                                  "focus-within:border", // Corregido desde "focus-within:border-1"
-                                  "transition-colors",
-                                  "duration-300",
-                                  "ease-in-out",
-                                  "rounded-md",
-                                ],
-                              }}
-                              placeholder="Escribe las observaciones del servicio"
-                              value={observaciones}
-                              onChange={(e) =>
-                                setObservaciones(e.target.value)
-                              }
-                            />
+                      {/* Step 4: Status */}
+                      {currentStep === 4 && (
+                        <div className="space-y-6 animate-fadeIn">
+                          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
+                            Estado del Servicio
+                          </h3>
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="status"
+                            >
+                              Estado Inicial del Servicio
+                            </label>
+                            <div className="relative">
+                              {/* Optional: Add an icon here */}
+                              <Select
+                                classNames={{
+                                  trigger: [
+                                    "!bg-transparent",
+                                    "data-[hover=true]:!bg-transparent",
+                                    "border-1",
+                                    "py-7",
+                                    "group-data-[focus=true]:!bg-transparent",
+                                    "rounded-md",
+                                  ],
+                                }}
+                                id="status"
+                                name="status"
+                                selectedKeys={[state]} // Cambia value por selectedKeys
+                                onSelectionChange={(keys) => {
+                                  const selectedValue = Array.from(
+                                    keys,
+                                  )[0] as EstadoServicio;
+
+                                  setState(selectedValue);
+                                }}
+                              >
+                                <SelectItem
+                                  key="solicitado"
+                                  textValue="Solicitado"
+                                >
+                                  Solicitado
+                                </SelectItem>
+                                <SelectItem
+                                  key="planificado"
+                                  textValue="Planificado"
+                                >
+                                  Planificado
+                                </SelectItem>
+                              </Select>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">
+                              El estado inicial suele ser 'Solicitado' o
+                              'Planificado'. Otros estados se actualizarán
+                              durante el seguimiento.
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 4: Status */}
-                  {currentStep === 4 && (
-                    <div className="space-y-6 animate-fadeIn">
-                      <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
-                        Estado del Servicio
-                      </h3>
-                      <div className="relative">
-                        <label
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                          htmlFor="status"
-                        >
-                          Estado Inicial del Servicio
-                        </label>
-                        <div className="relative">
-                          {/* Optional: Add an icon here */}
-                          <Select
-                            classNames={{
-                              trigger: [
-                                "!bg-transparent",
-                                "data-[hover=true]:!bg-transparent",
-                                "border-1",
-                                "py-7",
-                                "group-data-[focus=true]:!bg-transparent",
-                                "rounded-md",
-                              ],
-                            }}
-                            id="status"
-                            name="status"
-                            selectedKeys={[state]} // Cambia value por selectedKeys
-                            onSelectionChange={(keys) => {
-                              const selectedValue = Array.from(
-                                keys,
-                              )[0] as EstadoServicio;
-
-                              setState(selectedValue);
-                            }}
-                          >
-                            <SelectItem
-                              key="solicitado"
-                              textValue="Solicitado"
-                            >
-                              Solicitado
-                            </SelectItem>
-                            <SelectItem
-                              key="planificado"
-                              textValue="Planificado"
-                            >
-                              Planificado
-                            </SelectItem>
-                          </Select>
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          El estado inicial suele ser 'Solicitado' o
-                          'Planificado'. Otros estados se actualizarán durante
-                          el seguimiento.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  </>
+                      )}
+                    </>
                   )}
 
                   {/* Navigation Buttons */}
@@ -1323,42 +1433,55 @@ export default function ModalFormServicio() {
                         ) : (
                           <div className="flex gap-2">
                             {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en curso */}
-                            {isEditing && servicio && 
-                              (servicio.estado === 'solicitado' || 
-                               servicio.estado === 'planificado' || 
-                               servicio.estado === 'en curso') && (
-                              <button
-                                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                type="button"
-                                onClick={async () => {
-                                  if (servicio.id && window.confirm("¿Estás seguro de que deseas cancelar este servicio?")) {
-                                    try {
-                                      await actualizarEstadoServicio(servicio.id, "cancelado");
-                                      addToast({
-                                        title: "Éxito",
-                                        description: "Servicio cancelado correctamente",
-                                        color: "success",
-                                      });
-                                      handleModalAdd(); // Cerrar modal
-                                      resetFormStates();
-                                    } catch (error) {
-                                      addToast({
-                                        title: "Error",
-                                        description: "No se pudo cancelar el servicio",
-                                        color: "danger",
-                                      });
+                            {isEditing &&
+                              servicio &&
+                              (servicio.estado === "solicitado" ||
+                                servicio.estado === "planificado" ||
+                                servicio.estado === "en curso") && (
+                                <button
+                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                  type="button"
+                                  onClick={async () => {
+                                    if (
+                                      servicio.id &&
+                                      window.confirm(
+                                        "¿Estás seguro de que deseas cancelar este servicio?",
+                                      )
+                                    ) {
+                                      try {
+                                        await actualizarEstadoServicio(
+                                          servicio.id,
+                                          "cancelado",
+                                        );
+                                        addToast({
+                                          title: "Éxito",
+                                          description:
+                                            "Servicio cancelado correctamente",
+                                          color: "success",
+                                        });
+                                        handleModalAdd(); // Cerrar modal
+                                        resetFormStates();
+                                      } catch (error) {
+                                        addToast({
+                                          title: "Error",
+                                          description:
+                                            "No se pudo cancelar el servicio",
+                                          color: "danger",
+                                        });
+                                      }
                                     }
-                                  }
-                                }}
-                              >
-                                Cancelar Servicio
-                              </button>
-                            )}
+                                  }}
+                                >
+                                  Cancelar Servicio
+                                </button>
+                              )}
                             <button
                               className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                               type="submit"
                             >
-                              {isEditing ? 'Actualizar Servicio' : 'Registrar Servicio'}
+                              {isEditing
+                                ? "Actualizar Servicio"
+                                : "Registrar Servicio"}
                             </button>
                           </div>
                         )}

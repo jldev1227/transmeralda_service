@@ -1,14 +1,8 @@
 "use client";
 
-import React, { ReactNode, useEffect } from "react";
+import React, { ReactNode } from "react";
 
 const LoadingPage = ({ children }: { children: ReactNode }) => {
-  // Opcional: Añadir alguna lógica de tiempo para mostrar mensajes diferentes
-  // si la carga toma demasiado tiempo
-  useEffect(() => {
-    // Puedes implementar alguna lógica aquí si lo deseas
-  }, []);
-
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900">
       <div className="flex flex-col items-center">
