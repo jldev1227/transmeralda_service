@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
+import React, { useState, useRef, useCallback } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Servicio, useService, VehicleTracking, ServicioConRelaciones } from "@/context/serviceContext";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
+
 import EnhancedMapComponent from "@/components/enhancedMapComponent";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import {
+  Servicio,
+  useService,
+  VehicleTracking,
+  ServicioConRelaciones,
+} from "@/context/serviceContext";
+import ModalAgregarServicio from "@/components/ui/modalAgregarServicio";
+import { formatearFecha } from "@/helpers";
+import ServiciosSlider from "@/components/ui/serviciosSlider";
 
 // Type definitions
 interface WialonVehicle {
@@ -34,8 +41,8 @@ interface Filters {
   estado: string;
   origen: string;
   destino: string;
-  fechaInicio: string;
-  fechaFin: string;
+  fechaSolicitud: string;
+  fechaRealizacion: string;
   tipoServicio: string;
 }
 
@@ -52,29 +59,33 @@ const statusColors = {
   "en curso": "#00bc7d",
   planificado: "#FF9800",
   cancelado: "#F44336",
-  default: "#3388ff"
+  default: "#3388ff",
 };
 
 const getStatusColor = (estado: string): string => {
-  return statusColors[estado as keyof typeof statusColors] || statusColors.default;
+  return (
+    statusColors[estado as keyof typeof statusColors] || statusColors.default
+  );
 };
 
 const formatDate = (date: Date | string): string => {
   if (!date) return "-";
   const d = new Date(date);
+
   return d.toLocaleDateString("es-CO", {
     day: "2-digit",
     month: "short",
-    year: "numeric"
+    year: "numeric",
   });
 };
 
 const formatTime = (date: Date | string): string => {
   if (!date) return "-";
   const d = new Date(date);
+
   return d.toLocaleTimeString("es-CO", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 };
 
@@ -83,7 +94,7 @@ const statusTextMap: Record<string, string> = {
   "en curso": "En curso",
   planificado: "Pendiente",
   cancelado: "Cancelado",
-  solicitado: "Solicitado"
+  solicitado: "Solicitado",
 };
 
 const getStatusText = (estado: string): string => {
@@ -91,8 +102,9 @@ const getStatusText = (estado: string): string => {
 };
 
 const serviceTypeTextMap: Record<string, string> = {
-  carga: "Carga",
-  pasajeros: "Pasajeros"
+  herramienta: "Cargado con herramienta",
+  personal: "Deplazamineto de personal",
+  vehiculo: "Posicionar vehiculo",
 };
 
 const getServiceTypeText = (tipo: string): string => {
@@ -111,9 +123,13 @@ const AdvancedDashboard = () => {
 
   // State
   const { servicios } = useService();
-  const [selectedServicio, setSelectedServicio] = useState<Servicio | null>(null);
-  const [servicioWithRoutes, setServicioWithRoutes] = useState<ServicioConRelaciones | null>(null);
-  const [vehicleTracking, setVehicleTracking] = useState<VehicleTracking | null>(null);
+  const [selectedServicio, setSelectedServicio] = useState<Servicio | null>(
+    null,
+  );
+  const [servicioWithRoutes, setServicioWithRoutes] =
+    useState<ServicioConRelaciones | null>(null);
+  const [vehicleTracking, setVehicleTracking] =
+    useState<VehicleTracking | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -125,235 +141,383 @@ const AdvancedDashboard = () => {
     estado: "",
     origen: "",
     destino: "",
-    fechaInicio: "",
-    fechaFin: "",
-    tipoServicio: ""
+    fechaSolicitud: "",
+    fechaRealizacion: "",
+    tipoServicio: "",
   });
 
   // Wialon API call function
-  const callWialonApi = useCallback(async (sessionIdOrToken: string, service: string, params: any) => {
-    const isLoginCall = service === "token/login";
-    const payload = {
-      token: isLoginCall ? null : sessionIdOrToken,
-      service,
-      params,
-    };
-
-    if (isLoginCall) {
-      payload.params = { ...params, token: sessionIdOrToken };
-    }
-
-    try {
-      const response = await axios.post("/api/wialon-api", payload);
-
-      if (response.data && response.data.error) {
-        throw new Error(
-          `Error Wialon API (${response.data.error}): ${response.data.reason || service}`,
-        );
-      }
-
-      return response.data;
-    } catch (err) {
-      console.error(`Error llamando a ${service} via /api/wialon-api:`, err);
-      throw err;
-    }
-  }, []);
-
-  // Fetch route geometry using Mapbox API
-  const fetchRouteGeometry = useCallback(async (servicio: ServicioConRelaciones) => {
-    if (!servicio || !MAPBOX_ACCESS_TOKEN) {
-      return null;
-    }
-
-    try {
-      // For 'en curso' services, try to get the vehicle position from Wialon first
-      let origenLat = servicio.origen_latitud;
-      let origenLng = servicio.origen_longitud;
-      let useVehiclePosition = false;
-      
-      if (servicio.estado === 'en curso' && servicio.vehiculo?.placa && token) {
-        try {
-          setTrackingError('');
-          setIsLoadingWialon(true);
-          
-          // Login to Wialon to get session ID
-          const loginData = await callWialonApi(token, "token/login", {});
-          if (loginData?.eid) {
-            const sessionId = loginData.eid;
-            
-            // Search for the vehicle by plate number
-            const vehiclesData = await callWialonApi(sessionId, "core/search_items", {
-              spec: {
-                itemsType: "avl_unit",
-                propName: "sys_name",
-                propValueMask: "*",
-                sortType: "sys_name",
-              },
-              force: 1,
-              flags: 1025, // Include position data
-              from: 0,
-              to: 1000,
-            });
-            
-            if (vehiclesData?.items) {
-              // Find the vehicle with matching plate number
-              const vehicleData = vehiclesData.items.find((v: any) => 
-                v.nm.includes(servicio.vehiculo.placa) || 
-                v.nm.toLowerCase() === servicio.vehiculo.placa.toLowerCase()
-              );
-              
-              // If vehicle found and has position data
-              if (vehicleData?.pos) {
-                // Update origin coordinates to vehicle's current position
-                origenLat = vehicleData.pos.y;
-                origenLng = vehicleData.pos.x;
-                useVehiclePosition = true;
-                
-                // Create vehicle tracking object for the map component
-                const trackingData: VehicleTracking = {
-                  id: vehicleData.id,
-                  name: vehicleData.nm,
-                  flags: vehicleData.flags || 0,
-                  position: vehicleData.pos,
-                  lastUpdate: new Date(),
-                  item: vehicleData
-                };
-                
-                setVehicleTracking(trackingData);
-              } else {
-                setTrackingError('No se encontró la posición actual del vehículo');
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error al obtener posición del vehículo:", error);
-          setTrackingError('Error al obtener información del vehículo');
-        } finally {
-          setIsLoadingWialon(false);
-        }
-      }
-      
-      // Ensure coordinates exist and are valid
-      if (
-        !origenLat ||
-        !origenLng ||
-        !servicio.destino_latitud ||
-        !servicio.destino_longitud
-      ) {
-        throw new Error("Coordenadas de origen o destino no válidas");
-      }
-
-      const origenCoords: LatLngTuple = [origenLat, origenLng];
-      const destinoCoords: LatLngTuple = [
-        servicio.destino_latitud,
-        servicio.destino_longitud,
-      ];
-
-      // Build URL for Mapbox Directions API
-      const originCoords = `${origenCoords[1]},${origenCoords[0]}`; // [lng, lat] format
-      const destCoords = `${destinoCoords[1]},${destinoCoords[0]}`;
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords};${destCoords}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN}`;
-
-      // Make request to API
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(
-          `Error en la respuesta de Mapbox API: ${response.status}`,
-        );
-      }
-
-      const data = await response.json();
-
-      if (!data.routes || data.routes.length === 0) {
-        throw new Error("No se encontró una ruta válida");
-      }
-
-      // Extract route geometry
-      const route: MapboxRoute = data.routes[0];
-
-      const servicioWithRoutesData = {
-        ...servicio,
-        origenCoords: useVehiclePosition ? [origenLat, origenLng] as LatLngTuple : origenCoords,
-        destinoCoords,
-        geometry: [origenCoords, destinoCoords] as LatLngExpression[],
-        routeDistance: (route.distance / 1000).toFixed(1),
-        routeDuration: Math.round(route.duration / 60),
+  const callWialonApi = useCallback(
+    async (sessionIdOrToken: string, service: string, params: any) => {
+      const isLoginCall = service === "token/login";
+      const payload = {
+        token: isLoginCall ? null : sessionIdOrToken,
+        service,
+        params,
       };
 
-      setServicioWithRoutes(servicioWithRoutesData);
-      return servicioWithRoutesData;
-    } catch (error: any) {
-      console.error("Error:", error.message);
+      if (isLoginCall) {
+        payload.params = { ...params, token: sessionIdOrToken };
+      }
 
-      // Handle error case using a straight line
-      if (servicio.origen_latitud && servicio.origen_longitud && 
-        servicio.destino_latitud && servicio.destino_longitud) {        const origenCoords: LatLngTuple = [
-          servicio.origen_latitud,
-          servicio.origen_longitud,
-        ];
+      try {
+        const response = await axios.post("/api/wialon-api", payload);
+
+        if (response.data && response.data.error) {
+          throw new Error(
+            `Error Wialon API (${response.data.error}): ${response.data.reason || service}`,
+          );
+        }
+
+        return response.data;
+      } catch (err) {
+        console.error(`Error llamando a ${service} via /api/wialon-api:`, err);
+        throw err;
+      }
+    },
+    [],
+  );
+
+  // Fetch route geometry using Mapbox API
+  const fetchRouteGeometry = useCallback(
+    async (servicio: ServicioConRelaciones) => {
+      if (!servicio || !MAPBOX_ACCESS_TOKEN) {
+        return null;
+      }
+
+      try {
+        // For 'en curso' services, try to get the vehicle position from Wialon first
+        let origenLat = servicio.origen_latitud;
+        let origenLng = servicio.origen_longitud;
+        let useVehiclePosition = false;
+
+        if (
+          servicio.estado === "en curso" &&
+          servicio.vehiculo?.placa &&
+          token
+        ) {
+          try {
+            setTrackingError("");
+            setIsLoadingWialon(true);
+
+            // Login to Wialon to get session ID
+            const loginData = await callWialonApi(token, "token/login", {});
+
+            if (loginData?.eid) {
+              const sessionId = loginData.eid;
+
+              // Search for the vehicle by plate number
+              const vehiclesData = await callWialonApi(
+                sessionId,
+                "core/search_items",
+                {
+                  spec: {
+                    itemsType: "avl_unit",
+                    propName: "sys_name",
+                    propValueMask: "*",
+                    sortType: "sys_name",
+                  },
+                  force: 1,
+                  flags: 1025, // Include position data
+                  from: 0,
+                  to: 1000,
+                },
+              );
+
+              if (vehiclesData?.items) {
+                // Find the vehicle with matching plate number
+                const vehicleData = vehiclesData.items.find(
+                  (v: any) =>
+                    v.nm.includes(servicio.vehiculo.placa) ||
+                    v.nm.toLowerCase() ===
+                    servicio.vehiculo.placa.toLowerCase(),
+                );
+
+                // If vehicle found and has position data
+                if (vehicleData?.pos) {
+                  // Update origin coordinates to vehicle's current position
+                  origenLat = vehicleData.pos.y;
+                  origenLng = vehicleData.pos.x;
+                  useVehiclePosition = true;
+
+                  // Create vehicle tracking object for the map component
+                  const trackingData: VehicleTracking = {
+                    id: vehicleData.id,
+                    name: vehicleData.nm,
+                    flags: vehicleData.flags || 0,
+                    position: vehicleData.pos,
+                    lastUpdate: new Date(),
+                    item: vehicleData,
+                  };
+
+                  setVehicleTracking(trackingData);
+                } else {
+                  setTrackingError(
+                    "No se encontró la posición actual del vehículo",
+                  );
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error al obtener posición del vehículo:", error);
+            setTrackingError("Error al obtener información del vehículo");
+          } finally {
+            setIsLoadingWialon(false);
+          }
+        }
+
+        // Ensure coordinates exist and are valid
+        if (
+          !origenLat ||
+          !origenLng ||
+          !servicio.destino_latitud ||
+          !servicio.destino_longitud
+        ) {
+          throw new Error("Coordenadas de origen o destino no válidas");
+        }
+
+        const origenCoords: LatLngTuple = [origenLat, origenLng];
         const destinoCoords: LatLngTuple = [
           servicio.destino_latitud,
           servicio.destino_longitud,
         ];
 
+        // Build URL for Mapbox Directions API
+        const originCoords = `${origenCoords[1]},${origenCoords[0]}`; // [lng, lat] format
+        const destCoords = `${destinoCoords[1]},${destinoCoords[0]}`;
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords};${destCoords}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN}`;
+
+        // Make request to API
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(
+            `Error en la respuesta de Mapbox API: ${response.status}`,
+          );
+        }
+
+        const data = await response.json();
+
+        if (!data.routes || data.routes.length === 0) {
+          throw new Error("No se encontró una ruta válida");
+        }
+
+        // Extract route geometry
+        const route: MapboxRoute = data.routes[0];
+
         const servicioWithRoutesData = {
           ...servicio,
-          origenCoords,
+          origenCoords: useVehiclePosition
+            ? ([origenLat, origenLng] as LatLngTuple)
+            : origenCoords,
           destinoCoords,
-          geometry: [origenCoords, destinoCoords],
-          routeDistance: servicio.distancia_km || "0",
-          routeDuration: null,
+          geometry: [origenCoords, destinoCoords] as LatLngExpression[],
+          routeDistance: (route.distance / 1000).toFixed(1),
+          routeDuration: Math.round(route.duration / 60),
         };
 
         setServicioWithRoutes(servicioWithRoutesData);
+
         return servicioWithRoutesData;
+      } catch (error: any) {
+        console.error("Error:", error.message);
+
+        // Handle error case using a straight line
+        if (
+          servicio.origen_latitud &&
+          servicio.origen_longitud &&
+          servicio.destino_latitud &&
+          servicio.destino_longitud
+        ) {
+          const origenCoords: LatLngTuple = [
+            servicio.origen_latitud,
+            servicio.origen_longitud,
+          ];
+          const destinoCoords: LatLngTuple = [
+            servicio.destino_latitud,
+            servicio.destino_longitud,
+          ];
+
+          const servicioWithRoutesData = {
+            ...servicio,
+            origenCoords,
+            destinoCoords,
+            geometry: [origenCoords, destinoCoords],
+            routeDistance: servicio.distancia_km || "0",
+            routeDuration: null,
+          };
+
+          setServicioWithRoutes(servicioWithRoutesData);
+
+          return servicioWithRoutesData;
+        }
+
+        return null;
       }
-      
-      return null;
-    }
-  }, [MAPBOX_ACCESS_TOKEN, token, callWialonApi]);
+    },
+    [MAPBOX_ACCESS_TOKEN, token, callWialonApi],
+  );
 
   // Select a service
-  const handleSelectServicio = useCallback(async (servicio: ServicioConRelaciones) => {
-    setSelectedServicio(servicio);
-    await fetchRouteGeometry(servicio);
-  }, [fetchRouteGeometry]);
-
+  const handleSelectServicio = useCallback(
+    async (servicio: ServicioConRelaciones) => {
+      setSelectedServicio(servicio);
+      await fetchRouteGeometry(servicio);
+    },
+    [fetchRouteGeometry],
+  );
 
   // Filter services
-  const filteredServicios = servicios.filter(servicio => {
+  const filteredServicios = servicios.filter((servicio) => {
     if (filters.estado && servicio.estado !== filters.estado) return false;
-    if (filters.origen && !servicio.origen_especifico.toLowerCase().includes(filters.origen.toLowerCase())) return false;
-    if (filters.destino && !servicio.destino_especifico.toLowerCase().includes(filters.destino.toLowerCase())) return false;
-    if (filters.tipoServicio && servicio.tipo_servicio !== filters.tipoServicio) return false;
+    if (
+      filters.origen &&
+      !servicio.origen_especifico
+        .toLowerCase()
+        .includes(filters.origen.toLowerCase())
+    )
+      return false;
+    if (
+      filters.destino &&
+      !servicio.destino_especifico
+        .toLowerCase()
+        .includes(filters.destino.toLowerCase())
+    )
+      return false;
+    if (filters.tipoServicio && servicio.tipo_servicio !== filters.tipoServicio)
+      return false;
+
     return true;
   });
 
-  return (
-    <div className="h-screen flex">
-      <PanelGroup direction="horizontal">
-        <Panel
-          defaultSize={25}
-          minSize={25}
-          maxSize={35}
-          className="bg-white border-r"
-        >
-          {/* Sidebar header */}
-          <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="text-xl font-bold">Servicios</h2>
-          </div>
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
 
+  // Función que se ejecutará al cambiar de slide
+  const handleSlideChange = (oldIndex, newIndex) => {
+    console.log(`Cambiado del slide ${oldIndex} al slide ${newIndex}`);
+    // Aquí puedes poner cualquier lógica personalizada
+  };
+
+  // Función que se ejecuta antes de cada cambio de slide
+  const handleBeforeChange = (oldIndex, newIndex) => {
+    console.log(`A punto de cambiar del slide ${oldIndex} al slide ${newIndex}`);
+    // Lógica previa al cambio de slide
+  };
+
+  // Función que se ejecuta después de cada cambio de slide
+  const handleAfterChange = (index) => {
+    console.log(`Ahora el slide activo es ${index}`);
+    // Lógica posterior al cambio de slide
+  };
+
+  // Configuración del slider
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    beforeChange: handleBeforeChange,
+    afterChange: handleAfterChange,
+    onInit: () => console.log('Slider inicializado'),
+  };
+
+  return (
+    <div className="h-screen relative overflow-hidden">
+      {/* Main map panel - takes full width/height when sidebar is closed */}
+      <div className={`h-full w-full transition-all duration-300 ${isPanelOpen ? 'md:pl-[370px]' : ''}`}>
+        <EnhancedMapComponent
+          getServiceTypeText={getServiceTypeText}
+          getStatusText={getStatusText}
+          handleServicioClick={handleSelectServicio}
+          mapboxToken={MAPBOX_ACCESS_TOKEN}
+          selectedServicio={servicioWithRoutes}
+          servicios={servicios}
+          setServicioWithRoutes={setServicioWithRoutes}
+          trackingError={trackingError}
+          vehicleTracking={vehicleTracking}
+          wialonToken={WIALON_API_TOKEN}
+          onWialonRequest={callWialonApi}
+        />
+        <ModalAgregarServicio />
+      </div>
+
+      {/* Floating toggle button for mobile */}
+      <button
+        className={`md:hidden fixed top-4 right-14 z-50 bg-white p-3 rounded-full shadow-lg ${isPanelOpen ? "hidden" : ""}`}
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Fixed toggle button for desktop */}
+      <button
+        className="hidden md:flex fixed top-4 left-[370px] z-50 bg-white h-8 w-8 items-center justify-center rounded-r-md shadow-md transition-all duration-300"
+        style={{ left: isPanelOpen ? '370px' : '0' }}
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-5 w-5 transition-transform duration-300 ${!isPanelOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Sidebar/floating panel */}
+      <div
+        className={`absolute transition-all duration-300 ease-in-out bg-white shadow-lg 
+                   md:h-full md:w-[370px] md:fixed md:top-0 md:left-0
+                   ${isPanelOpen
+            ? 'top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0'
+            : 'top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0'}`}
+      >
+        {/* Panel header with handle for mobile */}
+        <div className="p-3 md:p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+          <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
+          <button
+            className="md:hidden p-1 rounded-full hover:bg-gray-100"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? '' : 'rotate-180'}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Panel content with scrolling */}
+        <div className="h-[calc(100%-56px)] overflow-auto">
           {/* Filters */}
-          <div className="p-4 border-b">
-            <h3 className="font-semibold mb-3">Filtros</h3>
-            <div className="space-y-3">
-              <div>
+          <div className="p-3 md:p-4 border-b">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Filtros</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium mb-1">Estado</label>
                 <select
+                  className="w-full p-2 border rounded-md text-sm"
                   value={filters.estado}
-                  onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                  className="w-full p-2 border rounded-md"
+                  onChange={(e) =>
+                    setFilters({ ...filters, estado: e.target.value })
+                  }
                 >
                   <option value="">Todos</option>
                   <option value="solicitado">Solicitado</option>
@@ -364,111 +528,75 @@ const AdvancedDashboard = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Origen</label>
-                <input
-                  type="text"
-                  value={filters.origen}
-                  onChange={(e) => setFilters({ ...filters, origen: e.target.value })}
-                  placeholder="Buscar origen..."
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Destino</label>
-                <input
-                  type="text"
-                  value={filters.destino}
-                  onChange={(e) => setFilters({ ...filters, destino: e.target.value })}
-                  placeholder="Buscar destino..."
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipo de Servicio</label>
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium mb-1">
+                  Tipo de Servicio
+                </label>
                 <select
+                  className="w-full p-2 border rounded-md text-sm"
                   value={filters.tipoServicio}
-                  onChange={(e) => setFilters({ ...filters, tipoServicio: e.target.value })}
-                  className="w-full p-2 border rounded-md"
+                  onChange={(e) =>
+                    setFilters({ ...filters, tipoServicio: e.target.value })
+                  }
                 >
                   <option value="">Todos</option>
                   <option value="personal">Personal</option>
                   <option value="herramienta">Herramienta</option>
-                  <option value="posicionar">Posicionar vehículo</option>
+                  <option value="vehiculo">Posicionar vehículo</option>
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Origen</label>
+                <input
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="Buscar origen..."
+                  type="text"
+                  value={filters.origen}
+                  onChange={(e) =>
+                    setFilters({ ...filters, origen: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  Destino
+                </label>
+                <input
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="Buscar destino..."
+                  type="text"
+                  value={filters.destino}
+                  onChange={(e) =>
+                    setFilters({ ...filters, destino: e.target.value })
+                  }
+                />
               </div>
             </div>
           </div>
 
           {/* Service list */}
-          <div className="flex-1 overflow-auto">
-            <div className="p-4">
-              {loading ? (
-                <div className="text-center py-8">Cargando...</div>
-              ) : filteredServicios.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No se encontraron servicios
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredServicios.map((servicio) => (
-                    <div
-                      key={servicio.id}
-                      onClick={() => handleSelectServicio(servicio)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                        selectedServicio?.id === servicio.id ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="font-semibold">{servicio.origen_especifico}</div>
-                          <div className="text-sm text-gray-600">→ {servicio.destino_especifico}</div>
-                        </div>
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
-                          style={{
-                            backgroundColor: `${getStatusColor(servicio.estado)}20`,
-                            color: getStatusColor(servicio.estado)
-                          }}
-                        >
-                          {getStatusText(servicio.estado)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        <div>{formatDate(servicio.fecha_inicio)} · {servicio.hora_salida}</div>
-                        <div>{servicio.tipo_servicio} · {servicio.distancia_km} km</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="p-3 md:p-4">
+            {loading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : filteredServicios.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                No se encontraron servicios
+              </div>
+            ) : (
+              <ServiciosSlider
+        filteredServicios={filteredServicios}
+        selectedServicio={selectedServicio}
+        handleSelectServicio={handleSelectServicio}
+        getStatusColor={getStatusColor}
+        getStatusText={getStatusText}
+        formatearFecha={formatearFecha}
+      />
+            )}
           </div>
-        </Panel>
-
-        <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-blue-500 transition-colors cursor-col-resize" />
-
-        <Panel
-        defaultSize={85}
-        className="bg-white border-r"
-        >
-          <EnhancedMapComponent
-            servicios={servicios}
-            selectedServicio={servicioWithRoutes}
-            vehicleTracking={vehicleTracking}
-            trackingError={trackingError}
-            handleServicioClick={handleSelectServicio}
-            getStatusText={getStatusText}
-            getServiceTypeText={getServiceTypeText}
-            mapboxToken={MAPBOX_ACCESS_TOKEN}
-            wialonToken={WIALON_API_TOKEN}
-            onWialonRequest={callWialonApi}
-            setServicioWithRoutes={setServicioWithRoutes}
-          />
-        </Panel>
-      </PanelGroup>
+        </div>
+      </div>
 
       {/* Additional styles */}
       <style global jsx>{`
@@ -477,6 +605,17 @@ const AdvancedDashboard = () => {
         }
         .vehicle-marker:hover {
           transform: scale(1.1);
+        }
+        
+        @media (max-width: 768px) {
+          /* Mobile drag handle appearance */
+          .panel-drag-handle {
+            width: 40px;
+            height: 5px;
+            background-color: #cbd5e0;
+            border-radius: 3px;
+            margin: 10px auto;
+          }
         }
       `}</style>
     </div>

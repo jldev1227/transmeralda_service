@@ -11,14 +11,14 @@ interface ServiceDetailPanelProps {
   servicioWithRoutes: Servicio;
   vehicleTracking: VehicleTracking | null;
   isLoadingRoute: boolean;
-  onClose?: () => void;  // Añade esta prop opcional
+  onClose?: () => void; // Añade esta prop opcional
 }
 
 const ServiceDetailPanel = ({
   servicioWithRoutes,
   vehicleTracking,
   isLoadingRoute,
-  onClose // Agrega esta prop opcional para notificar al padre
+  onClose, // Agrega esta prop opcional para notificar al padre
 }: ServiceDetailPanelProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [elapsedTime, setElapsedTime] = useState<{
@@ -27,7 +27,7 @@ const ServiceDetailPanel = ({
   }>({ hours: 0, minutes: 0 });
   const [kmRecorridos, setKmRecorridos] = useState<number>(0);
   const [isVisible, setIsVisible] = useState(true);
-  
+
   const handleClose = () => {
     setIsVisible(false);
     // Opcional: notificar al padre después de la animación
@@ -63,7 +63,7 @@ const ServiceDetailPanel = ({
     if (!servicioWithRoutes) return;
 
     // Definir hourOut como las 6 AM de la fecha de inicio
-    const fechaInicio = new Date(servicioWithRoutes.fecha_inicio);
+    const fechaInicio = new Date(servicioWithRoutes.fecha_solicitud);
     const hourOut = new Date(fechaInicio);
 
     hourOut.setHours(6, 0, 0, 0); // 6:00 AM
@@ -135,12 +135,14 @@ const ServiceDetailPanel = ({
   // Efecto para desmontar después de la animación
   useEffect(() => {
     let timer: NodeJS.Timeout;
+
     if (!isVisible) {
       timer = setTimeout(() => {
         setIsMounted(false);
         // Aquí podrías llamar a una función prop para notificar al padre que se cerró el panel
       }, 500); // Mismo tiempo que la duración de la animación
     }
+
     return () => clearTimeout(timer);
   }, [isVisible]);
 
@@ -208,7 +210,7 @@ const ServiceDetailPanel = ({
           <p className="text-xs text-emerald-600 mt-1">
             {Math.round(
               (kmRecorridos / parseFloat(servicioWithRoutes.routeDistance)) *
-              100,
+                100,
             )}
             % completado
           </p>
@@ -242,7 +244,7 @@ const ServiceDetailPanel = ({
                   <div>
                     <p className="text-xs text-gray-500">Fecha programada</p>
                     <p className="text-sm font-medium">
-                      {formatDate(servicioWithRoutes.fecha_inicio)}
+                      {formatDate(servicioWithRoutes.fecha_solicitud)}
                     </p>
                   </div>
                 </div>

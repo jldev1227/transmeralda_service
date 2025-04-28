@@ -3,17 +3,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
+import { LatLngTuple } from "leaflet";
 
 import OptimizedMapComponent from "@/components/optimizedMapComponent";
 import {
-  Servicio,
   ServicioConRelaciones,
   useService,
   VehicleTracking,
 } from "@/context/serviceContext";
 import ServiceDetailPanel from "@/components/ui/servicioDetailPanel";
 import LoadingPage from "@/components/loadingPage";
-import { LatLngTuple } from "leaflet";
 
 // Definición de la interfaz WialonVehicle para TypeScript
 interface WialonVehicle {
@@ -41,9 +40,8 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
   const [isLoadingService, setIsLoadingService] = useState(false);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
-  const [servicioWithRoutes, setServicioWithRoutes] = useState<ServicioConRelaciones | null>(
-    null,
-  );
+  const [servicioWithRoutes, setServicioWithRoutes] =
+    useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
     useState<VehicleTracking | null>(null);
   const [trackingError, setTrackingError] = useState<string>("");
@@ -120,8 +118,11 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         throw new Error("Coordenadas de origen o destino no válidas");
       }
 
-      const origenCoords : LatLngTuple = [servicio.origen_latitud, servicio.origen_longitud];
-      const destinoCoords : LatLngTuple = [
+      const origenCoords: LatLngTuple = [
+        servicio.origen_latitud,
+        servicio.origen_longitud,
+      ];
+      const destinoCoords: LatLngTuple = [
         servicio.destino_latitud,
         servicio.destino_longitud,
       ];
@@ -166,16 +167,16 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
         routeDistance: (route.distance / 1000).toFixed(1),
         routeDuration: Math.round(route.duration / 60),
       });
-    } catch (error : any) {
+    } catch (error: any) {
       console.error("Error:", error.message);
 
       // Manejar el caso de error utilizando una línea recta
       if (servicio?.origen?.latitud && servicio?.destino?.latitud) {
-        const origenCoords : LatLngTuple = [
+        const origenCoords: LatLngTuple = [
           servicio.origen.latitud,
           servicio.origen.longitud,
         ];
-        const destinoCoords : LatLngTuple = [
+        const destinoCoords: LatLngTuple = [
           servicio.destino.latitud,
           servicio.destino.longitud,
         ];
@@ -411,63 +412,64 @@ const ServicioDetailView = ({ servicioId }: { servicioId: string }) => {
 
   return (
     <div className="h-screen w-full grid grid-cols-1 md:grid-cols-4 relative">
-    {/* Botón flotante para mostrar el panel (solo en móvil) */}
-    <button
-      onClick={() => setIsPanelVisible(true)}
-      className={`md:hidden fixed top-32 left-4 z-20 bg-white shadow-lg p-3 rounded-full transition-opacity duration-300 ${
-        isPanelVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
-    >
-      {/* Ícono de flecha hacia abajo */}
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className="h-6 w-6 text-emerald-600" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="currentColor"
+      {/* Botón flotante para mostrar el panel (solo en móvil) */}
+      <button
+        className={`md:hidden fixed top-32 left-4 z-20 bg-white shadow-lg p-3 rounded-full transition-opacity duration-300 ${
+          isPanelVisible ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+        onClick={() => setIsPanelVisible(true)}
       >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2} 
-          d="M19 9l-7 7-7-7" 
-        />
-      </svg>
-    </button>
+        {/* Ícono de flecha hacia abajo */}
+        <svg
+          className="h-6 w-6 text-emerald-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M19 9l-7 7-7-7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
+        </svg>
+      </button>
 
-    {/* Panel lateral izquierdo */}
-    <div className={`max-sm:absolute z-10 md:col-span-1 overflow-hidden 
+      {/* Panel lateral izquierdo */}
+      <div
+        className={`max-sm:absolute z-10 md:col-span-1 overflow-hidden 
       max-sm:inset-x-0 max-sm:top-0 max-sm:transition-transform max-sm:duration-500 max-sm:ease-in-out
-      ${isPanelVisible ? 'max-sm:translate-y-0' : 'max-sm:-translate-y-full'}`}
-    >
-      {servicioWithRoutes && (
-        <ServiceDetailPanel
-          isLoadingRoute={isLoadingRoute}
-          servicioWithRoutes={servicioWithRoutes}
-          vehicleTracking={vehicleTracking}
-          onClose={() => setIsPanelVisible(false)} // Pasa la función para cerrar
-        />
-      )}
-    </div>
+      ${isPanelVisible ? "max-sm:translate-y-0" : "max-sm:-translate-y-full"}`}
+      >
+        {servicioWithRoutes && (
+          <ServiceDetailPanel
+            isLoadingRoute={isLoadingRoute}
+            servicioWithRoutes={servicioWithRoutes}
+            vehicleTracking={vehicleTracking}
+            onClose={() => setIsPanelVisible(false)} // Pasa la función para cerrar
+          />
+        )}
+      </div>
 
-    {/* Mapa */}
-    <div className="md:col-span-3">
-      {mapboxLoaded && servicioWithRoutes ? (
-        <OptimizedMapComponent
-          getServiceTypeText={getServiceTypeText}
-          getStatusText={getStatusText}
-          handleServicioClick={handleServicioClick}
-          mapboxToken={MAPBOX_ACCESS_TOKEN}
-          servicioId={servicioId}
-          servicioWithRoutes={servicioWithRoutes}
-          trackingError={trackingError}
-          vehicleTracking={vehicleTracking}
-        />
-      ) : (
-        <LoadingPage>Cargando mapa</LoadingPage>
-      )}
+      {/* Mapa */}
+      <div className="md:col-span-3">
+        {mapboxLoaded && servicioWithRoutes ? (
+          <OptimizedMapComponent
+            getServiceTypeText={getServiceTypeText}
+            getStatusText={getStatusText}
+            handleServicioClick={handleServicioClick}
+            mapboxToken={MAPBOX_ACCESS_TOKEN}
+            servicioId={servicioId}
+            servicioWithRoutes={servicioWithRoutes}
+            trackingError={trackingError}
+            vehicleTracking={vehicleTracking}
+          />
+        ) : (
+          <LoadingPage>Cargando mapa</LoadingPage>
+        )}
+      </div>
     </div>
-  </div>
   );
 };
 

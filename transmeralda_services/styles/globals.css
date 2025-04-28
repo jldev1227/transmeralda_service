@@ -2,12 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
-    html {
-      font-size: 0.875rem;
-    }
-    body {
-      @apply text-sm;
-    }
+  html {
+    font-size: 0.875rem;
   }
+  body {
+    @apply text-sm;
+  }
+}
+
+

@@ -66,10 +66,20 @@ interface ServiceContextType {
   trackingError?: string;
   selectedServicio?: ServicioConRelaciones | null;
   serviciosWithRoutes?: ServicioConRelaciones[];
-  setServiciosWithRoutes?: React.Dispatch<React.SetStateAction<ServicioConRelaciones[]>>;
+  setServiciosWithRoutes?: React.Dispatch<
+    React.SetStateAction<ServicioConRelaciones[]>
+  >;
   selectServicio?: (servicio: ServicioConRelaciones) => void;
   clearSelectedServicio?: () => void;
-  setSelectedServicio?: React.Dispatch<React.SetStateAction<ServicioConRelaciones | null>>;
+  setSelectedServicio?: React.Dispatch<
+    React.SetStateAction<ServicioConRelaciones | null>
+  >;
+
+  // modalStates
+  modalAgregar: boolean
+
+  // handle Modals
+  handleModalAdd: ()=>void
 
   // Nuevas propiedades para Socket.IO
   socketConnected?: boolean;
@@ -101,8 +111,8 @@ export interface Servicio {
   cliente_id: string;
   estado: EstadoServicio;
   tipo_servicio: string;
-  fecha_inicio: Date | string;
-  fecha_fin?: Date | string;
+  fecha_solicitud: Date | string;
+  fecha_realizacion?: Date | string;
   hora_salida: string;
   distancia_km: number;
   valor: number;
@@ -135,10 +145,9 @@ export interface CreateServicioDTO {
   vehiculo_id: string;
   cliente_id: string;
   tipo_servicio: string;
-  fecha_inicio: Date | string;
+  fecha_solicitud: Date | string;
   estado: EstadoServicio;
-  hora_salida: Time | null;
-  fecha_fin?: Date | string;
+  fecha_realizacion: Date | string;
   valor: number;
   observaciones?: string;
 }
@@ -248,8 +257,8 @@ export interface CrearServicioDTO {
   cliente_id: number;
   estado?: EstadoServicio;
   tipo_servicio: string;
-  fecha_inicio: Date | string;
-  fecha_fin?: Date | string;
+  fecha_solicitud: Date | string;
+  fecha_realizacion?: Date | string;
   distancia_km: number;
   valor: number;
   observaciones?: string;
@@ -266,8 +275,8 @@ export interface ActualizarServicioDTO {
   cliente_id?: number;
   estado?: EstadoServicio;
   tipo_servicio?: string;
-  fecha_inicio?: Date | string;
-  fecha_fin?: Date | string;
+  fecha_solicitud?: Date | string;
+  fecha_realizacion?: Date | string;
   distancia_km?: number;
   valor?: number;
   observaciones?: string;
@@ -282,8 +291,8 @@ export interface CambiarEstadoDTO {
 export interface BuscarServiciosParams {
   estado?: EstadoServicio;
   tipo_servicio?: string;
-  fecha_inicio?: Date | string;
-  fecha_fin?: Date | string;
+  fecha_solicitud?: Date | string;
+  fecha_realizacion?: Date | string;
   conductor_id?: string;
   cliente_id?: number;
   origen_id?: string;
@@ -319,6 +328,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalAgregar, setModalAgregar] = useState(false);
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -337,8 +347,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -360,8 +370,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -385,8 +395,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -408,8 +418,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -431,8 +441,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -461,8 +471,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+            err.message ||
+            "Error al conectar con el servidor",
         );
 
         return null;
@@ -502,6 +512,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
+  const handleModalAdd = ()=>{
+    setModalAgregar(!modalAgregar)
+  }
+
   useEffect(() => {
     obtenerServicios();
     obtenerMunicipios();
@@ -511,36 +525,43 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   }, []);
 
   // Estado para rastreo de vehículos y servicios seleccionados
-  const [vehicleTracking, setVehicleTracking] = useState<VehicleTracking | null>(null);
-  const [trackingError, setTrackingError] = useState<string>('');
-  const [selectedServicio, setSelectedServicio] = useState<ServicioConRelaciones | null>(null);
-  const [serviciosWithRoutes, setServiciosWithRoutes] = useState<ServicioConRelaciones[]>([]);
+  const [vehicleTracking, setVehicleTracking] =
+    useState<VehicleTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string>("");
+  const [selectedServicio, setSelectedServicio] =
+    useState<ServicioConRelaciones | null>(null);
+  const [serviciosWithRoutes, setServiciosWithRoutes] = useState<
+    ServicioConRelaciones[]
+  >([]);
 
   // Seleccionar un servicio para mostrar detalles y tracking
-  const selectServicio = useCallback(async (servicio: ServicioConRelaciones) => {
-    setSelectedServicio(servicio);
-    
-    // Si el servicio está en curso, intentar obtener tracking del vehículo
-    if (servicio.estado === 'en curso' && servicio.vehiculo?.placa) {
-      setTrackingError('');
-      try {
-        // Aquí se implementaría la lógica para obtener el tracking del vehículo
-        // Por ahora dejamos esto como un placeholder
+  const selectServicio = useCallback(
+    async (servicio: ServicioConRelaciones) => {
+      setSelectedServicio(servicio);
+
+      // Si el servicio está en curso, intentar obtener tracking del vehículo
+      if (servicio.estado === "en curso" && servicio.vehiculo?.placa) {
+        setTrackingError("");
+        try {
+          // Aquí se implementaría la lógica para obtener el tracking del vehículo
+          // Por ahora dejamos esto como un placeholder
+          setVehicleTracking(null);
+        } catch (error) {
+          console.error("Error al obtener tracking del vehículo:", error);
+          setTrackingError("No se pudo obtener información del vehículo.");
+        }
+      } else {
         setVehicleTracking(null);
-      } catch (error) {
-        console.error("Error al obtener tracking del vehículo:", error);
-        setTrackingError('No se pudo obtener información del vehículo.');
       }
-    } else {
-      setVehicleTracking(null);
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Limpiar la selección de servicio
   const clearSelectedServicio = useCallback(() => {
     setSelectedServicio(null);
     setVehicleTracking(null);
-    setTrackingError('');
+    setTrackingError("");
   }, []);
 
   // Valor del contexto
@@ -563,7 +584,15 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setServiciosWithRoutes,
     selectServicio,
     clearSelectedServicio,
-    setSelectedServicio
+    setSelectedServicio,
+
+
+    // Modals state
+    modalAgregar,
+
+    // handles Modal
+    handleModalAdd,
+    
   };
 
   return (

@@ -26,7 +26,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       {/* {!is404Page && <Navbar />} */}
       <main className="bg-gray-50 flex-grow">{children}</main>
       {/* Footer - solo se muestra si NO es la página 404 */}
-      {!is404Page && (
+      {/* {!is404Page && (
         <footer className="bg-white border-t border-gray-200 py-4">
           <div className="max-w-7xl mx-auto px-6">
             <p className="text-sm text-gray-500 text-center">
@@ -35,7 +35,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
         </footer>
-      )}
+      )} */}
     </div>
   );
 }

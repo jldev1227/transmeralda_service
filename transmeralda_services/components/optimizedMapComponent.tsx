@@ -9,7 +9,11 @@ import React, {
 } from "react";
 import mapboxgl from "mapbox-gl";
 
-import { Servicio, ServicioConRelaciones, VehicleTracking } from "@/context/serviceContext";
+import {
+  Servicio,
+  ServicioConRelaciones,
+  VehicleTracking,
+} from "@/context/serviceContext";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 interface OptimizedMapComponentProps {
@@ -180,7 +184,7 @@ const OptimizedMapComponent = ({
               </div>
               <div>
                 <div class="font-medium">Fecha inicio</div>
-                <div>${new Date(servicioWithRoutes.fecha_inicio).toLocaleDateString()}</div>
+                <div>${new Date(servicioWithRoutes.fecha_solicitud).toLocaleDateString()}</div>
               </div>
             </div>`
               : `<div class="text-sm">
@@ -276,7 +280,7 @@ const OptimizedMapComponent = ({
       .addTo(map.current);
   };
 
-  // Actualizar mapa cuando cambien los datos       
+  // Actualizar mapa cuando cambien los datos
   useEffect(() => {
     if (!isMapLoaded || !map.current || !servicioWithRoutes) return;
 
@@ -297,7 +301,7 @@ const OptimizedMapComponent = ({
       map.current.removeSource("route");
     }
 
-    console.log(isMapLoaded)
+    console.log(isMapLoaded);
 
     // Determinar si debemos mostrar ruta completa o solo desde vehículo al destino
     const isVehicleActive =
