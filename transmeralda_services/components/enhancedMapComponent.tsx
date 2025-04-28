@@ -491,32 +491,67 @@ const EnhancedMapComponent = ({
   };
 
   const clearMapObjects = () => {
-    // Clear existing markers
-    Object.values(markersRef.current).forEach((marker) => {
-      if (marker && typeof marker.remove === "function") marker.remove();
+    if (!map.current) return;
+    
+    // Asegurarnos de limpiar todos los marcadores completamente
+    try {
+      // Limpiar marcador de origen si existe
+      if (markersRef.current.origen) {
+        markersRef.current.origen.remove();
+        markersRef.current.origen = undefined;
+      }
+      
+      // Limpiar marcador de destino si existe
+      if (markersRef.current.destino) {
+        markersRef.current.destino.remove();
+        markersRef.current.destino = undefined;
+      }
+      
+      // Específicamente, SIEMPRE limpiar el marcador de vehículo principal si existe
+      if (markersRef.current.vehicle) {
+        try {
+          markersRef.current.vehicle.remove();
+        } catch (err) {
+          console.log("Error al remover marcador de vehículo:", err);
+        }
+        markersRef.current.vehicle = undefined;
+      }
+      
+      // Limpiar marcadores de vehículos activos
+      markersRef.current.activeVehicles.forEach((marker) => {
+        try {
+          marker.remove();
+        } catch (err) {
+          console.error("Error removing active vehicle marker:", err);
+        }
+      });
+      markersRef.current.activeVehicles.clear();
+    } catch (err) {
+      console.error("Error clearing markers:", err);
+    }
+    
+    // Limpiar fuentes y capas del mapa de manera segura
+    const sourcesToRemove = ["route", "active-route", "original-route"];
+    sourcesToRemove.forEach(source => {
+      try {
+        if (map.current?.getLayer(source)) {
+          map.current.removeLayer(source);
+        }
+        if (map.current?.getSource(source)) {
+          map.current.removeSource(source);
+        }
+      } catch (err) {
+        console.error(`Error removing ${source}:`, err);
+      }
     });
-    markersRef.current.activeVehicles.forEach((marker) => marker.remove());
-    markersRef.current.activeVehicles.clear();
-    markersRef.current.origen = undefined;
-    markersRef.current.destino = undefined;
-    markersRef.current.vehicle = undefined;
-
-    // Clear existing route layers if they exist
-    if (map.current?.getSource("route")) {
-      map.current.removeLayer("route");
-      map.current.removeSource("route");
-    }
-
-    // Clear active route (vehicle to destination) if it exists
-    if (map.current?.getSource("active-route")) {
-      map.current.removeLayer("active-route");
-      map.current.removeSource("active-route");
-    }
-
-    // Clear original route if it exists (used for "en curso" services)
-    if (map.current?.getSource("original-route")) {
-      map.current.removeLayer("original-route");
-      map.current.removeSource("original-route");
+    
+    // Cerrar cualquier popup abierto
+    try {
+      document.querySelectorAll(".mapboxgl-popup").forEach(popup => {
+        popup.remove();
+      });
+    } catch (err) {
+      console.error("Error removing popups:", err);
     }
   };
 
@@ -547,11 +582,12 @@ const EnhancedMapComponent = ({
     }
   };
 
+  // Verificar cambios en el servicio seleccionado para forzar re-renderizado
   useEffect(() => {
     // Validación inicial
     if (!isMapLoaded || !map.current || !selectedServicio) return;
-
-    // Limpiar marcadores y rutas previas
+    
+    // Siempre limpiar completamente todos los objetos del mapa
     clearMapObjects();
 
     // Crear bounds para ajustar la vista del mapa
@@ -735,6 +771,7 @@ const EnhancedMapComponent = ({
 
     // 5. Mostrar panel de detalles
     setDetallesVisible(true);
+  // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
   }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
@@ -834,6 +871,52 @@ const EnhancedMapComponent = ({
     createVehicleMarker,
     fetchMapboxRoute,
   ]);
+  
+  // Limpiar el mapa cuando modalAgregar cambia o cuando no hay servicio seleccionado
+  const { modalAgregar } = useService();
+  useEffect(() => {
+    // Limpiar mapa cuando se abre el modal o cuando no hay servicio seleccionado
+    if ((modalAgregar || !selectedServicio) && map.current) {
+      // Limpiar completamente todos los elementos del mapa
+      clearMapObjects();
+      setDetallesVisible(false);
+      
+      // Si no hay modal abierto y no hay servicio seleccionado, mostrar solo los marcadores pulsantes de vehículos en curso
+      if (!modalAgregar && !selectedServicio && activeVehiclesData.length > 0) {
+        // Recrear SOLO los marcadores de vehículos activos con servicios en estado "en curso"
+        activeVehiclesData.forEach((data: VehicleMarkerData) => {
+          // Verificar que el servicio esté en curso antes de crear el marcador
+          if (data.service.estado === "en curso") {
+            const marker = createPulsingVehicleMarker(data.vehicle, data.service);
+            if (marker) {
+              markersRef.current.activeVehicles.set(
+                data.vehicle.id.toString(),
+                marker
+              );
+            }
+          }
+        });
+        
+        // Ajustar el mapa para mostrar todos los vehículos activos
+        if (map.current && activeVehiclesData.length > 0) {
+          const bounds = new mapboxgl.LngLatBounds();
+          activeVehiclesData.forEach((data) => {
+            // Solo incluir en los bounds los vehículos con servicios en curso
+            if (data.service.estado === "en curso") {
+              bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
+            }
+          });
+          
+          if (!bounds.isEmpty()) {
+            map.current.fitBounds(bounds, {
+              padding: 100,
+              maxZoom: 14,
+            });
+          }
+        }
+      }
+    }
+  }, [modalAgregar, selectedServicio, activeVehiclesData]);
 
   const formatTime = (date: Date | string) => {
     if (!date) return "-";
@@ -862,24 +945,32 @@ const EnhancedMapComponent = ({
     // Reset marker creation flag to allow fresh creation
     markersCreatedRef.current = false;
 
-    // Force re-render of active vehicles after clearing service
+    // Force re-render of active vehicles after clearing service - show only pulsing markers for active services
     if (activeVehiclesData.length > 0 && map.current) {
       setTimeout(() => {
         if (!map.current) return;
 
-        // First make sure all existing markers are removed
+        // First make sure all existing markers are removed (including vehicle marker)
         markersRef.current.activeVehicles.forEach((marker) => marker.remove());
         markersRef.current.activeVehicles.clear();
+        
+        // Also specifically clear vehicle marker if it exists
+        if (markersRef.current.vehicle) {
+          markersRef.current.vehicle.remove();
+          markersRef.current.vehicle = undefined;
+        }
 
-        // Create markers for all active vehicles
+        // Create markers ONLY for active vehicles with services "en curso"
         activeVehiclesData.forEach((data: VehicleMarkerData) => {
-          const marker = createPulsingVehicleMarker(data.vehicle, data.service);
-
-          if (marker) {
-            markersRef.current.activeVehicles.set(
-              data.vehicle.id.toString(),
-              marker,
-            );
+          // Solo crear marcador si el servicio está en curso
+          if (data.service.estado === "en curso") {
+            const marker = createPulsingVehicleMarker(data.vehicle, data.service);
+            if (marker) {
+              markersRef.current.activeVehicles.set(
+                data.vehicle.id.toString(),
+                marker,
+              );
+            }
           }
         });
 
@@ -891,22 +982,33 @@ const EnhancedMapComponent = ({
           const bounds = new mapboxgl.LngLatBounds();
 
           activeVehiclesData.forEach((data) => {
-            bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
+            if (data.service.estado === "en curso") {
+              bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
+            }
           });
 
-          map.current.fitBounds(bounds, {
-            padding: 100,
-            maxZoom: 14,
-          });
+          if (!bounds.isEmpty()) {
+            map.current.fitBounds(bounds, {
+              padding: 100,
+              maxZoom: 14,
+            });
+          }
         }
       }, 100); // Short delay to ensure state is updated
     }
   };
   
   const handleButtonPress = (e: PressEvent) => {
-    handleModalAdd();
+    // Primero limpiar el mapa completamente
+    clearMapObjects();
+    setDetallesVisible(false);
+    
+    // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
+    setTimeout(() => {
+      // Abrir el modal de agregar servicio
+      handleModalAdd();
+    }, 50);
   };
-  
 
   return (
     <div className="h-full w-full relative">

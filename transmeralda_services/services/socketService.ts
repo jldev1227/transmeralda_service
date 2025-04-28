@@ -1,5 +1,4 @@
 // src/services/socketService.ts
-import { addToast } from "@heroui/toast";
 import { io, Socket } from "socket.io-client";
 
 class SocketService {
@@ -49,25 +48,12 @@ class SocketService {
       this.socket.on("error", this.handleError);
     } catch (error: any) {
       console.error("Error al crear conexión Socket.IO:", error);
-      addToast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Error al conectar con el socket",
-        color: "danger",
-      });
     }
   }
 
   // Manejador de conexión exitosa
   private handleConnect = () => {
     console.log("Socket conectado");
-    addToast({
-      title: "Conectado",
-      description: "Conexión en tiempo real establecida correctamente",
-      color: "success",
-    });
     this.reconnectAttempts = 0; // Resetear conteo de intentos al conectar
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -79,13 +65,6 @@ class SocketService {
   private handleConnectError = (error: any) => {
     console.error("Error de conexión Socket.IO:", error);
     
-    // Mostrar toast de error
-    addToast({
-      title: "Error de conexión",
-      description: "No se pudo establecer la conexión en tiempo real. Intentando reconectar...",
-      color: "danger",
-    });
-
     // Intentar reconectar con estrategia diferente
     this.disconnect();
     this.attemptReconnect();
@@ -93,13 +72,6 @@ class SocketService {
 
   // Manejador de desconexión
   private handleDisconnect = (reason: string) => {
-    // Mostrar toast de error por desconexión
-    addToast({
-      title: "Desconexión",
-      description: "Se ha perdido la conexión con el servidor. Intentando reconectar...",
-      color: "danger",
-    });
-
     // Intentar reconectar si la desconexión no fue intencional
     if (reason !== "io client disconnect" && this.userId) {
       this.attemptReconnect();
@@ -109,13 +81,6 @@ class SocketService {
   // Manejador de errores generales
   private handleError = (error: any) => {
     console.error("Error en Socket.IO:", error);
-    
-    // Mostrar toast de error
-    addToast({
-      title: "Error del socket",
-      description: "Ha ocurrido un error en la conexión en tiempo real",
-      color: "danger",
-    });
   };
 
   // Lógica de reconexión manual
@@ -153,11 +118,7 @@ class SocketService {
         }
       }, delay);
     } else {
-      addToast({
-        title: "Error",
-        description: "No se pudo establecer la conexión en tiempo real",
-        color: "danger",
-      });
+    console.error("No se pudo establecer la conexión en tiempo real")
     }
   };
 

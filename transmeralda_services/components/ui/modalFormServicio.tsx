@@ -162,6 +162,8 @@ export default function ModalFormServicio() {
     registrarServicio,
     actualizarServicio,
     actualizarEstadoServicio,
+    clearSelectedServicio, // Añadimos esta función para limpiar manualmente el servicio seleccionado
+    selectedServicio // Añadimos para verificar si hay un servicio seleccionado
   } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -241,6 +243,14 @@ export default function ModalFormServicio() {
   // Estado para controlar si se puede editar el servicio
   const [isReadOnly, setIsReadOnly] = useState(false);
 
+  // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
+  useEffect(() => {
+    // Si el modal se abrió, limpiar inmediatamente el servicio seleccionado
+    if (modalAgregar && selectedServicio !== null) {
+      clearSelectedServicio();
+    }
+  }, [modalAgregar, clearSelectedServicio, selectedServicio]);
+  
   // Cargar datos del servicio cuando estamos en modo edición
   useEffect(() => {
     // Si el modal está abierto y es para editar
@@ -416,6 +426,12 @@ export default function ModalFormServicio() {
     setError(null);
 
     try {
+      // Asegurarse de limpiar el servicio seleccionado primero
+      // para asegurar que el mapa se limpie completamente
+      if (selectedServicio !== null) {
+        clearSelectedServicio();
+      }
+
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
       const servicioData: CreateServicioDTO = {
         origen_id: selectedOriginMun,
@@ -440,6 +456,7 @@ export default function ModalFormServicio() {
       if (isEditing && servicio?.id) {
         // Si estamos editando, actualizamos el servicio existente
         await actualizarServicio(servicio.id, servicioData);
+        
         addToast({
           title: "Éxito",
           description: "Servicio actualizado correctamente",
@@ -448,13 +465,14 @@ export default function ModalFormServicio() {
       } else {
         // Si estamos creando uno nuevo, registramos el servicio
         await registrarServicio(servicioData);
+        
         addToast({
           title: "Éxito",
           description: "Servicio registrado correctamente",
           color: "success",
         });
       }
-
+      
       // Cerrar el modal después de la operación exitosa
       handleModalAdd();
       resetFormStates();
@@ -531,6 +549,11 @@ export default function ModalFormServicio() {
         isOpen={modalAgregar}
         size={"5xl"}
         onClose={() => {
+          // Primero limpiar el servicio seleccionado para eliminar cualquier ruta/marcador en el mapa
+          if (selectedServicio) {
+            clearSelectedServicio();
+          }
+          // Luego cerrar el modal
           handleModalAdd();
           resetFormStates();
         }}

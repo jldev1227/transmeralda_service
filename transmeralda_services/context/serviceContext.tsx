@@ -593,17 +593,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   };
 
   const handleModalAdd = (servicio?: ServicioConRelaciones | null) => {
-    // Si el modal se está cerrando (actualmente está abierto), restablecer los valores
-    if (modalAgregar) {
-      // Retraso para asegurar que la animación de cierre funcione correctamente
-      setTimeout(() => {
-        setServicioEditar({
-          servicio: null,
-          isEditing: false,
-        });
-      }, 300);
-    } else {
-      // Si se está abriendo el modal
+    // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si 
+    // el modal se está abriendo o cerrando. Esto evita problemas de referencia.
+    clearSelectedServicio();
+    
+    // Si el modal se está abriendo (actualmente está cerrado)
+    if (!modalAgregar) {
+      // Configurar el servicio para edición si se proporcionó uno
       if (servicio) {
         setServicioEditar({
           servicio: servicio,
@@ -615,8 +611,19 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           isEditing: false,
         });
       }
+    } 
+    // Si el modal se está cerrando (actualmente está abierto)
+    else {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioEditar({
+          servicio: null,
+          isEditing: false,
+        });
+      }, 300);
     }
 
+    // Cambiar el estado del modal
     setModalAgregar(!modalAgregar);
   };
 
@@ -673,8 +680,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setVehicleTracking(null);
     setTrackingError("");
   }, []);
-  
-  
+
   // Inicializar Socket.IO cuando el usuario esté autenticado
   useEffect(() => {
     if (user?.id) {
@@ -704,17 +710,217 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
-      // Registrar manejadores de eventos
+      // Manejadores para eventos de servicios
+      const handleServicioCreado = (data: ServicioConRelaciones) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:creado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Añadir a la lista principal de servicios
+        setServicios(prevServicios => [data, ...prevServicios]);
+        
+        // Añadir a serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes(prevServicios => [data, ...prevServicios]);
+        }
+        
+        addToast({
+          title: "Nuevo servicio",
+          description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico}`,
+          color: "success",
+        });
+      };
+
+      const handleServicioActualizado = (data: ServicioConRelaciones) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:actualizado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Actualizar en la lista de servicios
+        setServicios(prevServicios => 
+          prevServicios.map(s => s.id === data.id ? data : s)
+        );
+        
+        // Si es el servicio seleccionado actualmente, actualizarlo
+        if (selectedServicio?.id === data.id) {
+          setSelectedServicio(data);
+        }
+        
+        // Actualizar en serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes(prevServicios => 
+            prevServicios.map(s => s.id === data.id ? data : s)
+          );
+        }
+        
+        addToast({
+          title: "Servicio actualizado",
+          description: `El servicio hacia ${data.destino_especifico} ha sido actualizado`,
+          color: "primary",
+        });
+      };
+
+      const handleServicioAsignado = (data: { servicio: ServicioConRelaciones, conductorId: string }) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:asignado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Solo mostrar notificación si es relevante para el conductor actual
+        if (user.id === data.conductorId) {
+          addToast({
+            title: "Servicio asignado",
+            description: `Se te ha asignado un servicio hacia ${data.servicio.destino_especifico}`,
+            color: "success",
+          });
+        }
+      };
+
+      const handleServicioDesasignado = (data: { servicio: ServicioConRelaciones, conductorId: string }) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:desasignado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Solo mostrar notificación si es relevante para el conductor actual
+        if (user.id === data.conductorId) {
+          addToast({
+            title: "Servicio retirado",
+            description: `Ya no estás asignado al servicio hacia ${data.servicio.destino_especifico}`,
+            color: "warning",
+          });
+        }
+      };
+
+      const handleServicioEliminado = (data: { servicioId: string, conductorId?: string }) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:eliminado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Eliminar de la lista principal de servicios
+        setServicios(prevServicios => 
+          prevServicios.filter(s => s.id !== data.servicioId)
+        );
+        
+        // Si es el servicio seleccionado actualmente, limpiarlo
+        if (selectedServicio?.id === data.servicioId) {
+          clearSelectedServicio();
+        }
+        
+        // Eliminar de serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes(prevServicios => 
+            prevServicios.filter(s => s.id !== data.servicioId)
+          );
+        }
+        
+        // Notificación específica para el conductor si aplica
+        if (data.conductorId && user.id === data.conductorId) {
+          addToast({
+            title: "Servicio eliminado",
+            description: "Un servicio asignado a ti ha sido eliminado",
+            color: "danger",
+          });
+        } else {
+          addToast({
+            title: "Servicio eliminado",
+            description: "Se ha eliminado un servicio del sistema",
+            color: "danger",
+          });
+        }
+      };
+
+      const handleServicioEstadoActualizado = (data: { servicio: ServicioConRelaciones, estadoAnterior: EstadoServicio }) => {
+        setSocketEventLogs(prev => [...prev, {
+          eventName: 'servicio:estado-actualizado',
+          data,
+          timestamp: new Date()
+        }]);
+        
+        // Actualizar en la lista principal de servicios
+        setServicios(prevServicios => 
+          prevServicios.map(s => s.id === data.servicio.id ? data.servicio : s)
+        );
+        
+        // Si es el servicio seleccionado actualmente, actualizarlo
+        if (selectedServicio?.id === data.servicio.id) {
+          setSelectedServicio(data.servicio);
+        }
+        
+        // Actualizar en serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes(prevServicios => 
+            prevServicios.map(s => s.id === data.servicio.id ? data.servicio : s)
+          );
+        }
+        
+        // Mensaje personalizado según el estado
+        let mensaje = "";
+        let color: "success" | "warning" | "primary" | "danger" = "primary";
+        
+        switch (data.servicio.estado) {
+          case "en curso":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} está en curso`;
+            color = "success";
+            break;
+          case "realizado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido completado`;
+            color = "success";
+            break;
+          case "cancelado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido cancelado`;
+            color = "danger";
+            break;
+          case "planificado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido planificado`;
+            color = "warning";
+            break;
+          default:
+            mensaje = `El estado del servicio hacia ${data.servicio.destino_especifico} ha cambiado a ${data.servicio.estado}`;
+        }
+        
+        addToast({
+          title: "Estado de servicio actualizado",
+          description: mensaje,
+          color: color,
+        });
+      };
+
+      // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);
       socketService.on("disconnect", handleDisconnect);
+      
+      // Registrar manejadores de eventos de servicios
+      socketService.on("servicio:creado", handleServicioCreado);
+      socketService.on("servicio:actualizado", handleServicioActualizado);
+      socketService.on("servicio:asignado", handleServicioAsignado);
+      socketService.on("servicio:desasignado", handleServicioDesasignado);
+      socketService.on("servicio:eliminado", handleServicioEliminado);
+      socketService.on("servicio:estado-actualizado", handleServicioEstadoActualizado);
 
       return () => {
         // Limpiar al desmontar
         socketService.off("connect");
         socketService.off("disconnect");
+        
+        // Limpiar manejadores de eventos de servicios
+        socketService.off("servicio:creado");
+        socketService.off("servicio:actualizado");
+        socketService.off("servicio:asignado");
+        socketService.off("servicio:desasignado");
+        socketService.off("servicio:eliminado");
+        socketService.off("servicio:estado-actualizado");
       };
     }
-  }, [user?.id]);
+  }, [user?.id, selectedServicio, clearSelectedServicio]);
 
    // Función para limpiar el registro de eventos de socket
    const clearSocketEventLogs = useCallback(() => {

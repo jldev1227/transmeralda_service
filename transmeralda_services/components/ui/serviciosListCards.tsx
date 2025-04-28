@@ -20,7 +20,7 @@ const ServiciosListCards = ({
   getStatusText,
   formatearFecha,
 }: ServiciosListCardsProps) => {
-  const { handleModalAdd } = useService();
+  const { handleModalAdd, clearSelectedServicio } = useService();
 
   // Función para manejar el evento de edición
   const handleEdit = (
@@ -33,8 +33,15 @@ const ServiciosListCards = ({
     if (servicio.estado === "realizado" || servicio.estado === "cancelado") {
       return;
     }
-
-    handleModalAdd(servicio); // Abre el modal con el servicio a editar
+    
+    // Primero limpiar forzosamente el servicio seleccionado antes de abrir el modal
+    // Esto asegura que el mapa se limpie completamente
+    clearSelectedServicio();
+    
+    // Después de limpiar, abrimos el modal con el servicio a editar
+    setTimeout(() => {
+      handleModalAdd(servicio);
+    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
   };
 
   // Determinar si se debe mostrar el botón de edición
@@ -59,6 +66,8 @@ const ServiciosListCards = ({
         return "";
     }
   };
+
+  console.log(selectedServicio)
 
   return (
     <div className="servicios-slider-container space-y-3">

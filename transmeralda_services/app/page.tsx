@@ -78,9 +78,7 @@ const AdvancedDashboard = () => {
   const [token] = useState(WIALON_API_TOKEN);
 
   // State
-  const { servicios, socketConnected } = useService();
-  const [selectedServicio, setSelectedServicio] =
-    useState<ServicioConRelaciones | null>(null);
+  const { servicios, socketConnected, selectedServicio, setSelectedServicio } = useService();
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =

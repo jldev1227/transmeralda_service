@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 
 import { useService } from "@/context/serviceContext";
@@ -49,10 +49,20 @@ const TrackerPage = () => {
     trackingError,
     selectServicio,
     setSelectedServicio,
+    socketConnected, // Añadimos para detectar eventos socket
+    modalAgregar, // Añadimos para detectar apertura/cierre del modal
   } = useService();
 
   // Estado de error de comunicación
   const [error, setError] = useState<string | null>(null);
+  
+  // Clave para forzar re-renderizado del mapa
+  const [mapKey, setMapKey] = useState(1);
+  
+  // Forzar re-renderizado cuando se cierra el modal o cambia el servicio seleccionado
+  useEffect(() => {
+    setMapKey(prev => prev + 1);
+  }, [modalAgregar, selectedServicio]);
 
   // Envía peticiones a la API de Wialon
   const onWialonRequest = useCallback(
@@ -129,7 +139,9 @@ const TrackerPage = () => {
         </div>
 
         <div className="flex-grow">
+          {/* Usar key para forzar re-renderizado completo del componente */}
           <EnhancedMapComponent
+            key={mapKey} // Clave que cambia cuando se actualiza un servicio
             getServiceTypeText={getServiceTypeText}
             getStatusText={getStatusText}
             handleServicioClick={handleServicioClick}
