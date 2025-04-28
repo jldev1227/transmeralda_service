@@ -12,7 +12,7 @@ import {
   VehicleTracking,
   ServicioConRelaciones,
 } from "@/context/serviceContext";
-import ModalAgregarServicio from "@/components/ui/modalAgregarServicio";
+import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosSlider from "@/components/ui/serviciosSlider";
 
@@ -439,7 +439,7 @@ const AdvancedDashboard = () => {
           wialonToken={WIALON_API_TOKEN}
           onWialonRequest={callWialonApi}
         />
-        <ModalAgregarServicio />
+        <ModalFormServicio />
       </div>
 
       {/* Floating toggle button for mobile */}

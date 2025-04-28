@@ -166,11 +166,31 @@ const BuildingOfficeIcon = () => (
   </svg>
 );
 
-export default function App() {
-  const { municipios, conductores, vehiculos, empresas, modalAgregar, handleModalAdd } = useService();
-  const { setError, registrarServicio } = useService();
+export default function ModalFormServicio() {
+  const { municipios, conductores, vehiculos, empresas, modalAgregar, handleModalAdd, servicioEditar } = useService();
+  const { setError, registrarServicio, actualizarServicio } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
+  const { servicio, isEditing } = servicioEditar;
+  
+  // Función para limpiar todos los estados del formulario
+  const resetFormStates = () => {
+    setCurrentStep(1);
+    setCliente("");
+    setConductorSelected("");
+    setVehicleSelected("");
+    setFechaSolicitud(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
+    setFechaRealizacion(parseZonedDateTime(`${new Date().toISOString().split('T')[0]}T${new Date().toTimeString().split(' ')[0]}[America/Bogota]`));
+    setSelectedOriginMun("");
+    setSelectedDestMun("");
+    setOriginSpecific("");
+    setDestSpecific("");
+    setOriginCoords({ lat: 0, lng: 0 });
+    setDestCoords({ lat: 0, lng: 0 });
+    setPurpose("");
+    setState("solicitado");
+    setObservaciones("");
+  };
 
   // State for cliente selected
   const [clienteSelected, setCliente] = useState("");
@@ -199,10 +219,6 @@ export default function App() {
   const [originCoords, setOriginCoords] = useState({ lat: 0, lng: 0 });
   const [destCoords, setDestCoords] = useState({ lat: 0, lng: 0 });
 
-  useEffect(() => {
-    console.log(originSpecific);
-  }, [originSpecific]);
-
   // purpose
   const [purpose, setPurpose] = useState("");
 
@@ -211,6 +227,61 @@ export default function App() {
 
   // state
   const [observaciones, setObservaciones] = useState<string>("");
+
+  console.log(servicio)
+  
+  // Cargar datos del servicio cuando estamos en modo edición
+  useEffect(() => {
+    // Si el modal está abierto y es para editar
+    if (modalAgregar && isEditing && servicio) {
+      // Llenar los campos con la información del servicio
+      setCliente(servicio.cliente_id || "");
+      setConductorSelected(servicio.conductor_id || "");
+      setVehicleSelected(servicio.vehiculo_id || "");
+      
+      // Convertir fechas a objetos ZonedDateTime
+      if (servicio.fecha_solicitud) {
+        const fechaSolDate = new Date(servicio.fecha_solicitud);
+        setFechaSolicitud(parseZonedDateTime(
+          `${fechaSolDate.toISOString().split('T')[0]}T${fechaSolDate.toTimeString().split(' ')[0]}[America/Bogota]`
+        ));
+      }
+      
+      if (servicio.fecha_realizacion) {
+        const fechaRealDate = new Date(servicio.fecha_realizacion);
+        setFechaRealizacion(parseZonedDateTime(
+          `${fechaRealDate.toISOString().split('T')[0]}T${fechaRealDate.toTimeString().split(' ')[0]}[America/Bogota]`
+        ));
+      }
+      
+      setSelectedOriginMun(servicio.origen_id || "");
+      setSelectedDestMun(servicio.destino_id || "");
+      setOriginSpecific(servicio.origen_especifico || "");
+      setDestSpecific(servicio.destino_especifico || "");
+      
+      // Coordenadas
+      if (servicio.origen_latitud && servicio.origen_longitud) {
+        setOriginCoords({ 
+          lat: servicio.origen_latitud, 
+          lng: servicio.origen_longitud 
+        });
+      }
+      
+      if (servicio.destino_latitud && servicio.destino_longitud) {
+        setDestCoords({ 
+          lat: servicio.destino_latitud, 
+          lng: servicio.destino_longitud 
+        });
+      }
+      
+      setPurpose(servicio.tipo_servicio || "");
+      setState(servicio.estado || "solicitado");
+      setObservaciones(servicio.observaciones || "");
+    } else if (!modalAgregar) {
+      // Si el modal está cerrado, resetear los estados
+      resetFormStates();
+    }
+  }, [modalAgregar, isEditing, servicio]);
 
   // Función para manejar el cambio de origen específico con coordenadas
   const handleOriginSpecificChange = (
@@ -328,20 +399,44 @@ export default function App() {
 
       console.log(servicioData);
 
-      // Llamar a la función para registrar el servicio
-      await registrarServicio(servicioData);
-
-      // Opcional: Mostrar notificación de éxito
-      alert("¡Servicio registrado exitosamente!");
+      if (isEditing && servicio?.id) {
+        // Si estamos editando, actualizamos el servicio existente
+        await actualizarServicio(servicio.id, servicioData);
+        addToast({
+          title: "Éxito",
+          description: "Servicio actualizado correctamente",
+          color: "success",
+        });
+      } else {
+        // Si estamos creando uno nuevo, registramos el servicio
+        await registrarServicio(servicioData);
+        addToast({
+          title: "Éxito",
+          description: "Servicio registrado correctamente",
+          color: "success",
+        });
+      }
+      
+      // Cerrar el modal después de la operación exitosa
+      handleModalAdd();
+      resetFormStates();
     } catch (error) {
       // Manejar errores
-      console.error("Error al registrar el servicio:", error);
+      console.error(isEditing ? "Error al actualizar el servicio:" : "Error al registrar el servicio:", error);
 
       setError(
         error instanceof Error
           ? error.message
-          : "Error desconocido al registrar el servicio",
+          : isEditing 
+            ? "Error desconocido al actualizar el servicio"
+            : "Error desconocido al registrar el servicio",
       );
+      
+      addToast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error al procesar el servicio",
+        color: "danger",
+      });
     }
   };
 
@@ -386,12 +481,18 @@ export default function App() {
 
   return (
     <>
-      <Modal isOpen={modalAgregar} size={"5xl"} onClose={handleModalAdd}>
+      <Modal 
+        isOpen={modalAgregar} 
+        size={"5xl"} 
+        onClose={() => {
+          handleModalAdd();
+          resetFormStates();
+        }}>
         <ModalContent className="p-6">
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                Registro de servicio
+                {isEditing ? 'Editar servicio' : 'Registro de servicio'}
               </ModalHeader>
               <ModalBody className="space-y-4">
                 {/* Step Progress Bar */}
@@ -1120,7 +1221,7 @@ export default function App() {
                         className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                         type="submit"
                       >
-                        Registrar Servicio
+                        {isEditing ? 'Actualizar Servicio' : 'Registrar Servicio'}
                       </button>
                     )}
                   </div>

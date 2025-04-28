@@ -1,6 +1,6 @@
 // components/GooglePlacesInput.tsx
 import React, { useRef, useEffect } from "react";
-import { LocationMarkerIcon } from "./modalAgregarServicio";
+import { LocationMarkerIcon } from "./modalFormServicio";
 
 interface GooglePlacesInputProps {
   label: string;

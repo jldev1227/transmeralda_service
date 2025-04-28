@@ -47,6 +47,11 @@ export interface SocketEventLog {
   timestamp: Date;
 }
 
+export interface ServicioEditar {
+  servicio: ServicioConRelaciones | null;
+  isEditing: boolean;
+}
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
@@ -58,6 +63,7 @@ interface ServiceContextType {
   empresas: Empresa[];
   loading: boolean;
   registrarServicio: (servicioData: CreateServicioDTO) => void;
+  actualizarServicio: (id: string, servicioData: CreateServicioDTO) => Promise<ServicioConRelaciones>;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
@@ -76,10 +82,11 @@ interface ServiceContextType {
   >;
 
   // modalStates
-  modalAgregar: boolean
+  modalAgregar: boolean;
+  servicioEditar: ServicioEditar;
 
   // handle Modals
-  handleModalAdd: ()=>void
+  handleModalAdd: (servicio?: ServicioConRelaciones | null) => void;
 
   // Nuevas propiedades para Socket.IO
   socketConnected?: boolean;
@@ -329,6 +336,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [modalAgregar, setModalAgregar] = useState(false);
+  const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
+    servicio: null,
+    isEditing: false
+  });
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -511,9 +522,93 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       }
     }
   };
+  
+  const actualizarServicio = async (
+    id: string,
+    servicioData: CreateServicioDTO,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición PUT al endpoint de servicios
+      const response = await apiClient.put<ApiResponse<ServicioConRelaciones>>(
+        `/api/servicios/${id}`,
+        servicioData,
+      );
 
-  const handleModalAdd = ()=>{
-    setModalAgregar(!modalAgregar)
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al actualizar el servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Error desconocido al actualizar el servicio");
+      }
+    }
+  };
+  
+  const actualizarEstadoServicio = async (
+    id: string,
+    estado: EstadoServicio,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición PATCH al endpoint de servicios
+      const response = await apiClient.patch<ApiResponse<ServicioConRelaciones>>(
+        `/api/servicios/${id}/estado`,
+        { estado },
+      );
+
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al actualizar el estado del servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Error desconocido al actualizar el estado del servicio");
+      }
+    }
+  };
+
+  const handleModalAdd = (servicio?: ServicioConRelaciones | null) => {
+    // Si el modal se está cerrando (actualmente está abierto), restablecer los valores
+    if (modalAgregar) {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioEditar({
+          servicio: null,
+          isEditing: false
+        });
+      }, 300);
+    } else {
+      // Si se está abriendo el modal
+      if (servicio) {
+        setServicioEditar({
+          servicio: servicio,
+          isEditing: true
+        });
+      } else {
+        setServicioEditar({
+          servicio: null,
+          isEditing: false
+        });
+      }
+    }
+    
+    setModalAgregar(!modalAgregar);
   }
 
   useEffect(() => {
@@ -589,9 +684,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
     // Modals state
     modalAgregar,
+    servicioEditar,
 
     // handles Modal
     handleModalAdd,
+    actualizarServicio,
+    actualizarEstadoServicio,
     
   };
 

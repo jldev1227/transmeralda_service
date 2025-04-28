@@ -1,4 +1,5 @@
 import { Edit } from 'lucide-react';
+import { useService } from '@/context/serviceContext';
 
 const ServiciosSlider = ({
     filteredServicios,
@@ -8,13 +9,24 @@ const ServiciosSlider = ({
     getStatusText,
     formatearFecha
 }) => {
+    const { handleModalAdd } = useService();
 
     // Función para manejar el evento de edición
     const handleEdit = (e, servicio) => {
         e.stopPropagation(); // Evita que se active también el onClick del contenedor
-        console.log("editando servicio", servicio.id);
+        
+        // No mostrar botón de edición si el servicio está completado o cancelado
+        if (servicio.estado === 'realizado' || servicio.estado === 'cancelado') {
+            return;
+        }
+        
+        handleModalAdd(servicio); // Abre el modal con el servicio a editar
     };
-
+    
+    // Determinar si se debe mostrar el botón de edición
+    const shouldShowEditButton = (servicio) => {
+        return servicio.estado !== 'realizado' && servicio.estado !== 'cancelado';
+    };
 
     return (
         <div className="servicios-slider-container space-y-3">
@@ -26,18 +38,20 @@ const ServiciosSlider = ({
                 >
                     <div
                         className={`select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative ${selectedServicio?.id === servicio.id
-                                ? "border-blue-500 bg-blue-50"
+                                ? "border-emerald-500 bg-emerald-50"
                                 : ""
                             }`}
                         onClick={() => handleSelectServicio(servicio)}
                     >
-                        {/* Botón de edición que aparece al deslizar/hover */}
-                        <div
-                            className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={(e) => handleEdit(e, servicio)}
-                        >
-                            <Edit size={16} />
-                        </div>
+                        {/* Botón de edición que aparece al deslizar/hover (solo si no está realizado o cancelado) */}
+                        {shouldShowEditButton(servicio) && (
+                            <div
+                                className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => handleEdit(e, servicio)}
+                            >
+                                <Edit size={16} />
+                            </div>
+                        )}
                         <div className="flex justify-between items-start mb-2">
                             <div className="overflow-hidden">
                                 <div className="font-semibold truncate">
