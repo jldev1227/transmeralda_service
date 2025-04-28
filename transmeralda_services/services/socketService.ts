@@ -14,6 +14,7 @@ class SocketService {
   private getSocketUrl(): string {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://api.transmeralda.com";
 
+    console.log(url)
     return url;
   }
 
@@ -61,9 +62,10 @@ class SocketService {
 
   // Manejador de conexión exitosa
   private handleConnect = () => {
+    console.log("Socket conectado");
     addToast({
-      title: "Éxito",
-      description: "Conexión en tiempo real establecida",
+      title: "Conectado",
+      description: "Conexión en tiempo real establecida correctamente",
       color: "success",
     });
     this.reconnectAttempts = 0; // Resetear conteo de intentos al conectar
@@ -76,6 +78,13 @@ class SocketService {
   // Manejador de error de conexión
   private handleConnectError = (error: any) => {
     console.error("Error de conexión Socket.IO:", error);
+    
+    // Mostrar toast de error
+    addToast({
+      title: "Error de conexión",
+      description: "No se pudo establecer la conexión en tiempo real. Intentando reconectar...",
+      color: "danger",
+    });
 
     // Intentar reconectar con estrategia diferente
     this.disconnect();
@@ -84,6 +93,13 @@ class SocketService {
 
   // Manejador de desconexión
   private handleDisconnect = (reason: string) => {
+    // Mostrar toast de error por desconexión
+    addToast({
+      title: "Desconexión",
+      description: "Se ha perdido la conexión con el servidor. Intentando reconectar...",
+      color: "danger",
+    });
+
     // Intentar reconectar si la desconexión no fue intencional
     if (reason !== "io client disconnect" && this.userId) {
       this.attemptReconnect();
@@ -93,6 +109,13 @@ class SocketService {
   // Manejador de errores generales
   private handleError = (error: any) => {
     console.error("Error en Socket.IO:", error);
+    
+    // Mostrar toast de error
+    addToast({
+      title: "Error del socket",
+      description: "Ha ocurrido un error en la conexión en tiempo real",
+      color: "danger",
+    });
   };
 
   // Lógica de reconexión manual

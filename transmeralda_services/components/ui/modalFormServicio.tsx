@@ -246,6 +246,7 @@ export default function ModalFormServicio() {
     // Si el modal está abierto y es para editar
     if (modalAgregar && isEditing && servicio) {
       // Determinar si el servicio está en estado no editable
+      // Se permite la edición para servicios en estado 'en curso'
       const isServiceReadOnly =
         servicio.estado === "realizado" || servicio.estado === "cancelado";
 
@@ -1338,15 +1339,12 @@ export default function ModalFormServicio() {
                       {/* Step 4: Status */}
                       {currentStep === 4 && (
                         <div className="space-y-6 animate-fadeIn">
-                          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
-                            Estado del Servicio
-                          </h3>
                           <div className="relative">
                             <label
                               className="block text-sm font-medium text-gray-700 mb-1"
                               htmlFor="status"
                             >
-                              Estado Inicial del Servicio
+                              Estado del Servicio
                             </label>
                             <div className="relative">
                               {/* Optional: Add an icon here */}
@@ -1383,6 +1381,12 @@ export default function ModalFormServicio() {
                                   textValue="Planificado"
                                 >
                                   Planificado
+                                </SelectItem>
+                                <SelectItem
+                                  key="en curso"
+                                  textValue="En curso"
+                                >
+                                  En curso
                                 </SelectItem>
                               </Select>
                             </div>

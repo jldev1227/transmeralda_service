@@ -10,6 +10,9 @@ import React, {
 import { LatLngExpression, LatLngTuple } from "leaflet";
 
 import { apiClient } from "@/config/apiClient";
+import socketService from "@/services/socketService";
+import { useAuth } from "./AuthContext";
+import { addToast } from "@heroui/toast";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -90,10 +93,12 @@ interface ServiceContextType {
   // handle Modals
   handleModalAdd: (servicio?: ServicioConRelaciones | null) => void;
 
-  // Nuevas propiedades para Socket.IO
-  socketConnected?: boolean;
-  socketEventLogs?: SocketEventLog[];
-  clearSocketEventLogs?: () => void;
+  // Propiedades para Socket.IO
+  socketConnected: boolean;
+  socketEventLogs: SocketEventLog[];
+  clearSocketEventLogs: () => void;
+  connectSocket?: (userId: string) => void;
+  disconnectSocket?: () => void;
 }
 
 // Props para el provider
@@ -343,6 +348,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicio: null,
     isEditing: false,
   });
+
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -631,6 +637,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [serviciosWithRoutes, setServiciosWithRoutes] = useState<
     ServicioConRelaciones[]
   >([]);
+  
+  // Estado para Socket.IO
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [socketEventLogs, setSocketEventLogs] = useState<SocketEventLog[]>([]);
+  const { user } = useAuth();
+
 
   // Seleccionar un servicio para mostrar detalles y tracking
   const selectServicio = useCallback(
@@ -660,6 +672,53 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setSelectedServicio(null);
     setVehicleTracking(null);
     setTrackingError("");
+  }, []);
+  
+  
+  // Inicializar Socket.IO cuando el usuario esté autenticado
+  useEffect(() => {
+    if (user?.id) {
+      // Conectar socket
+      socketService.connect(user.id);
+
+      // Verificar conexión inicial y configurar manejo de eventos de conexión
+      const checkConnection = () => {
+        const isConnected = socketService.isConnected();
+        setSocketConnected(isConnected);
+      };
+
+      // Verificar estado inicial
+      checkConnection();
+
+      // Manejar eventos de conexión
+      const handleConnect = () => {
+        setSocketConnected(true);
+      };
+
+      const handleDisconnect = () => {
+        setSocketConnected(false);
+        addToast({
+          title: "Error",
+          description: "Desconectado de actualizaciones en tiempo real",
+          color: "danger",
+        });
+      };
+
+      // Registrar manejadores de eventos
+      socketService.on("connect", handleConnect);
+      socketService.on("disconnect", handleDisconnect);
+
+      return () => {
+        // Limpiar al desmontar
+        socketService.off("connect");
+        socketService.off("disconnect");
+      };
+    }
+  }, [user?.id]);
+
+   // Función para limpiar el registro de eventos de socket
+   const clearSocketEventLogs = useCallback(() => {
+    setSocketEventLogs([]);
   }, []);
 
   // Valor del contexto
@@ -692,6 +751,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     handleModalAdd,
     actualizarServicio,
     actualizarEstadoServicio,
+    
+    // Socket properties
+    socketConnected,
+    socketEventLogs,
+    clearSocketEventLogs,
   };
 
   return (
