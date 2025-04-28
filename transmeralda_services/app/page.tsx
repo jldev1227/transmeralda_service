@@ -14,7 +14,7 @@ import {
 } from "@/context/serviceContext";
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
-import ServiciosSlider from "@/components/ui/serviciosSlider";
+import ServiciosListCards from "@/components/ui/serviciosListCards";
 
 // Type definitions
 interface WialonVehicle {
@@ -585,7 +585,7 @@ const AdvancedDashboard = () => {
                 No se encontraron servicios
               </div>
             ) : (
-              <ServiciosSlider
+              <ServiciosListCards
         filteredServicios={filteredServicios}
         selectedServicio={selectedServicio}
         handleSelectServicio={handleSelectServicio}

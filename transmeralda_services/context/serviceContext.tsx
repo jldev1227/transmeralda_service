@@ -7,7 +7,6 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { Time } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
 import { LatLngExpression, LatLngTuple } from "leaflet";
 
 import { apiClient } from "@/config/apiClient";
@@ -690,7 +689,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     handleModalAdd,
     actualizarServicio,
     actualizarEstadoServicio,
-    
   };
 
   return (

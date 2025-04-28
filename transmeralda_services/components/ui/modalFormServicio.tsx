@@ -168,7 +168,7 @@ const BuildingOfficeIcon = () => (
 
 export default function ModalFormServicio() {
   const { municipios, conductores, vehiculos, empresas, modalAgregar, handleModalAdd, servicioEditar } = useService();
-  const { setError, registrarServicio, actualizarServicio } = useService();
+  const { setError, registrarServicio, actualizarServicio, actualizarEstadoServicio } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { servicio, isEditing } = servicioEditar;
@@ -230,10 +230,17 @@ export default function ModalFormServicio() {
 
   console.log(servicio)
   
+  // Estado para controlar si se puede editar el servicio
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  
   // Cargar datos del servicio cuando estamos en modo edición
   useEffect(() => {
     // Si el modal está abierto y es para editar
     if (modalAgregar && isEditing && servicio) {
+      // Determinar si el servicio está en estado no editable
+      const isServiceReadOnly = servicio.estado === 'realizado' || servicio.estado === 'cancelado';
+      setIsReadOnly(isServiceReadOnly);
+      
       // Llenar los campos con la información del servicio
       setCliente(servicio.cliente_id || "");
       setConductorSelected(servicio.conductor_id || "");
@@ -280,6 +287,7 @@ export default function ModalFormServicio() {
     } else if (!modalAgregar) {
       // Si el modal está cerrado, resetear los estados
       resetFormStates();
+      setIsReadOnly(false);
     }
   }, [modalAgregar, isEditing, servicio]);
 
@@ -492,29 +500,108 @@ export default function ModalFormServicio() {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                {isEditing ? 'Editar servicio' : 'Registro de servicio'}
+                {isEditing 
+                  ? isReadOnly 
+                    ? `Ver detalles de servicio (${servicio?.estado})` 
+                    : 'Editar servicio' 
+                  : 'Registro de servicio'}
               </ModalHeader>
               <ModalBody className="space-y-4">
-                {/* Step Progress Bar */}
-                <div className="flex items-center justify-between">
-                  <StepIndicator stepNumber={1} title="Información Básica" />
-                  <div
-                    className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? "bg-emerald-600" : "bg-gray-200"}`}
-                  />
-                  <StepIndicator stepNumber={2} title="Detalles Viaje" />
-                  <div
-                    className={`flex-1 h-0.5 mx-4 ${currentStep > 2 ? "bg-emerald-600" : "bg-gray-200"}`}
-                  />
-                  <StepIndicator stepNumber={3} title="Planificación" />
-                  <div
-                    className={`flex-1 h-0.5 mx-4 ${currentStep > 3 ? "bg-emerald-600" : "bg-gray-200"}`}
-                  />
-                  <StepIndicator stepNumber={4} title="Estado" />
-                </div>
+                {/* Step Progress Bar - solo mostrar si no estamos en modo solo lectura */}
+                {!isReadOnly && (
+                  <div className="flex items-center justify-between">
+                    <StepIndicator stepNumber={1} title="Información Básica" />
+                    <div
+                      className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? "bg-emerald-600" : "bg-gray-200"}`}
+                    />
+                    <StepIndicator stepNumber={2} title="Detalles Viaje" />
+                    <div
+                      className={`flex-1 h-0.5 mx-4 ${currentStep > 2 ? "bg-emerald-600" : "bg-gray-200"}`}
+                    />
+                    <StepIndicator stepNumber={3} title="Planificación" />
+                    <div
+                      className={`flex-1 h-0.5 mx-4 ${currentStep > 3 ? "bg-emerald-600" : "bg-gray-200"}`}
+                    />
+                    <StepIndicator stepNumber={4} title="Estado" />
+                  </div>
+                )}
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
-                  {/* Step 1: Basic Info */}
-                  {currentStep === 1 && (
+                  {/* Si está en modo solo lectura, mostrar todos los detalles juntos */}
+                  {isReadOnly ? (
+                    <div className="space-y-6 animate-fadeIn">
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información Básica</h3>
+                        {/* Cliente */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Cliente</p>
+                            <p className="text-md">{empresas.find(e => e.id === servicio?.cliente_id)?.Nombre || "No asignado"}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Estado</p>
+                            <p className="text-md capitalize">{servicio?.estado}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Fecha de Solicitud</p>
+                            <p className="text-md">{servicio?.fecha_solicitud ? new Date(servicio.fecha_solicitud).toLocaleString() : "No definida"}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Fecha de Realización</p>
+                            <p className="text-md">{servicio?.fecha_realizacion ? new Date(servicio.fecha_realizacion).toLocaleString() : "No definida"}</p>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Origen y Destino</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Origen</p>
+                            <p className="text-md">{servicio?.origen_especifico}</p>
+                            <p className="text-sm text-gray-500">{municipios.find(m => m.id === servicio?.origen_id)?.nombre_municipio || "No especificado"}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Destino</p>
+                            <p className="text-md">{servicio?.destino_especifico}</p>
+                            <p className="text-sm text-gray-500">{municipios.find(m => m.id === servicio?.destino_id)?.nombre_municipio || "No especificado"}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Propósito</p>
+                            <p className="text-md capitalize">{servicio?.tipo_servicio || "No especificado"}</p>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Asignaciones</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Conductor</p>
+                            <p className="text-md">
+                              {conductores.find(c => c.id === servicio?.conductor_id) 
+                                ? `${conductores.find(c => c.id === servicio?.conductor_id)?.nombre} ${conductores.find(c => c.id === servicio?.conductor_id)?.apellido}`
+                                : "No asignado"}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-500">Vehículo</p>
+                            <p className="text-md">
+                              {vehiculos.find(v => v.id === servicio?.vehiculo_id)
+                                ? `${vehiculos.find(v => v.id === servicio?.vehiculo_id)?.placa} (${vehiculos.find(v => v.id === servicio?.vehiculo_id)?.marca})`
+                                : "No asignado"}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {servicio?.observaciones && (
+                          <>
+                            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Observaciones</h3>
+                            <p className="text-md">{servicio.observaciones}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Step 1: Basic Info */}
+                      {currentStep === 1 && (
                     <div className="space-y-6 animate-fadeIn">
                       {/* Client - Changed to SelectReact */}
                       <div className="relative">
@@ -1197,32 +1284,85 @@ export default function ModalFormServicio() {
                       </div>
                     </div>
                   )}
+                  </>
+                  )}
 
                   {/* Navigation Buttons */}
                   <div className="flex justify-between pt-6 border-t border-gray-200">
-                    <button
-                      className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
-                      disabled={currentStep === 1}
-                      type="button"
-                      onClick={prevStep}
-                    >
-                      Anterior
-                    </button>
-                    {currentStep < totalSteps ? (
-                      <div
-                        className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                        role="button"
-                        onClick={nextStep}
-                      >
-                        Siguiente
-                      </div>
-                    ) : (
+                    {isReadOnly ? (
+                      // Botones para modo solo lectura
                       <button
-                        className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                        type="submit"
+                        className="border-1 py-2 px-4 rounded-md shadow-sm"
+                        type="button"
+                        onClick={() => {
+                          handleModalAdd();
+                          resetFormStates();
+                        }}
                       >
-                        {isEditing ? 'Actualizar Servicio' : 'Registrar Servicio'}
+                        Cerrar
                       </button>
+                    ) : (
+                      // Botones para modo edición/creación
+                      <>
+                        <button
+                          className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
+                          disabled={currentStep === 1}
+                          type="button"
+                          onClick={prevStep}
+                        >
+                          Anterior
+                        </button>
+                        {currentStep < totalSteps ? (
+                          <div
+                            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                            role="button"
+                            onClick={nextStep}
+                          >
+                            Siguiente
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en curso */}
+                            {isEditing && servicio && 
+                              (servicio.estado === 'solicitado' || 
+                               servicio.estado === 'planificado' || 
+                               servicio.estado === 'en curso') && (
+                              <button
+                                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                type="button"
+                                onClick={async () => {
+                                  if (servicio.id && window.confirm("¿Estás seguro de que deseas cancelar este servicio?")) {
+                                    try {
+                                      await actualizarEstadoServicio(servicio.id, "cancelado");
+                                      addToast({
+                                        title: "Éxito",
+                                        description: "Servicio cancelado correctamente",
+                                        color: "success",
+                                      });
+                                      handleModalAdd(); // Cerrar modal
+                                      resetFormStates();
+                                    } catch (error) {
+                                      addToast({
+                                        title: "Error",
+                                        description: "No se pudo cancelar el servicio",
+                                        color: "danger",
+                                      });
+                                    }
+                                  }
+                                }}
+                              >
+                                Cancelar Servicio
+                              </button>
+                            )}
+                            <button
+                              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                              type="submit"
+                            >
+                              {isEditing ? 'Actualizar Servicio' : 'Registrar Servicio'}
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </form>
