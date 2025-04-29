@@ -3,10 +3,16 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
-  useCallback,
   ReactNode,
+  useCallback,
+  useEffect,
 } from "react";
+import { LatLngExpression, LatLngTuple } from "leaflet";
+import { addToast } from "@heroui/toast";
+
+import { useAuth } from "./AuthContext";
+
+import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
 
 // Definiciones de tipos
@@ -34,6 +40,7 @@ export interface Vehiculo {
   id: string;
   placa: string;
   modelo: string;
+  linea: string;
   marca: string;
 }
 
@@ -43,14 +50,63 @@ export interface SocketEventLog {
   timestamp: Date;
 }
 
+export interface ServicioEditar {
+  servicio: ServicioConRelaciones | null;
+  isEditing: boolean;
+}
+
+export interface ServicioTicket {
+  servicio: ServicioConRelaciones | null;
+}
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
-  servicios: []
-  // Nuevas propiedades para Socket.IO
-  socketConnected?: boolean;
-  socketEventLogs?: SocketEventLog[];
-  clearSocketEventLogs?: () => void;
+  servicios: ServicioConRelaciones[];
+  servicio: Servicio | null;
+  municipios: Municipio[];
+  conductores: Conductor[];
+  vehiculos: Vehiculo[];
+  empresas: Empresa[];
+  loading: boolean;
+  registrarServicio: (servicioData: CreateServicioDTO) => void;
+  actualizarServicio: (
+    id: string,
+    servicioData: CreateServicioDTO,
+  ) => Promise<ServicioConRelaciones>;
+  obtenerServicio: (id: string) => void;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+
+  // Tracking de vehículos y servicios seleccionados
+  vehicleTracking?: VehicleTracking | null;
+  trackingError?: string;
+  selectedServicio?: ServicioConRelaciones | null;
+  serviciosWithRoutes?: ServicioConRelaciones[];
+  setServiciosWithRoutes?: React.Dispatch<
+    React.SetStateAction<ServicioConRelaciones[]>
+  >;
+  selectServicio?: (servicio: ServicioConRelaciones) => void;
+  clearSelectedServicio?: () => void;
+  setSelectedServicio?: React.Dispatch<
+    React.SetStateAction<ServicioConRelaciones | null>
+  >;
+
+  // modalStates
+  modalForm: boolean;
+  modalTicket: boolean;
+  servicioEditar: ServicioEditar;
+  servicioTicket: ServicioTicket;
+
+  // handle Modals
+  handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalTicket: (servicio?: ServicioConRelaciones | null) => void;
+
+  // Propiedades para Socket.IO
+  socketConnected: boolean;
+  socketEventLogs: SocketEventLog[];
+  clearSocketEventLogs: () => void;
+  connectSocket?: (userId: string) => void;
+  disconnectSocket?: () => void;
 }
 
 // Props para el provider
@@ -58,133 +114,933 @@ interface ServicesProviderContext {
   children: ReactNode;
 }
 
+export type EstadoServicio =
+  | "solicitado"
+  | "en curso"
+  | "planificado"
+  | "realizado"
+  | "cancelado";
+
+// Interface para el modelo Servicio
+export interface Servicio {
+  id?: string; // UUID
+  origen_id: string; // UUID referencia a municipio
+  destino_id: string; // UUID referencia a municipio
+  origen_especifico: string;
+  destino_especifico: string;
+  conductor_id: string; // UUID referencia a user
+  vehiculo_id: string;
+  cliente_id: string;
+  estado: EstadoServicio;
+  proposito_servicio: string;
+  fecha_solicitud: Date | string;
+  fecha_realizacion?: Date | string;
+  hora_salida: string;
+  distancia_km: number;
+  valor: number;
+  observaciones?: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  origen: Municipio;
+  destino: Municipio;
+  origenCoords: LatLngTuple;
+  destinoCoords: LatLngTuple;
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  geometry: LatLngExpression[];
+  routeDistance: string | number;
+  routeDuration: number | null;
+}
+
+export interface CreateServicioDTO {
+  origen_id: string;
+  destino_id: string;
+  origen_especifico: string;
+  destino_especifico: string;
+  origen_latitud: number | null;
+  origen_longitud: number | null;
+  destino_latitud: number | null;
+  destino_longitud: number | null;
+  conductor_id: string;
+  vehiculo_id: string;
+  cliente_id: string;
+  proposito_servicio: string;
+  fecha_solicitud: Date | string;
+  estado: EstadoServicio;
+  fecha_realizacion: Date | string;
+  valor: number;
+  observaciones?: string;
+}
+
+export interface Municipio {
+  id: string; // UUID
+  codigo_departamento: number;
+  nombre_departamento: string;
+  codigo_municipio: number;
+  nombre_municipio: string;
+  tipo: string;
+  longitud: number;
+  latitud: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+export interface Conductor {
+  id: string; // UUID
+  nombre: string;
+  apellido: string;
+  tipo_identificacion: string;
+  numero_identificacion: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+// interfaces/vehiculo.interface.ts
+export interface Vehiculo {
+  id: string;
+  placa: string;
+  modelo: string;
+  marca: string;
+  anio: number;
+  capacidad: number;
+  tipo?: string;
+  estado?: string;
+  kilometraje?: number;
+  ultima_revision?: Date | string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+// Interface para Servicio con relaciones cargadas
+export interface ServicioConRelaciones extends Servicio {
+  origen: Municipio;
+  destino: Municipio;
+  conductor: Conductor;
+  vehiculo: Vehiculo;
+  cliente: Cliente;
+}
+
+export interface VehicleTracking {
+  id: number;
+  name: string;
+  flags: number; // 1025
+  position: Position;
+  lastUpdate: Date;
+  item: {
+    cls: number; // 2
+    id: number; // 24616231
+    lmsg: {
+      t: number; // Timestamp (1745587111)
+      f: number; // Flag (1)
+      tp: string; // Tipo ('ud')
+      pos: Position; // Objeto de posición
+      lc: number; // 0
+    };
+    mu: number; // 3
+    nm: string; // "EYX108"
+    pos: Position; // Objeto de posición
+    uacl: number; // 19327369763
+  };
+}
+
+export interface Position {
+  c: number; // 0 (posiblemente counter)
+  f: number; // 1 (posiblemente flag)
+  lc: number; // 0 (posiblemente last count)
+  s: number; // 0 (posiblemente status)
+  sc: number; // 0 (posiblemente status code)
+  t: number; // Timestamp (1745587111)
+  x: number; // Longitud (-71.6594783)
+  y: number; // Latitud (3.77588)
+  z: number; // Altitud (0)
+}
+
+export interface Cliente {
+  id: number;
+  Nombre: string;
+  NIT?: string;
+  Representante?: string;
+  Cedula?: string;
+  Telefono?: string;
+  Direccion?: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+// Interface para crear un nuevo servicio
+export interface CrearServicioDTO {
+  origen_id: string;
+  destino_id: string;
+  origen_especifico: string;
+  destino_especifico: string;
+  conductor_id: string;
+  vehiculo_id: number;
+  cliente_id: number;
+  estado?: EstadoServicio;
+  proposito_servicio: string;
+  fecha_solicitud: Date | string;
+  fecha_realizacion?: Date | string;
+  distancia_km: number;
+  valor: number;
+  observaciones?: string;
+}
+
+// Interface para actualizar un servicio existente (todos los campos opcionales)
+export interface ActualizarServicioDTO {
+  origen_id?: string;
+  destino_id?: string;
+  origen_especifico?: string;
+  destino_especifico?: string;
+  conductor_id?: string;
+  vehiculo_id?: number;
+  cliente_id?: number;
+  estado?: EstadoServicio;
+  proposito_servicio?: string;
+  fecha_solicitud?: Date | string;
+  fecha_realizacion?: Date | string;
+  distancia_km?: number;
+  valor?: number;
+  observaciones?: string;
+}
+
+// Interface para cambiar solo el estado de un servicio
+export interface CambiarEstadoDTO {
+  estado: EstadoServicio;
+}
+
+// Interface para parámetros de búsqueda
+export interface BuscarServiciosParams {
+  estado?: EstadoServicio;
+  proposito_servicio?: string;
+  fecha_solicitud?: Date | string;
+  fecha_realizacion?: Date | string;
+  conductor_id?: string;
+  cliente_id?: number;
+  origen_id?: string;
+  destino_id?: string;
+  pagina?: number;
+  limite?: number;
+}
+
+// Interface para respuesta de API
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  total?: number;
+  errors?: Array<{
+    field: string;
+    message: string;
+  }>;
+}
+
 // Crear el contexto
 const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 
-
-const serviciosDefault = [
-  {
-    "id": "srv-zsszv9qak",
-    "origen_id": "05004",
-    "destino_id": "05002",
-    "origen_especifico": "ABRIAQUÍ, ANTIOQUIA - Terminal de transporte",
-    "destino_especifico": "ABEJORRAL, ANTIOQUIA - Centro comercial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 3,
-    "cliente_id": 13,
-    "estado": "PROGRAMADO",
-    "tipo_servicio": "MENSAJERÍA",
-    "fecha_inicio": "2025-04-03T08:23:41.333Z",
-    "fecha_fin": "2025-04-04T06:23:41.333Z",
-    "distancia_km": 31,
-    "valor": 4110047,
-    "observaciones": null,
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  },
-  {
-    "id": "srv-3tpux8r78",
-    "origen_id": "05004",
-    "destino_id": "05030",
-    "origen_especifico": "ABRIAQUÍ, ANTIOQUIA - Zona industrial",
-    "destino_especifico": "AMAGÁ, ANTIOQUIA - Parque empresarial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 4,
-    "cliente_id": 13,
-    "estado": "COMPLETADO",
-    "tipo_servicio": "TRANSPORTE_PERSONAL",
-    "fecha_inicio": "2025-04-27T22:44:26.173Z",
-    "fecha_fin": "2025-04-28T07:44:26.173Z",
-    "distancia_km": 316,
-    "valor": 1618902,
-    "observaciones": "Servicio con paradas intermedias",
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  },
-  {
-    "id": "srv-1rfhmi2wq",
-    "origen_id": "05001",
-    "destino_id": "05021",
-    "origen_especifico": "MEDELLÍN, ANTIOQUIA - Terminal de transporte",
-    "destino_especifico": "ALEJANDRÍA, ANTIOQUIA - Parque empresarial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 3,
-    "cliente_id": 11,
-    "estado": "EN_CURSO",
-    "tipo_servicio": "TRANSPORTE_PERSONAL",
-    "fecha_inicio": "2025-01-23T07:08:46.532Z",
-    "fecha_fin": "2025-01-23T11:08:46.532Z",
-    "distancia_km": 47,
-    "valor": 3171705,
-    "observaciones": null,
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  },
-  {
-    "id": "srv-jgn8kml5o",
-    "origen_id": "05030",
-    "destino_id": "05001",
-    "origen_especifico": "AMAGÁ, ANTIOQUIA - Terminal de transporte",
-    "destino_especifico": "MEDELLÍN, ANTIOQUIA - Parque empresarial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 3,
-    "cliente_id": 11,
-    "estado": "PROGRAMADO",
-    "tipo_servicio": "TRASLADO_AEROPUERTO",
-    "fecha_inicio": "2025-04-06T11:42:24.827Z",
-    "fecha_fin": "2025-04-06T23:42:24.827Z",
-    "distancia_km": 41,
-    "valor": 1565263,
-    "observaciones": null,
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  },
-  {
-    "id": "srv-k6dhm9djm",
-    "origen_id": "05002",
-    "destino_id": "05001",
-    "origen_especifico": "ABEJORRAL, ANTIOQUIA - Zona industrial",
-    "destino_especifico": "MEDELLÍN, ANTIOQUIA - Centro comercial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 3,
-    "cliente_id": 13,
-    "estado": "PROGRAMADO",
-    "tipo_servicio": "MENSAJERÍA",
-    "fecha_inicio": "2025-04-13T15:56:34.363Z",
-    "fecha_fin": "2025-04-14T09:56:34.363Z",
-    "distancia_km": 395,
-    "valor": 797406,
-    "observaciones": "Servicio con paradas intermedias",
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  },
-  {
-    "id": "srv-k6dhm9djm",
-    "origen_id": "05002",
-    "destino_id": "05001",
-    "origen_especifico": "ABEJORRAL, ANTIOQUIA - Zona industrial",
-    "destino_especifico": "MEDELLÍN, ANTIOQUIA - Centro comercial",
-    "conductor_id": "5e846d84-c6a6-4e25-96d1-88c3dbf7307e",
-    "vehiculo_id": 3,
-    "cliente_id": 13,
-    "estado": "CANCELADO",
-    "tipo_servicio": "MENSAJERÍA",
-    "fecha_inicio": "2025-04-13T15:56:34.363Z",
-    "fecha_fin": "2025-04-14T09:56:34.363Z",
-    "distancia_km": 395,
-    "valor": 797406,
-    "observaciones": "Servicio con paradas intermedias",
-    "createdAt": "2025-04-12T22:13:28.890Z",
-    "updatedAt": "2025-04-12T22:13:28.890Z"
-  }
-]
-
 // Proveedor del contexto
-export const ServicesProvider: React.FC<ServicesProviderContext> = ({ children }) => {
-  const [servicios, setServicios] = useState(serviciosDefault)
+export const ServicesProvider: React.FC<ServicesProviderContext> = ({
+  children,
+}) => {
+  const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
+  const [servicio, setServicio] = useState<Servicio | null>(null);
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [conductores, setConductores] = useState<Conductor[]>([]);
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modalForm, setModalForm] = useState(false);
+  const [modalTicket, setModalTicket] = useState(false);
+  const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
+    servicio: null,
+    isEditing: false,
+  });
+  const [servicioTicket, setServicioTicket] = useState<ServicioTicket>({
+    servicio: null,
+  });
+
+  // Obtener todas las servicios
+  const obtenerServicios = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get("/api/servicios");
+
+      if (response.data.success) {
+        setServicios(response.data.data);
+      } else {
+        throw new Error(
+          response.data.message || "Error al obtener liquidaciones",
+        );
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Obtener todas las municipios
+  const obtenerMunicipios = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get("/api/municipios");
+
+      if (response.data.success) {
+        setMunicipios(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Error al obtener municipios");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Obtener todas las conductores
+  const obtenerConductores = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get("/api/conductores/basicos");
+
+      if (response.data.success) {
+        setConductores(response.data.data);
+      } else {
+        throw new Error(
+          response.data.message || "Error al obtener conductores",
+        );
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Obtener todas los vehiculos
+  const obtenerVehiculos = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get("/api/flota/basicos");
+
+      if (response.data.success) {
+        setVehiculos(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Error al obtener vehiculos");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Obtener todas los empresas
+  const obtenerEmpresas = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get("/api/empresas/basicos");
+
+      if (response.data.success) {
+        setEmpresas(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Error al obtener empresas");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al conectar con el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Dentro de tu hook/context useService
+  const obtenerServicio = useCallback(
+    async (id: string): Promise<Servicio | null> => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await apiClient.get(`/api/servicios/${id}`);
+
+        if (response.data.success) {
+          setServicio(response.data.data);
+
+          return response.data.data;
+        } else {
+          throw new Error(
+            response.data.message || "Error al obtener la liquidación",
+          );
+        }
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Error al conectar con el servidor",
+        );
+
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const registrarServicio = async (
+    servicioData: CreateServicioDTO,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición POST al endpoint de servicios
+      const response = await apiClient.post<ApiResponse<ServicioConRelaciones>>(
+        "/api/servicios",
+        servicioData,
+      );
+
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al registrar el servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Error desconocido al registrar el servicio");
+      }
+    }
+  };
+
+  const actualizarServicio = async (
+    id: string,
+    servicioData: CreateServicioDTO,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición PUT al endpoint de servicios
+      const response = await apiClient.put<ApiResponse<ServicioConRelaciones>>(
+        `/api/servicios/${id}`,
+        servicioData,
+      );
+
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al actualizar el servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Error desconocido al actualizar el servicio");
+      }
+    }
+  };
+
+  const actualizarEstadoServicio = async (
+    id: string,
+    estado: EstadoServicio,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición PATCH al endpoint de servicios
+      const response = await apiClient.patch<
+        ApiResponse<ServicioConRelaciones>
+      >(`/api/servicios/${id}/estado`, { estado });
+
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al actualizar el estado del servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(
+          "Error desconocido al actualizar el estado del servicio",
+        );
+      }
+    }
+  };
+
+  const handleModalForm = (servicio?: ServicioConRelaciones | null) => {
+    // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si
+    // el modal se está abriendo o cerrando. Esto evita problemas de referencia.
+    clearSelectedServicio();
+
+    // Si el modal se está abriendo (actualmente está cerrado)
+    if (!modalForm) {
+      // Configurar el servicio para edición si se proporcionó uno
+      if (servicio) {
+        setServicioEditar({
+          servicio: servicio,
+          isEditing: true,
+        });
+      } else {
+        setServicioEditar({
+          servicio: null,
+          isEditing: false,
+        });
+      }
+    }
+    // Si el modal se está cerrando (actualmente está abierto)
+    else {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioEditar({
+          servicio: null,
+          isEditing: false,
+        });
+      }, 300);
+    }
+
+    // Cambiar el estado del modal
+    setModalForm(!modalForm);
+  };
+
+  const handleModalTicket = (servicio?: ServicioConRelaciones | null) => {
+    // Cambiar el estado del modal
+    if (!modalTicket) {
+      // Configurar el servicio para edición si se proporcionó uno
+      if (servicio) {
+        setServicioTicket({
+          servicio: servicio,
+        });
+        setModalTicket(!modalTicket);
+      } else {
+        setServicioTicket({
+          servicio: null,
+        });
+        setModalTicket(false);
+      }
+    }
+    // Si el modal se está cerrando (actualmente está abierto)
+    else {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioTicket({
+          servicio: null,
+        });
+        setModalTicket(false);
+      }, 300);
+    }
+  };
+
+  useEffect(() => {
+    obtenerServicios();
+    obtenerMunicipios();
+    obtenerConductores();
+    obtenerVehiculos();
+    obtenerEmpresas();
+  }, []);
+
+  // Estado para rastreo de vehículos y servicios seleccionados
+  const [vehicleTracking, setVehicleTracking] =
+    useState<VehicleTracking | null>(null);
+  const [trackingError, setTrackingError] = useState<string>("");
+  const [selectedServicio, setSelectedServicio] =
+    useState<ServicioConRelaciones | null>(null);
+  const [serviciosWithRoutes, setServiciosWithRoutes] = useState<
+    ServicioConRelaciones[]
+  >([]);
+
+  // Estado para Socket.IO
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [socketEventLogs, setSocketEventLogs] = useState<SocketEventLog[]>([]);
+  const { user } = useAuth();
+
+  // Seleccionar un servicio para mostrar detalles y tracking
+  const selectServicio = useCallback(
+    async (servicio: ServicioConRelaciones) => {
+      setSelectedServicio(servicio);
+
+      // Si el servicio está en curso, intentar obtener tracking del vehículo
+      if (servicio.estado === "en curso" && servicio.vehiculo?.placa) {
+        setTrackingError("");
+        try {
+          // Aquí se implementaría la lógica para obtener el tracking del vehículo
+          // Por ahora dejamos esto como un placeholder
+          setVehicleTracking(null);
+        } catch (error) {
+          console.error("Error al obtener tracking del vehículo:", error);
+          setTrackingError("No se pudo obtener información del vehículo.");
+        }
+      } else {
+        setVehicleTracking(null);
+      }
+    },
+    [],
+  );
+
+  // Limpiar la selección de servicio
+  const clearSelectedServicio = useCallback(() => {
+    setSelectedServicio(null);
+    setVehicleTracking(null);
+    setTrackingError("");
+  }, []);
+
+  // Inicializar Socket.IO cuando el usuario esté autenticado
+  useEffect(() => {
+    if (user?.id) {
+      // Conectar socket
+      socketService.connect(user.id);
+
+      // Verificar conexión inicial y configurar manejo de eventos de conexión
+      const checkConnection = () => {
+        const isConnected = socketService.isConnected();
+
+        setSocketConnected(isConnected);
+      };
+
+      // Verificar estado inicial
+      checkConnection();
+
+      // Manejar eventos de conexión
+      const handleConnect = () => {
+        setSocketConnected(true);
+      };
+
+      const handleDisconnect = () => {
+        setSocketConnected(false);
+        addToast({
+          title: "Error",
+          description: "Desconectado de actualizaciones en tiempo real",
+          color: "danger",
+        });
+      };
+
+      // Manejadores para eventos de servicios
+      const handleServicioCreado = (data: ServicioConRelaciones) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:creado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Añadir a la lista principal de servicios
+        setServicios((prevServicios) => [data, ...prevServicios]);
+
+        // Añadir a serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes((prevServicios) => [data, ...prevServicios]);
+        }
+
+        addToast({
+          title: "Nuevo servicio",
+          description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico}`,
+          color: "success",
+        });
+      };
+
+      const handleServicioActualizado = (data: ServicioConRelaciones) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:actualizado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Actualizar en la lista de servicios
+        setServicios((prevServicios) =>
+          prevServicios.map((s) => (s.id === data.id ? data : s)),
+        );
+
+        // Si es el servicio seleccionado actualmente, actualizarlo
+        if (selectedServicio?.id === data.id) {
+          setSelectedServicio(data);
+        }
+
+        // Actualizar en serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.map((s) => (s.id === data.id ? data : s)),
+          );
+        }
+
+        addToast({
+          title: "Servicio actualizado",
+          description: `El servicio hacia ${data.destino_especifico} ha sido actualizado`,
+          color: "primary",
+        });
+      };
+
+      const handleServicioAsignado = (data: {
+        servicio: ServicioConRelaciones;
+        conductorId: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:asignado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Solo mostrar notificación si es relevante para el conductor actual
+        if (user.id === data.conductorId) {
+          addToast({
+            title: "Servicio asignado",
+            description: `Se te ha asignado un servicio hacia ${data.servicio.destino_especifico}`,
+            color: "success",
+          });
+        }
+      };
+
+      const handleServicioDesasignado = (data: {
+        servicio: ServicioConRelaciones;
+        conductorId: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:desasignado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Solo mostrar notificación si es relevante para el conductor actual
+        if (user.id === data.conductorId) {
+          addToast({
+            title: "Servicio retirado",
+            description: `Ya no estás asignado al servicio hacia ${data.servicio.destino_especifico}`,
+            color: "warning",
+          });
+        }
+      };
+
+      const handleServicioEliminado = (data: {
+        servicioId: string;
+        conductorId?: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:eliminado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Eliminar de la lista principal de servicios
+        setServicios((prevServicios) =>
+          prevServicios.filter((s) => s.id !== data.servicioId),
+        );
+
+        // Si es el servicio seleccionado actualmente, limpiarlo
+        if (selectedServicio?.id === data.servicioId) {
+          clearSelectedServicio();
+        }
+
+        // Eliminar de serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.filter((s) => s.id !== data.servicioId),
+          );
+        }
+
+        // Notificación específica para el conductor si aplica
+        if (data.conductorId && user.id === data.conductorId) {
+          addToast({
+            title: "Servicio eliminado",
+            description: "Un servicio asignado a ti ha sido eliminado",
+            color: "danger",
+          });
+        } else {
+          addToast({
+            title: "Servicio eliminado",
+            description: "Se ha eliminado un servicio del sistema",
+            color: "danger",
+          });
+        }
+      };
+
+      const handleServicioEstadoActualizado = (data: {
+        servicio: ServicioConRelaciones;
+        estadoAnterior: EstadoServicio;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:estado-actualizado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Actualizar en la lista principal de servicios
+        setServicios((prevServicios) =>
+          prevServicios.map((s) =>
+            s.id === data.servicio.id ? data.servicio : s,
+          ),
+        );
+
+        // Si es el servicio seleccionado actualmente, actualizarlo
+        if (selectedServicio?.id === data.servicio.id) {
+          setSelectedServicio(data.servicio);
+        }
+
+        // Actualizar en serviciosWithRoutes si existe
+        if (serviciosWithRoutes) {
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.map((s) =>
+              s.id === data.servicio.id ? data.servicio : s,
+            ),
+          );
+        }
+
+        // Mensaje personalizado según el estado
+        let mensaje = "";
+        let color: "success" | "warning" | "primary" | "danger" = "primary";
+
+        switch (data.servicio.estado) {
+          case "en curso":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} está en curso`;
+            color = "success";
+            break;
+          case "realizado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido completado`;
+            color = "success";
+            break;
+          case "cancelado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido cancelado`;
+            color = "danger";
+            break;
+          case "planificado":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} ha sido planificado`;
+            color = "warning";
+            break;
+          default:
+            mensaje = `El estado del servicio hacia ${data.servicio.destino_especifico} ha cambiado a ${data.servicio.estado}`;
+        }
+
+        addToast({
+          title: "Estado de servicio actualizado",
+          description: mensaje,
+          color: color,
+        });
+      };
+
+      // Registrar manejadores de eventos de conexión
+      socketService.on("connect", handleConnect);
+      socketService.on("disconnect", handleDisconnect);
+
+      // Registrar manejadores de eventos de servicios
+      socketService.on("servicio:creado", handleServicioCreado);
+      socketService.on("servicio:actualizado", handleServicioActualizado);
+      socketService.on("servicio:asignado", handleServicioAsignado);
+      socketService.on("servicio:desasignado", handleServicioDesasignado);
+      socketService.on("servicio:eliminado", handleServicioEliminado);
+      socketService.on(
+        "servicio:estado-actualizado",
+        handleServicioEstadoActualizado,
+      );
+
+      return () => {
+        // Limpiar al desmontar
+        socketService.off("connect");
+        socketService.off("disconnect");
+
+        // Limpiar manejadores de eventos de servicios
+        socketService.off("servicio:creado");
+        socketService.off("servicio:actualizado");
+        socketService.off("servicio:asignado");
+        socketService.off("servicio:desasignado");
+        socketService.off("servicio:eliminado");
+        socketService.off("servicio:estado-actualizado");
+      };
+    }
+  }, [user?.id, selectedServicio, clearSelectedServicio]);
+
+  // Función para limpiar el registro de eventos de socket
+  const clearSocketEventLogs = useCallback(() => {
+    setSocketEventLogs([]);
+  }, []);
+
   // Valor del contexto
   const value: ServiceContextType = {
-    servicios
+    servicios,
+    servicio,
+    servicioTicket,
+    municipios,
+    conductores,
+    vehiculos,
+    empresas,
+    loading,
+    registrarServicio,
+    obtenerServicio,
+    setError,
+    // Añadir estados y métodos de tracking
+    vehicleTracking,
+    trackingError,
+    selectedServicio,
+    serviciosWithRoutes,
+    setServiciosWithRoutes,
+    selectServicio,
+    clearSelectedServicio,
+    setSelectedServicio,
+
+    // Modals state
+    modalForm,
+    modalTicket,
+    servicioEditar,
+
+    // handles Modal
+    handleModalForm,
+    handleModalTicket,
+    actualizarServicio,
+    actualizarEstadoServicio,
+
+    // Socket properties
+    socketConnected,
+    socketEventLogs,
+    clearSocketEventLogs,
   };
 
   return (

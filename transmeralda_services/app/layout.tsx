@@ -1,12 +1,14 @@
+// RootLayout.tsx (componente servidor)
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import { Link } from "@heroui/link";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
+import { ClientLayout } from "./client-layout"; // Componente cliente que crearemos
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
+import { AuthGuard } from "@/components/authGuard";
 
 export const metadata: Metadata = {
   title: {
@@ -15,48 +17,36 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: "/favicon.ico",
+    icon: "/assets/favicon.ico",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
+    { media: "(prefers-color-scheme: dark)", color: "white" },
   ],
 };
 
+// Componente servidor principal sin 'use client'
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html suppressHydrationWarning lang="es">
       <head />
       <body
         className={clsx(
-          "min-h-screen bg-background font-sans antialiased",
+          "min-h-screen font-sans antialiased",
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-          <div className="relative flex flex-col h-screen">
-            <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
-              {children}
-            </main>
-            <footer className="w-full flex items-center justify-center py-3">
-              <Link
-                isExternal
-                className="flex items-center gap-1 text-current"
-                href="https://heroui.com?utm_source=next-app-template"
-                title="heroui.com homepage"
-              >
-                <span className="text-default-600">Powered by</span>
-                <p className="text-primary">HeroUI</p>
-              </Link>
-            </footer>
-          </div>
+        <Providers themeProps={{ attribute: "class", defaultTheme: "white" }}>
+          <AuthGuard>
+            <ClientLayout>{children}</ClientLayout>
+          </AuthGuard>
         </Providers>
       </body>
     </html>

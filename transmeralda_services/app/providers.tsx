@@ -6,7 +6,10 @@ import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ToastProvider } from "@heroui/toast";
+
 import { ServicesProvider } from "@/context/serviceContext";
+import AuthProvider from "@/context/AuthContext";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -26,9 +29,12 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      <ServicesProvider>
-        <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
-      </ServicesProvider>
+      <ToastProvider placement="bottom-center" />
+      <AuthProvider>
+        <ServicesProvider>
+          <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+        </ServicesProvider>
+      </AuthProvider>
     </HeroUIProvider>
   );
 }
