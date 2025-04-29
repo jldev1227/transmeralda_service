@@ -4,7 +4,8 @@ import React, { useState, useCallback } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
-import { Alert } from "@heroui/alert"
+import { Alert } from "@heroui/alert";
+
 import EnhancedMapComponent from "@/components/enhancedMapComponent";
 import {
   useService,
@@ -14,7 +15,7 @@ import {
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
-import { ShieldCheck, ShieldCheckIcon, Verified } from "lucide-react";
+import ModalTicket from "@/components/ui/modalTicket";
 
 interface MapboxRoute {
   distance: number;
@@ -78,7 +79,8 @@ const AdvancedDashboard = () => {
   const [token] = useState(WIALON_API_TOKEN);
 
   // State
-  const { servicios, socketConnected, selectedServicio, setSelectedServicio } = useService();
+  const { servicios, socketConnected, selectedServicio, setSelectedServicio } =
+    useService();
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
@@ -180,7 +182,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                    servicio.vehiculo.placa.toLowerCase(),
+                      servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -334,7 +336,10 @@ const AdvancedDashboard = () => {
         .includes(filters.destino.toLowerCase())
     )
       return false;
-    if (filters.tipoServicio && servicio.tipo_servicio !== filters.tipoServicio)
+    if (
+      filters.tipoServicio &&
+      servicio.proposito_servicio !== filters.tipoServicio
+    )
       return false;
 
     return true;
@@ -362,6 +367,7 @@ const AdvancedDashboard = () => {
           onWialonRequest={callWialonApi}
         />
         <ModalFormServicio />
+        <ModalTicket />
       </div>
 
       {/* Floating toggle button for mobile */}
@@ -411,10 +417,11 @@ const AdvancedDashboard = () => {
       <div
         className={`absolute transition-all duration-300 ease-in-out bg-white shadow-lg 
                    md:h-full md:w-[370px] md:fixed md:top-0 md:left-0
-                   ${isPanelOpen
-            ? "top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0"
-            : "top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0"
-          }`}
+                   ${
+                     isPanelOpen
+                       ? "top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0"
+                       : "top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0"
+                   }`}
       >
         {/* Panel header with handle for mobile */}
         <div className="p-3 md:p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
@@ -422,19 +429,19 @@ const AdvancedDashboard = () => {
             <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
             {socketConnected ? (
               <Alert
-              className="py-2"
-              variant="faded"
-              color="success"
-              radius="sm"
-              title="Obteniendo cambios en tiempo real"
-            />
+                className="py-2"
+                color="success"
+                radius="sm"
+                title="Obteniendo cambios en tiempo real"
+                variant="faded"
+              />
             ) : (
               <Alert
                 className="py-2"
-                variant="faded"
                 color="danger"
                 radius="sm"
                 title="Desconectado de conexión en tiempo real"
+                variant="faded"
               />
             )}
           </div>

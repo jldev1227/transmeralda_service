@@ -153,17 +153,15 @@ export default function ModalFormServicio() {
     conductores,
     vehiculos,
     empresas,
-    modalAgregar,
-    handleModalAdd,
+    modalForm,
+    handleModalForm,
     servicioEditar,
-  } = useService();
-  const {
     setError,
     registrarServicio,
     actualizarServicio,
     actualizarEstadoServicio,
     clearSelectedServicio, // Añadimos esta función para limpiar manualmente el servicio seleccionado
-    selectedServicio // Añadimos para verificar si hay un servicio seleccionado
+    selectedServicio, // Añadimos para verificar si hay un servicio seleccionado
   } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -246,15 +244,15 @@ export default function ModalFormServicio() {
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
   useEffect(() => {
     // Si el modal se abrió, limpiar inmediatamente el servicio seleccionado
-    if (modalAgregar && selectedServicio !== null) {
+    if (modalForm && selectedServicio !== null) {
       clearSelectedServicio();
     }
-  }, [modalAgregar, clearSelectedServicio, selectedServicio]);
-  
+  }, [modalForm, clearSelectedServicio, selectedServicio]);
+
   // Cargar datos del servicio cuando estamos en modo edición
   useEffect(() => {
     // Si el modal está abierto y es para editar
-    if (modalAgregar && isEditing && servicio) {
+    if (modalForm && isEditing && servicio) {
       // Determinar si el servicio está en estado no editable
       // Se permite la edición para servicios en estado 'en curso'
       const isServiceReadOnly =
@@ -308,15 +306,15 @@ export default function ModalFormServicio() {
         });
       }
 
-      setPurpose(servicio.tipo_servicio || "");
+      setPurpose(servicio.proposito_servicio || "");
       setState(servicio.estado || "solicitado");
       setObservaciones(servicio.observaciones || "");
-    } else if (!modalAgregar) {
+    } else if (!modalForm) {
       // Si el modal está cerrado, resetear los estados
       resetFormStates();
       setIsReadOnly(false);
     }
-  }, [modalAgregar, isEditing, servicio]);
+  }, [modalForm, isEditing, servicio]);
 
   // Función para manejar el cambio de origen específico con coordenadas
   const handleOriginSpecificChange = (
@@ -374,6 +372,7 @@ export default function ModalFormServicio() {
           description: "Por favor seleccione un origen",
           color: "danger",
         });
+
         return;
       }
       if (!selectedDestMun) {
@@ -382,6 +381,7 @@ export default function ModalFormServicio() {
           description: "Por favor seleccione un destino",
           color: "danger",
         });
+
         return;
       }
       if (!originSpecific) {
@@ -390,6 +390,7 @@ export default function ModalFormServicio() {
           description: "Por favor ingrese una dirección de origen específica",
           color: "danger",
         });
+
         return;
       }
       if (!destSpecific) {
@@ -398,6 +399,7 @@ export default function ModalFormServicio() {
           description: "Por favor ingrese una dirección de destino específica",
           color: "danger",
         });
+
         return;
       }
       if (!purpose) {
@@ -406,6 +408,7 @@ export default function ModalFormServicio() {
           description: "Por favor seleccione un propósito para el servicio",
           color: "danger",
         });
+
         return;
       }
     } else if (currentStep === 3) {
@@ -445,7 +448,7 @@ export default function ModalFormServicio() {
         conductor_id: conductorSelected,
         vehiculo_id: vehicleSelected,
         cliente_id: clienteSelected,
-        tipo_servicio: purpose,
+        proposito_servicio: purpose,
         fecha_solicitud: convertirFechaParaDB(fechaSolicitud),
         fecha_realizacion: convertirFechaParaDB(fechaRealizacion),
         estado: state,
@@ -456,25 +459,13 @@ export default function ModalFormServicio() {
       if (isEditing && servicio?.id) {
         // Si estamos editando, actualizamos el servicio existente
         await actualizarServicio(servicio.id, servicioData);
-        
-        addToast({
-          title: "Éxito",
-          description: "Servicio actualizado correctamente",
-          color: "success",
-        });
       } else {
         // Si estamos creando uno nuevo, registramos el servicio
         await registrarServicio(servicioData);
-        
-        addToast({
-          title: "Éxito",
-          description: "Servicio registrado correctamente",
-          color: "success",
-        });
       }
-      
+
       // Cerrar el modal después de la operación exitosa
-      handleModalAdd();
+      handleModalForm();
       resetFormStates();
     } catch (error) {
       // Manejar errores
@@ -546,7 +537,7 @@ export default function ModalFormServicio() {
   return (
     <>
       <Modal
-        isOpen={modalAgregar}
+        isOpen={modalForm}
         size={"5xl"}
         onClose={() => {
           // Primero limpiar el servicio seleccionado para eliminar cualquier ruta/marcador en el mapa
@@ -554,7 +545,7 @@ export default function ModalFormServicio() {
             clearSelectedServicio();
           }
           // Luego cerrar el modal
-          handleModalAdd();
+          handleModalForm();
           resetFormStates();
         }}
       >
@@ -677,7 +668,8 @@ export default function ModalFormServicio() {
                               Propósito
                             </p>
                             <p className="text-md capitalize">
-                              {servicio?.tipo_servicio || "No especificado"}
+                              {servicio?.proposito_servicio ||
+                                "No especificado"}
                             </p>
                           </div>
                         </div>
@@ -1107,43 +1099,27 @@ export default function ModalFormServicio() {
                                   htmlFor="purpose-personnel"
                                 >
                                   <UsersIcon />
-                                  Recoger Personal
+                                  Transporte de personal
                                 </label>
                               </div>
                               <div className="flex items-center">
                                 <input
-                                  checked={purpose === "herramienta"}
+                                  checked={purpose === "personal y herramienta"}
                                   className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
                                   id="purpose-tools"
                                   name="purpose"
                                   type="radio"
-                                  value="herramienta"
-                                  onChange={() => setPurpose("herramienta")}
+                                  value="personal y herramienta"
+                                  onChange={() =>
+                                    setPurpose("personal y herramienta")
+                                  }
                                 />
                                 <label
                                   className="ml-2 flex items-center text-sm text-gray-900 gap-2"
                                   htmlFor="purpose-tools"
                                 >
                                   <WrenchScrewdriverIcon />
-                                  Llevar Herramienta
-                                </label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  checked={purpose === "vehiculo"}
-                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                                  id="purpose-vehicle"
-                                  name="purpose"
-                                  type="radio"
-                                  value="vehiculo"
-                                  onChange={() => setPurpose("vehiculo")}
-                                />
-                                <label
-                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                                  htmlFor="purpose-vehicle"
-                                >
-                                  <TruckIcon />
-                                  Posicionar Vehículo
+                                  Transporte de personal y herramienta
                                 </label>
                               </div>
                             </div>
@@ -1420,10 +1396,7 @@ export default function ModalFormServicio() {
                                 >
                                   Planificado
                                 </SelectItem>
-                                <SelectItem
-                                  key="en curso"
-                                  textValue="En curso"
-                                >
+                                <SelectItem key="en curso" textValue="En curso">
                                   En curso
                                 </SelectItem>
                               </Select>
@@ -1447,7 +1420,7 @@ export default function ModalFormServicio() {
                         className="border-1 py-2 px-4 rounded-md shadow-sm"
                         type="button"
                         onClick={() => {
-                          handleModalAdd();
+                          handleModalForm();
                           resetFormStates();
                         }}
                       >
@@ -1501,7 +1474,7 @@ export default function ModalFormServicio() {
                                             "Servicio cancelado correctamente",
                                           color: "success",
                                         });
-                                        handleModalAdd(); // Cerrar modal
+                                        handleModalForm(); // Cerrar modal
                                         resetFormStates();
                                       } catch (error) {
                                         addToast({

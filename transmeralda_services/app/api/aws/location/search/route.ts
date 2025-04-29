@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
-import { LocationClient, SearchPlaceIndexForTextCommand } from '@aws-sdk/client-location';
+import { NextResponse } from "next/server";
+import {
+  LocationClient,
+  SearchPlaceIndexForTextCommand,
+} from "@aws-sdk/client-location";
 
 // Definir el tipo para la request de Next.js
 export async function GET(request: Request) {
@@ -56,12 +59,13 @@ export async function GET(request: Request) {
     console.error("Error al consultar Amazon Location Service:", error);
 
     // Manejar el error con el tipo correcto
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    const errorCode = 
-      error instanceof Error && 'Code' in error 
-        ? (error as any).Code 
-        : error instanceof Error && '$metadata' in error 
-          ? (error as any).$metadata?.httpStatusCode 
+    const errorMessage =
+      error instanceof Error ? error.message : "Error desconocido";
+    const errorCode =
+      error instanceof Error && "Code" in error
+        ? (error as any).Code
+        : error instanceof Error && "$metadata" in error
+          ? (error as any).$metadata?.httpStatusCode
           : undefined;
 
     return NextResponse.json(

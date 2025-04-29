@@ -50,19 +50,19 @@ const TrackerPage = () => {
     selectServicio,
     setSelectedServicio,
     socketConnected, // Añadimos para detectar eventos socket
-    modalAgregar, // Añadimos para detectar apertura/cierre del modal
+    modalForm, // Añadimos para detectar apertura/cierre del modal
   } = useService();
 
   // Estado de error de comunicación
   const [error, setError] = useState<string | null>(null);
-  
+
   // Clave para forzar re-renderizado del mapa
   const [mapKey, setMapKey] = useState(1);
-  
+
   // Forzar re-renderizado cuando se cierra el modal o cambia el servicio seleccionado
   useEffect(() => {
-    setMapKey(prev => prev + 1);
-  }, [modalAgregar, selectedServicio]);
+    setMapKey((prev) => prev + 1);
+  }, [modalForm, selectedServicio]);
 
   // Envía peticiones a la API de Wialon
   const onWialonRequest = useCallback(

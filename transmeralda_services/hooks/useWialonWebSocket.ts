@@ -120,7 +120,8 @@ export const useWialonWebSocket = ({
   const disconnect = useCallback(() => {
     if (
       socket &&
-      (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+      (socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING)
     ) {
       socket.close();
     }

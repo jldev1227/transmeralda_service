@@ -179,7 +179,7 @@ const OptimizedMapComponent = ({
               ? `<div class="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio</div>
-                <div>${getServiceTypeText(servicioWithRoutes.tipo_servicio || "")}</div>
+                <div>${getServiceTypeText(servicioWithRoutes.proposito_servicio || "")}</div>
               </div>
               <div>
                 <div class="font-medium">Fecha inicio</div>

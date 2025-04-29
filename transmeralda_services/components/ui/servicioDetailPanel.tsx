@@ -116,7 +116,7 @@ const ServiceDetailPanel = ({
 
   // Obtener texto del tipo de servicio
   const getTipoServicioText = () => {
-    switch (servicioWithRoutes.tipo_servicio) {
+    switch (servicioWithRoutes.proposito_servicio) {
       case "carga":
         return "Carga";
       case "pasajeros":
@@ -124,7 +124,7 @@ const ServiceDetailPanel = ({
       case "herramienta":
         return "Transporte de herramientas";
       default:
-        return servicioWithRoutes.tipo_servicio;
+        return servicioWithRoutes.proposito_servicio;
     }
   };
 

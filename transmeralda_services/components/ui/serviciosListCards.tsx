@@ -1,4 +1,4 @@
-import { Edit } from "lucide-react";
+import { Edit, Ticket } from "lucide-react";
 import { MouseEvent } from "react";
 
 import { ServicioConRelaciones, useService } from "@/context/serviceContext";
@@ -20,7 +20,8 @@ const ServiciosListCards = ({
   getStatusText,
   formatearFecha,
 }: ServiciosListCardsProps) => {
-  const { handleModalAdd, clearSelectedServicio } = useService();
+  const { handleModalForm, handleModalTicket, clearSelectedServicio } =
+    useService();
 
   // Función para manejar el evento de edición
   const handleEdit = (
@@ -33,20 +34,43 @@ const ServiciosListCards = ({
     if (servicio.estado === "realizado" || servicio.estado === "cancelado") {
       return;
     }
-    
+
     // Primero limpiar forzosamente el servicio seleccionado antes de abrir el modal
     // Esto asegura que el mapa se limpie completamente
     clearSelectedServicio();
-    
+
     // Después de limpiar, abrimos el modal con el servicio a editar
     setTimeout(() => {
-      handleModalAdd(servicio);
+      handleModalForm(servicio);
+    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+  };
+
+  // Función para manejar el evento de edición
+  const handleViewTicket = (
+    e: MouseEvent<HTMLButtonElement>,
+    servicio: ServicioConRelaciones,
+  ) => {
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
+
+    // No mostrar botón de edición si el servicio está completado o cancelado
+    if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
+      return;
+    }
+
+    // Después de limpiar, abrimos el modal con el servicio a editar
+    setTimeout(() => {
+      handleModalTicket(servicio);
     }, 50); // Pequeño retraso para asegurar que la limpieza se complete
   };
 
   // Determinar si se debe mostrar el botón de edición
   const shouldShowEditButton = (servicio: ServicioConRelaciones) => {
     return servicio.estado !== "realizado" && servicio.estado !== "cancelado";
+  };
+
+  // Determinar si se debe mostrar el botón de edición
+  const shouldGetTicket = (servicio: ServicioConRelaciones) => {
+    return servicio.estado !== "solicitado" && servicio.estado !== "cancelado";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -67,7 +91,7 @@ const ServiciosListCards = ({
     }
   };
 
-  console.log(selectedServicio)
+  console.log(selectedServicio);
 
   return (
     <div className="servicios-slider-container space-y-3">
@@ -87,12 +111,18 @@ const ServiciosListCards = ({
 
             {shouldShowEditButton(servicio) && (
               <button
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                className={`absolute right-0 ${shouldGetTicket(servicio) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
                 onClick={(e) => handleEdit(e, servicio)}
               >
                 <Edit size={16} />
               </button>
             )}
+            <button
+              className={`absolute right-0 ${shouldShowEditButton(servicio) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+              onClick={(e) => handleViewTicket(e, servicio)}
+            >
+              <Ticket size={16} />
+            </button>
 
             <div className="flex justify-between items-start mb-2">
               <div className="overflow-hidden">

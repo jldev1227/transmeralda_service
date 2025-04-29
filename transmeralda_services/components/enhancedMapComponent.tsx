@@ -98,7 +98,7 @@ const EnhancedMapComponent = ({
   wialonToken,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
-  const { handleModalAdd } = useService();
+  const { handleModalForm } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkersRef>({
@@ -183,7 +183,7 @@ const EnhancedMapComponent = ({
         for (const servicio of serviciosEnCurso) {
           // Skip services without vehicle information
           if (!servicio.vehiculo || !servicio.vehiculo.placa) continue;
-          
+
           const vehicleData = vehiclesData.items.find(
             (v: { nm: string }) =>
               v.nm.includes(servicio.vehiculo.placa) ||
@@ -392,7 +392,7 @@ const EnhancedMapComponent = ({
               ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
-                <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.tipo_servicio || "")}</div>
+                <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
               : `<div class="text-sm">
@@ -492,7 +492,7 @@ const EnhancedMapComponent = ({
 
   const clearMapObjects = () => {
     if (!map.current) return;
-    
+
     // Asegurarnos de limpiar todos los marcadores completamente
     try {
       // Limpiar marcador de origen si existe
@@ -500,13 +500,13 @@ const EnhancedMapComponent = ({
         markersRef.current.origen.remove();
         markersRef.current.origen = undefined;
       }
-      
+
       // Limpiar marcador de destino si existe
       if (markersRef.current.destino) {
         markersRef.current.destino.remove();
         markersRef.current.destino = undefined;
       }
-      
+
       // Específicamente, SIEMPRE limpiar el marcador de vehículo principal si existe
       if (markersRef.current.vehicle) {
         try {
@@ -516,7 +516,7 @@ const EnhancedMapComponent = ({
         }
         markersRef.current.vehicle = undefined;
       }
-      
+
       // Limpiar marcadores de vehículos activos
       markersRef.current.activeVehicles.forEach((marker) => {
         try {
@@ -529,10 +529,11 @@ const EnhancedMapComponent = ({
     } catch (err) {
       console.error("Error clearing markers:", err);
     }
-    
+
     // Limpiar fuentes y capas del mapa de manera segura
     const sourcesToRemove = ["route", "active-route", "original-route"];
-    sourcesToRemove.forEach(source => {
+
+    sourcesToRemove.forEach((source) => {
       try {
         if (map.current?.getLayer(source)) {
           map.current.removeLayer(source);
@@ -544,10 +545,10 @@ const EnhancedMapComponent = ({
         console.error(`Error removing ${source}:`, err);
       }
     });
-    
+
     // Cerrar cualquier popup abierto
     try {
-      document.querySelectorAll(".mapboxgl-popup").forEach(popup => {
+      document.querySelectorAll(".mapboxgl-popup").forEach((popup) => {
         popup.remove();
       });
     } catch (err) {
@@ -586,7 +587,7 @@ const EnhancedMapComponent = ({
   useEffect(() => {
     // Validación inicial
     if (!isMapLoaded || !map.current || !selectedServicio) return;
-    
+
     // Siempre limpiar completamente todos los objetos del mapa
     clearMapObjects();
 
@@ -771,7 +772,7 @@ const EnhancedMapComponent = ({
 
     // 5. Mostrar panel de detalles
     setDetallesVisible(true);
-  // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
+    // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
   }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
@@ -871,42 +872,48 @@ const EnhancedMapComponent = ({
     createVehicleMarker,
     fetchMapboxRoute,
   ]);
-  
-  // Limpiar el mapa cuando modalAgregar cambia o cuando no hay servicio seleccionado
-  const { modalAgregar } = useService();
+
+  // Limpiar el mapa cuando modalForm cambia o cuando no hay servicio seleccionado
+  const { modalForm } = useService();
+
   useEffect(() => {
     // Limpiar mapa cuando se abre el modal o cuando no hay servicio seleccionado
-    if ((modalAgregar || !selectedServicio) && map.current) {
+    if ((modalForm || !selectedServicio) && map.current) {
       // Limpiar completamente todos los elementos del mapa
       clearMapObjects();
       setDetallesVisible(false);
-      
+
       // Si no hay modal abierto y no hay servicio seleccionado, mostrar solo los marcadores pulsantes de vehículos en curso
-      if (!modalAgregar && !selectedServicio && activeVehiclesData.length > 0) {
+      if (!modalForm && !selectedServicio && activeVehiclesData.length > 0) {
         // Recrear SOLO los marcadores de vehículos activos con servicios en estado "en curso"
         activeVehiclesData.forEach((data: VehicleMarkerData) => {
           // Verificar que el servicio esté en curso antes de crear el marcador
           if (data.service.estado === "en curso") {
-            const marker = createPulsingVehicleMarker(data.vehicle, data.service);
+            const marker = createPulsingVehicleMarker(
+              data.vehicle,
+              data.service,
+            );
+
             if (marker) {
               markersRef.current.activeVehicles.set(
                 data.vehicle.id.toString(),
-                marker
+                marker,
               );
             }
           }
         });
-        
+
         // Ajustar el mapa para mostrar todos los vehículos activos
         if (map.current && activeVehiclesData.length > 0) {
           const bounds = new mapboxgl.LngLatBounds();
+
           activeVehiclesData.forEach((data) => {
             // Solo incluir en los bounds los vehículos con servicios en curso
             if (data.service.estado === "en curso") {
               bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
             }
           });
-          
+
           if (!bounds.isEmpty()) {
             map.current.fitBounds(bounds, {
               padding: 100,
@@ -916,7 +923,7 @@ const EnhancedMapComponent = ({
         }
       }
     }
-  }, [modalAgregar, selectedServicio, activeVehiclesData]);
+  }, [modalForm, selectedServicio, activeVehiclesData]);
 
   const formatTime = (date: Date | string) => {
     if (!date) return "-";
@@ -953,7 +960,7 @@ const EnhancedMapComponent = ({
         // First make sure all existing markers are removed (including vehicle marker)
         markersRef.current.activeVehicles.forEach((marker) => marker.remove());
         markersRef.current.activeVehicles.clear();
-        
+
         // Also specifically clear vehicle marker if it exists
         if (markersRef.current.vehicle) {
           markersRef.current.vehicle.remove();
@@ -964,7 +971,11 @@ const EnhancedMapComponent = ({
         activeVehiclesData.forEach((data: VehicleMarkerData) => {
           // Solo crear marcador si el servicio está en curso
           if (data.service.estado === "en curso") {
-            const marker = createPulsingVehicleMarker(data.vehicle, data.service);
+            const marker = createPulsingVehicleMarker(
+              data.vehicle,
+              data.service,
+            );
+
             if (marker) {
               markersRef.current.activeVehicles.set(
                 data.vehicle.id.toString(),
@@ -997,16 +1008,16 @@ const EnhancedMapComponent = ({
       }, 100); // Short delay to ensure state is updated
     }
   };
-  
+
   const handleButtonPress = (e: PressEvent) => {
     // Primero limpiar el mapa completamente
     clearMapObjects();
     setDetallesVisible(false);
-    
+
     // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
     setTimeout(() => {
       // Abrir el modal de agregar servicio
-      handleModalAdd();
+      handleModalForm();
     }, 50);
   };
 
@@ -1183,7 +1194,7 @@ const EnhancedMapComponent = ({
 
       <div className="absolute top-3.5 left-3 md:left-12 bg-white bg-opacity-90 p-2 rounded-md shadow">
         <span className="text-sm font-medium">
-          Vehiculos con servicios en curso: {activeVehiclesData.length}
+          Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
         </span>
       </div>
 

@@ -13,7 +13,8 @@ class SocketService {
   private getSocketUrl(): string {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://api.transmeralda.com";
 
-    console.log(url)
+    console.log(url);
+
     return url;
   }
 
@@ -64,7 +65,7 @@ class SocketService {
   // Manejador de error de conexión
   private handleConnectError = (error: any) => {
     console.error("Error de conexión Socket.IO:", error);
-    
+
     // Intentar reconectar con estrategia diferente
     this.disconnect();
     this.attemptReconnect();
@@ -118,7 +119,7 @@ class SocketService {
         }
       }, delay);
     } else {
-    console.error("No se pudo establecer la conexión en tiempo real")
+      console.error("No se pudo establecer la conexión en tiempo real");
     }
   };
 

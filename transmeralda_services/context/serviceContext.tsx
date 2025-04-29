@@ -8,11 +8,12 @@ import React, {
   useEffect,
 } from "react";
 import { LatLngExpression, LatLngTuple } from "leaflet";
+import { addToast } from "@heroui/toast";
+
+import { useAuth } from "./AuthContext";
 
 import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
-import { useAuth } from "./AuthContext";
-import { addToast } from "@heroui/toast";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -54,6 +55,10 @@ export interface ServicioEditar {
   isEditing: boolean;
 }
 
+export interface ServicioTicket {
+  servicio: ServicioConRelaciones | null;
+}
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
@@ -87,11 +92,14 @@ interface ServiceContextType {
   >;
 
   // modalStates
-  modalAgregar: boolean;
+  modalForm: boolean;
+  modalTicket: boolean;
   servicioEditar: ServicioEditar;
+  servicioTicket: ServicioTicket;
 
   // handle Modals
-  handleModalAdd: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalTicket: (servicio?: ServicioConRelaciones | null) => void;
 
   // Propiedades para Socket.IO
   socketConnected: boolean;
@@ -124,7 +132,7 @@ export interface Servicio {
   vehiculo_id: string;
   cliente_id: string;
   estado: EstadoServicio;
-  tipo_servicio: string;
+  proposito_servicio: string;
   fecha_solicitud: Date | string;
   fecha_realizacion?: Date | string;
   hora_salida: string;
@@ -158,7 +166,7 @@ export interface CreateServicioDTO {
   conductor_id: string;
   vehiculo_id: string;
   cliente_id: string;
-  tipo_servicio: string;
+  proposito_servicio: string;
   fecha_solicitud: Date | string;
   estado: EstadoServicio;
   fecha_realizacion: Date | string;
@@ -271,7 +279,7 @@ export interface CrearServicioDTO {
   vehiculo_id: number;
   cliente_id: number;
   estado?: EstadoServicio;
-  tipo_servicio: string;
+  proposito_servicio: string;
   fecha_solicitud: Date | string;
   fecha_realizacion?: Date | string;
   distancia_km: number;
@@ -289,7 +297,7 @@ export interface ActualizarServicioDTO {
   vehiculo_id?: number;
   cliente_id?: number;
   estado?: EstadoServicio;
-  tipo_servicio?: string;
+  proposito_servicio?: string;
   fecha_solicitud?: Date | string;
   fecha_realizacion?: Date | string;
   distancia_km?: number;
@@ -305,7 +313,7 @@ export interface CambiarEstadoDTO {
 // Interface para parámetros de búsqueda
 export interface BuscarServiciosParams {
   estado?: EstadoServicio;
-  tipo_servicio?: string;
+  proposito_servicio?: string;
   fecha_solicitud?: Date | string;
   fecha_realizacion?: Date | string;
   conductor_id?: string;
@@ -343,12 +351,15 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalAgregar, setModalAgregar] = useState(false);
+  const [modalForm, setModalForm] = useState(false);
+  const [modalTicket, setModalTicket] = useState(false);
   const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
     servicio: null,
     isEditing: false,
   });
-
+  const [servicioTicket, setServicioTicket] = useState<ServicioTicket>({
+    servicio: null,
+  });
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -592,13 +603,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
-  const handleModalAdd = (servicio?: ServicioConRelaciones | null) => {
-    // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si 
+  const handleModalForm = (servicio?: ServicioConRelaciones | null) => {
+    // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si
     // el modal se está abriendo o cerrando. Esto evita problemas de referencia.
     clearSelectedServicio();
-    
+
     // Si el modal se está abriendo (actualmente está cerrado)
-    if (!modalAgregar) {
+    if (!modalForm) {
       // Configurar el servicio para edición si se proporcionó uno
       if (servicio) {
         setServicioEditar({
@@ -611,7 +622,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           isEditing: false,
         });
       }
-    } 
+    }
     // Si el modal se está cerrando (actualmente está abierto)
     else {
       // Retraso para asegurar que la animación de cierre funcione correctamente
@@ -624,7 +635,35 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
 
     // Cambiar el estado del modal
-    setModalAgregar(!modalAgregar);
+    setModalForm(!modalForm);
+  };
+
+  const handleModalTicket = (servicio?: ServicioConRelaciones | null) => {
+    // Cambiar el estado del modal
+    if (!modalTicket) {
+      // Configurar el servicio para edición si se proporcionó uno
+      if (servicio) {
+        setServicioTicket({
+          servicio: servicio,
+        });
+        setModalTicket(!modalTicket);
+      } else {
+        setServicioTicket({
+          servicio: null,
+        });
+        setModalTicket(false);
+      }
+    }
+    // Si el modal se está cerrando (actualmente está abierto)
+    else {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioTicket({
+          servicio: null,
+        });
+        setModalTicket(false);
+      }, 300);
+    }
   };
 
   useEffect(() => {
@@ -644,12 +683,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [serviciosWithRoutes, setServiciosWithRoutes] = useState<
     ServicioConRelaciones[]
   >([]);
-  
+
   // Estado para Socket.IO
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
   const [socketEventLogs, setSocketEventLogs] = useState<SocketEventLog[]>([]);
   const { user } = useAuth();
-
 
   // Seleccionar un servicio para mostrar detalles y tracking
   const selectServicio = useCallback(
@@ -690,6 +728,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       // Verificar conexión inicial y configurar manejo de eventos de conexión
       const checkConnection = () => {
         const isConnected = socketService.isConnected();
+
         setSocketConnected(isConnected);
       };
 
@@ -712,20 +751,23 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
       // Manejadores para eventos de servicios
       const handleServicioCreado = (data: ServicioConRelaciones) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:creado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:creado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Añadir a la lista principal de servicios
-        setServicios(prevServicios => [data, ...prevServicios]);
-        
+        setServicios((prevServicios) => [data, ...prevServicios]);
+
         // Añadir a serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          setServiciosWithRoutes(prevServicios => [data, ...prevServicios]);
+          setServiciosWithRoutes((prevServicios) => [data, ...prevServicios]);
         }
-        
+
         addToast({
           title: "Nuevo servicio",
           description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico}`,
@@ -734,29 +776,32 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       };
 
       const handleServicioActualizado = (data: ServicioConRelaciones) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:actualizado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:actualizado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Actualizar en la lista de servicios
-        setServicios(prevServicios => 
-          prevServicios.map(s => s.id === data.id ? data : s)
+        setServicios((prevServicios) =>
+          prevServicios.map((s) => (s.id === data.id ? data : s)),
         );
-        
+
         // Si es el servicio seleccionado actualmente, actualizarlo
         if (selectedServicio?.id === data.id) {
           setSelectedServicio(data);
         }
-        
+
         // Actualizar en serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          setServiciosWithRoutes(prevServicios => 
-            prevServicios.map(s => s.id === data.id ? data : s)
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.map((s) => (s.id === data.id ? data : s)),
           );
         }
-        
+
         addToast({
           title: "Servicio actualizado",
           description: `El servicio hacia ${data.destino_especifico} ha sido actualizado`,
@@ -764,13 +809,19 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
-      const handleServicioAsignado = (data: { servicio: ServicioConRelaciones, conductorId: string }) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:asignado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+      const handleServicioAsignado = (data: {
+        servicio: ServicioConRelaciones;
+        conductorId: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:asignado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Solo mostrar notificación si es relevante para el conductor actual
         if (user.id === data.conductorId) {
           addToast({
@@ -781,13 +832,19 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         }
       };
 
-      const handleServicioDesasignado = (data: { servicio: ServicioConRelaciones, conductorId: string }) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:desasignado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+      const handleServicioDesasignado = (data: {
+        servicio: ServicioConRelaciones;
+        conductorId: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:desasignado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Solo mostrar notificación si es relevante para el conductor actual
         if (user.id === data.conductorId) {
           addToast({
@@ -798,30 +855,36 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         }
       };
 
-      const handleServicioEliminado = (data: { servicioId: string, conductorId?: string }) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:eliminado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+      const handleServicioEliminado = (data: {
+        servicioId: string;
+        conductorId?: string;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:eliminado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Eliminar de la lista principal de servicios
-        setServicios(prevServicios => 
-          prevServicios.filter(s => s.id !== data.servicioId)
+        setServicios((prevServicios) =>
+          prevServicios.filter((s) => s.id !== data.servicioId),
         );
-        
+
         // Si es el servicio seleccionado actualmente, limpiarlo
         if (selectedServicio?.id === data.servicioId) {
           clearSelectedServicio();
         }
-        
+
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          setServiciosWithRoutes(prevServicios => 
-            prevServicios.filter(s => s.id !== data.servicioId)
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.filter((s) => s.id !== data.servicioId),
           );
         }
-        
+
         // Notificación específica para el conductor si aplica
         if (data.conductorId && user.id === data.conductorId) {
           addToast({
@@ -838,34 +901,44 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         }
       };
 
-      const handleServicioEstadoActualizado = (data: { servicio: ServicioConRelaciones, estadoAnterior: EstadoServicio }) => {
-        setSocketEventLogs(prev => [...prev, {
-          eventName: 'servicio:estado-actualizado',
-          data,
-          timestamp: new Date()
-        }]);
-        
+      const handleServicioEstadoActualizado = (data: {
+        servicio: ServicioConRelaciones;
+        estadoAnterior: EstadoServicio;
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:estado-actualizado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
         // Actualizar en la lista principal de servicios
-        setServicios(prevServicios => 
-          prevServicios.map(s => s.id === data.servicio.id ? data.servicio : s)
+        setServicios((prevServicios) =>
+          prevServicios.map((s) =>
+            s.id === data.servicio.id ? data.servicio : s,
+          ),
         );
-        
+
         // Si es el servicio seleccionado actualmente, actualizarlo
         if (selectedServicio?.id === data.servicio.id) {
           setSelectedServicio(data.servicio);
         }
-        
+
         // Actualizar en serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          setServiciosWithRoutes(prevServicios => 
-            prevServicios.map(s => s.id === data.servicio.id ? data.servicio : s)
+          setServiciosWithRoutes((prevServicios) =>
+            prevServicios.map((s) =>
+              s.id === data.servicio.id ? data.servicio : s,
+            ),
           );
         }
-        
+
         // Mensaje personalizado según el estado
         let mensaje = "";
         let color: "success" | "warning" | "primary" | "danger" = "primary";
-        
+
         switch (data.servicio.estado) {
           case "en curso":
             mensaje = `El servicio hacia ${data.servicio.destino_especifico} está en curso`;
@@ -886,7 +959,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           default:
             mensaje = `El estado del servicio hacia ${data.servicio.destino_especifico} ha cambiado a ${data.servicio.estado}`;
         }
-        
+
         addToast({
           title: "Estado de servicio actualizado",
           description: mensaje,
@@ -897,20 +970,23 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);
       socketService.on("disconnect", handleDisconnect);
-      
+
       // Registrar manejadores de eventos de servicios
       socketService.on("servicio:creado", handleServicioCreado);
       socketService.on("servicio:actualizado", handleServicioActualizado);
       socketService.on("servicio:asignado", handleServicioAsignado);
       socketService.on("servicio:desasignado", handleServicioDesasignado);
       socketService.on("servicio:eliminado", handleServicioEliminado);
-      socketService.on("servicio:estado-actualizado", handleServicioEstadoActualizado);
+      socketService.on(
+        "servicio:estado-actualizado",
+        handleServicioEstadoActualizado,
+      );
 
       return () => {
         // Limpiar al desmontar
         socketService.off("connect");
         socketService.off("disconnect");
-        
+
         // Limpiar manejadores de eventos de servicios
         socketService.off("servicio:creado");
         socketService.off("servicio:actualizado");
@@ -922,8 +998,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   }, [user?.id, selectedServicio, clearSelectedServicio]);
 
-   // Función para limpiar el registro de eventos de socket
-   const clearSocketEventLogs = useCallback(() => {
+  // Función para limpiar el registro de eventos de socket
+  const clearSocketEventLogs = useCallback(() => {
     setSocketEventLogs([]);
   }, []);
 
@@ -931,6 +1007,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const value: ServiceContextType = {
     servicios,
     servicio,
+    servicioTicket,
     municipios,
     conductores,
     vehiculos,
@@ -950,14 +1027,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setSelectedServicio,
 
     // Modals state
-    modalAgregar,
+    modalForm,
+    modalTicket,
     servicioEditar,
 
     // handles Modal
-    handleModalAdd,
+    handleModalForm,
+    handleModalTicket,
     actualizarServicio,
     actualizarEstadoServicio,
-    
+
     // Socket properties
     socketConnected,
     socketEventLogs,
