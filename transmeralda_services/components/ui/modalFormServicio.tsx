@@ -71,27 +71,6 @@ const TruckIcon = () => (
   </svg>
 );
 
-const WrenchScrewdriverIcon = () => (
-  <svg
-    className="w-5 h-5 text-gray-400"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.87-5.87a2.652 2.652 0 0 0-1.62-.65H9.75a2.652 2.652 0 0 0-1.62.65L2.25 17.25A2.652 2.652 0 0 0 6 21l5.87-5.87a2.652 2.652 0 0 0 1.62-.65Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M21 17.25v4.5A2.25 2.25 0 0 1 18.75 24H5.25A2.25 2.25 0 0 1 3 21.75v-4.5c0-1.24.98-2.35 2.25-2.6V11.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 .75.75v3.15c1.27.25 2.25 1.36 2.25 2.6Zm-9-9.48h.008v.008H12V7.77Zm0 0c-.552 0-1-.448-1-1s.448-1 1-1 1 .448 1 1-.448 1-1 1Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 const UsersIcon = () => (
   <svg
     className="w-5 h-5 text-gray-400"
@@ -1118,7 +1097,7 @@ export default function ModalFormServicio() {
                                   className="ml-2 flex items-center text-sm text-gray-900 gap-2"
                                   htmlFor="purpose-tools"
                                 >
-                                  <WrenchScrewdriverIcon />
+                                  <TruckIcon />
                                   Transporte de personal y herramienta
                                 </label>
                               </div>
@@ -1454,7 +1433,7 @@ export default function ModalFormServicio() {
                                 servicio.estado === "planificado" ||
                                 servicio.estado === "en curso") && (
                                 <button
-                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
                                   onClick={async () => {
                                     if (

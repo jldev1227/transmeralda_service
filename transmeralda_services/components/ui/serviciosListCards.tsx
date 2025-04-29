@@ -1,7 +1,7 @@
 import { Edit, Ticket } from "lucide-react";
 import { MouseEvent } from "react";
 
-import { ServicioConRelaciones, useService } from "@/context/serviceContext";
+import { EstadoServicio, ServicioConRelaciones, useService } from "@/context/serviceContext";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
@@ -64,13 +64,13 @@ const ServiciosListCards = ({
   };
 
   // Determinar si se debe mostrar el botón de edición
-  const shouldShowEditButton = (servicio: ServicioConRelaciones) => {
-    return servicio.estado !== "realizado" && servicio.estado !== "cancelado";
+  const shouldShowEditButton = (estado: EstadoServicio) => {
+    return estado !== "realizado" && estado !== "cancelado";
   };
 
   // Determinar si se debe mostrar el botón de edición
-  const shouldGetTicket = (servicio: ServicioConRelaciones) => {
-    return servicio.estado !== "solicitado" && servicio.estado !== "cancelado";
+  const shouldGetTicket = (estado: EstadoServicio)  => {
+    return estado !== "solicitado" && estado !== "cancelado";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -109,20 +109,23 @@ const ServiciosListCards = ({
           >
             {/* Botón de edición que aparece al deslizar/hover */}
 
-            {shouldShowEditButton(servicio) && (
+            {shouldShowEditButton(servicio.estado) && (
               <button
-                className={`absolute right-0 ${shouldGetTicket(servicio) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                onClick={(e) => handleEdit(e, servicio)}
+              className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+              onClick={(e) => handleEdit(e, servicio)}
               >
                 <Edit size={16} />
               </button>
             )}
+
+            {shouldGetTicket(servicio.estado) && (
             <button
-              className={`absolute right-0 ${shouldShowEditButton(servicio) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+              className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
               onClick={(e) => handleViewTicket(e, servicio)}
-            >
+              >
               <Ticket size={16} />
             </button>
+            )}
 
             <div className="flex justify-between items-start mb-2">
               <div className="overflow-hidden">
