@@ -295,7 +295,7 @@ const AdvancedDashboard = () => {
             origenCoords,
             destinoCoords,
             geometry: [origenCoords, destinoCoords],
-            routeDistance: servicio.distancia_km || "0",
+            routeDistance: servicio.distancia_km.toString() || "0",
             routeDuration: null,
           };
 

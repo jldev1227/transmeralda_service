@@ -5,10 +5,13 @@ import { format, differenceInMinutes } from "date-fns";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody } from "@heroui/card";
 
-import { Servicio, VehicleTracking } from "@/context/serviceContext";
+import {
+  ServicioConRelaciones,
+  VehicleTracking,
+} from "@/context/serviceContext";
 
 interface ServiceDetailPanelProps {
-  servicioWithRoutes: Servicio | null;
+  servicioWithRoutes: ServicioConRelaciones | null;
   vehicleTracking: VehicleTracking | null;
   onClose?: () => void; // Añade esta prop opcional
 }
@@ -152,7 +155,7 @@ const ServiceDetailPanel = ({
         <div className="px-4 py-3">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
-              Servicio #{servicioWithRoutes.id.substring(0, 8)}
+              Servicio #{servicioWithRoutes.id}
             </h2>
             <span
               className={`px-3 py-1 text-xs font-medium text-white rounded-full ${getStatusColor()}`}
@@ -273,8 +276,8 @@ const ServiceDetailPanel = ({
                   <div>
                     <p className="text-xs text-gray-500">Duración estimada</p>
                     <p className="text-sm font-medium">
-                      {Math.floor(servicioWithRoutes.routeDuration / 60)}h{" "}
-                      {servicioWithRoutes.routeDuration % 60}m
+                      {Math.floor(servicioWithRoutes.routeDuration ?? 0 / 60)}h{" "}
+                      {servicioWithRoutes.routeDuration ?? 0 % 60}m
                     </p>
                   </div>
                 </div>
