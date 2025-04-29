@@ -3,6 +3,14 @@ import React, { useRef, useEffect } from "react";
 
 import { LocationMarkerIcon } from "./modalFormServicio";
 
+interface Prediction {
+  place_id: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text: string;
+  };
+}
+
 interface GooglePlacesInputProps {
   label: string;
   placeholder: string;
@@ -94,7 +102,14 @@ export const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
             <div
               key={prediction.place_id}
               className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectPrediction(prediction)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  onSelectPrediction(prediction);
+                }
+              }}
             >
               <div className="font-medium">
                 {prediction.structured_formatting.main_text}

@@ -2,8 +2,6 @@ import React from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 import { useService } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
@@ -39,17 +37,6 @@ export default function ModalTicket() {
       currency: "COP",
       minimumFractionDigits: 0,
     }).format(value);
-  };
-
-  // Función para formatear fechas
-  const formatDate = (dateString?: string | Date) => {
-    if (!dateString) return "Fecha no definida";
-    try {
-      const date = new Date(dateString);
-      return format(date, "d 'de' MMMM yyyy", { locale: es });
-    } catch (error) {
-      return "Fecha inválida";
-    }
   };
 
   // Si no hay servicio, mostrar mensaje o regresar null
@@ -109,9 +96,9 @@ export default function ModalTicket() {
                         <Image
                           alt="Foto conductor asignado"
                           className="h-full w-full"
-                          width={200}
                           height={250}
                           src={"/assets/camilo velasco.jpeg"}
+                          width={200}
                         />
                       </div>
                       <div className="mt-4">
@@ -133,7 +120,8 @@ export default function ModalTicket() {
                           Vehículo
                         </h3>
                         <p className="text-gray-700">
-                          {servicio.vehiculo?.placa}{" "}{servicio.vehiculo?.linea}{" "}{servicio.vehiculo?.modelo}
+                          {servicio.vehiculo?.placa} {servicio.vehiculo?.linea}{" "}
+                          {servicio.vehiculo?.modelo}
                         </p>
                       </div>
                     </div>
@@ -142,10 +130,14 @@ export default function ModalTicket() {
                     <div className="w-full md:w-3/4 p-6">
                       {/* Número de ticket */}
                       <div className="flex justify-between items-center mb-6">
-                        <h1 className={`text-xl font-bold ${statusColors.text}`}>
+                        <h1
+                          className={`text-xl font-bold ${statusColors.text}`}
+                        >
                           Servicio #{servicio.id}
                         </h1>
-                        <span className={`px-3 py-1 rounded-full text-sm text-white ${statusColors.bg}`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm text-white ${statusColors.bg}`}
+                        >
                           {servicio.estado === "en curso"
                             ? "En Curso"
                             : servicio.estado === "realizado"
@@ -203,7 +195,8 @@ export default function ModalTicket() {
                         <div>
                           <p className="text-sm text-gray-500">Propósito</p>
                           <p className="font-medium">
-                            Transporte de {servicio.proposito_servicio || "No especificado"}
+                            Transporte de{" "}
+                            {servicio.proposito_servicio || "No especificado"}
                           </p>
                         </div>
                       </div>
@@ -232,7 +225,9 @@ export default function ModalTicket() {
                           <p className="text-sm text-gray-500">
                             Valor del servicio
                           </p>
-                          <p className={`font-bold text-lg ${statusColors.text}`}>
+                          <p
+                            className={`font-bold text-lg ${statusColors.text}`}
+                          >
                             {formatCurrency(servicio.valor || 0)}
                           </p>
                         </div>

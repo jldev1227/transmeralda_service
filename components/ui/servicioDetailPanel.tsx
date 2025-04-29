@@ -8,16 +8,14 @@ import { Card, CardBody } from "@heroui/card";
 import { Servicio, VehicleTracking } from "@/context/serviceContext";
 
 interface ServiceDetailPanelProps {
-  servicioWithRoutes: Servicio;
+  servicioWithRoutes: Servicio | null;
   vehicleTracking: VehicleTracking | null;
-  isLoadingRoute: boolean;
   onClose?: () => void; // Añade esta prop opcional
 }
 
 const ServiceDetailPanel = ({
   servicioWithRoutes,
   vehicleTracking,
-  isLoadingRoute,
   onClose, // Agrega esta prop opcional para notificar al padre
 }: ServiceDetailPanelProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -27,6 +25,8 @@ const ServiceDetailPanel = ({
   }>({ hours: 0, minutes: 0 });
   const [kmRecorridos, setKmRecorridos] = useState<number>(0);
   const [isVisible, setIsVisible] = useState(true);
+  // Estado para controlar si el componente debe montarse (mover aquí para evitar error de hooks condicionales)
+  const [isMounted, setIsMounted] = useState(true);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -41,12 +41,6 @@ const ServiceDetailPanel = ({
     if (!dateString) return "No disponible";
 
     return format(new Date(dateString), "dd/MM/yyyy");
-  };
-
-  const formatTime = (dateString: string) => {
-    if (!dateString) return "No disponible";
-
-    return format(new Date(dateString), "HH:mm");
   };
 
   // Actualizar hora actual cada minuto para cálculos de tiempo en tiempo real
@@ -94,9 +88,28 @@ const ServiceDetailPanel = ({
     }
   }, [servicioWithRoutes, currentTime]);
 
+  // Efecto para desmontar después de la animación (mover aquí para evitar error de hooks condicionales)
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
+
+    if (!isVisible) {
+      timer = setTimeout(() => {
+        setIsMounted(false);
+        // Aquí podrías llamar a una función prop para notificar al padre que se cerró el panel
+      }, 500); // Mismo tiempo que la duración de la animación
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isVisible]);
+
+  // Verificación temprana para no renderizar nada
   if (!servicioWithRoutes) {
     return <div className="h-screen bg-white p-4">Cargando información...</div>;
   }
+
+  if (!isMounted) return null;
 
   // Determinar el color del estado
   const getStatusColor = () => {
@@ -115,7 +128,7 @@ const ServiceDetailPanel = ({
   };
 
   // Obtener texto del tipo de servicio
-  const getTipoServicioText = () => {
+  const getpropositoServicioText = () => {
     switch (servicioWithRoutes.proposito_servicio) {
       case "carga":
         return "Carga";
@@ -127,26 +140,6 @@ const ServiceDetailPanel = ({
         return servicioWithRoutes.proposito_servicio;
     }
   };
-
-  // Agrega un estado para controlar si el componente debe montarse
-  const [isMounted, setIsMounted] = useState(true);
-
-  // Efecto para desmontar después de la animación
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (!isVisible) {
-      timer = setTimeout(() => {
-        setIsMounted(false);
-        // Aquí podrías llamar a una función prop para notificar al padre que se cerró el panel
-      }, 500); // Mismo tiempo que la duración de la animación
-    }
-
-    return () => clearTimeout(timer);
-  }, [isVisible]);
-
-  // Modifica el return para que no renderice nada si no está montado
-  if (!isMounted) return null;
 
   return (
     <div
@@ -237,7 +230,7 @@ const ServiceDetailPanel = ({
                   <div>
                     <p className="text-xs text-gray-500">Tipo de servicio</p>
                     <p className="text-sm font-medium">
-                      {getTipoServicioText()}
+                      {getpropositoServicioText()}
                     </p>
                   </div>
                   <div>

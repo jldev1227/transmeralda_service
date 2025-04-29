@@ -31,7 +31,7 @@ interface Filters {
   destino: string;
   fechaSolicitud: string;
   fechaRealizacion: string;
-  tipoServicio: string;
+  propositoServicio: string;
 }
 
 // Helper functions
@@ -95,7 +95,7 @@ const AdvancedDashboard = () => {
     destino: "",
     fechaSolicitud: "",
     fechaRealizacion: "",
-    tipoServicio: "",
+    propositoServicio: "",
   });
 
   // Wialon API call function
@@ -337,8 +337,8 @@ const AdvancedDashboard = () => {
     )
       return false;
     if (
-      filters.tipoServicio &&
-      servicio.proposito_servicio !== filters.tipoServicio
+      filters.propositoServicio &&
+      servicio.proposito_servicio !== filters.propositoServicio
     )
       return false;
 
@@ -476,9 +476,15 @@ const AdvancedDashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium mb-1">Estado</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="estado"
+                >
+                  Estado
+                </label>
                 <select
                   className="w-full p-2 border rounded-md text-sm"
+                  id="estado"
                   value={filters.estado}
                   onChange={(e) =>
                     setFilters({ ...filters, estado: e.target.value })
@@ -494,14 +500,21 @@ const AdvancedDashboard = () => {
               </div>
 
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="propositoServicio"
+                >
                   Tipo de Servicio
                 </label>
                 <select
                   className="w-full p-2 border rounded-md text-sm"
-                  value={filters.tipoServicio}
+                  id="propositoServicio"
+                  value={filters.propositoServicio}
                   onChange={(e) =>
-                    setFilters({ ...filters, tipoServicio: e.target.value })
+                    setFilters({
+                      ...filters,
+                      propositoServicio: e.target.value,
+                    })
                   }
                 >
                   <option value="">Todos</option>
@@ -512,9 +525,15 @@ const AdvancedDashboard = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Origen</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="origen"
+                >
+                  Origen
+                </label>
                 <input
                   className="w-full p-2 border rounded-md text-sm"
+                  id="origen"
                   placeholder="Buscar origen..."
                   type="text"
                   value={filters.origen}
@@ -525,11 +544,15 @@ const AdvancedDashboard = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="destino"
+                >
                   Destino
                 </label>
                 <input
                   className="w-full p-2 border rounded-md text-sm"
+                  id="destino"
                   placeholder="Buscar destino..."
                   type="text"
                   value={filters.destino}
