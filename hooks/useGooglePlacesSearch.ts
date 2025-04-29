@@ -1,25 +1,7 @@
 // hooks/useGooglePlacesSearch.ts
 import { useState, useCallback, useRef } from "react";
 import axios from "axios";
-
-// Prediction interface
-interface Prediction {
-  description: string;
-  place_id: string;
-  structured_formatting?: {
-    main_text: string;
-    secondary_text: string;
-    main_text_matched_substrings?: Array<{
-      offset: number;
-      length: number;
-    }>;
-  };
-  terms?: Array<{
-    offset: number;
-    value: string;
-  }>;
-  types?: string[];
-}
+import { Prediction } from "@/types";
 
 // Función de debounce personalizada
 function debounce<T extends (...args: any[]) => any>(

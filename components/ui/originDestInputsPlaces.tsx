@@ -63,6 +63,6 @@ export default function SearchInputsPlaces({
         onInputChange={destination.handleInputChange}
         onSelectPrediction={destination.selectPrediction}
       />
-    </div>
+    </div> 
   );
 }

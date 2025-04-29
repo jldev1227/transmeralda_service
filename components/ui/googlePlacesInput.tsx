@@ -2,14 +2,7 @@
 import React, { useRef, useEffect } from "react";
 
 import { LocationMarkerIcon } from "./modalFormServicio";
-
-interface Prediction {
-  place_id: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text: string;
-  };
-}
+import { Prediction } from "@/types";
 
 interface GooglePlacesInputProps {
   label: string;
@@ -19,7 +12,7 @@ interface GooglePlacesInputProps {
   showPredictions: boolean;
   predictions: Prediction[];
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelectPrediction: (prediction: Prediction) => void;
+  onSelectPrediction: (prediction: Prediction) => Promise<void> | void;
   onFocus: () => void;
   onBlur: () => void;
 }
