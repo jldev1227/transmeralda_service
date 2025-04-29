@@ -2,18 +2,14 @@ import React from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useEffect, useState } from "react";
 import SelectReact from "react-select";
-import { getLocalTimeZone } from "@internationalized/date"; // Ajusta esta importación según la biblioteca que uses
+// Ajusta esta importación según la biblioteca que uses
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { DateInput } from "@heroui/date-input";
-import { parseZonedDateTime } from "@internationalized/date";
+import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
 
-import {
-  CreateServicioDTO,
-  EstadoServicio,
-  useService,
-} from "@/context/serviceContext";
+import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 
 const UserIcon = () => (
@@ -138,7 +134,7 @@ export default function ModalFormServicio() {
     setError,
     registrarServicio,
     actualizarServicio,
-    actualizarEstadoServicio,
+    // actualizarEstadoServicio,
     clearSelectedServicio, // Añadimos esta función para limpiar manualmente el servicio seleccionado
     selectedServicio, // Añadimos para verificar si hay un servicio seleccionado
   } = useService();
@@ -152,16 +148,21 @@ export default function ModalFormServicio() {
     setCliente("");
     setConductorSelected("");
     setVehicleSelected("");
-    setFechaSolicitud(
-      parseZonedDateTime(
-        `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
-      ),
-    );
-    setFechaRealizacion(
-      parseZonedDateTime(
-        `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
-      ),
-    );
+
+    // Crear fechas para el momento actual con formato correcto para ZonedDateTime
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    const zonedDateTimeStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}[America/Bogota]`;
+
+    setFechaSolicitud(parseZonedDateTime(zonedDateTimeStr));
+    setFechaRealizacion(parseZonedDateTime(zonedDateTimeStr));
+
     setSelectedOriginMun("");
     setSelectedDestMun("");
     setOriginSpecific("");
@@ -183,14 +184,14 @@ export default function ModalFormServicio() {
   const [vehicleSelected, setVehicleSelected] = useState("");
 
   // State for date request
-  const [fechaSolicitud, setFechaSolicitud] = useState(
+  const [fechaSolicitud, setFechaSolicitud] = useState<ZonedDateTime>(
     parseZonedDateTime(
       `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
     ),
   );
 
   // State for date to do request
-  const [fechaRealizacion, setFechaRealizacion] = useState(
+  const [fechaRealizacion, setFechaRealizacion] = useState<ZonedDateTime>(
     parseZonedDateTime(
       `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
     ),
@@ -246,23 +247,55 @@ export default function ModalFormServicio() {
 
       // Convertir fechas a objetos ZonedDateTime
       if (servicio.fecha_solicitud) {
-        const fechaSolDate = new Date(servicio.fecha_solicitud);
+        try {
+          const fechaSolDate = new Date(servicio.fecha_solicitud);
+          const year = fechaSolDate.getFullYear();
+          const month = String(fechaSolDate.getMonth() + 1).padStart(2, "0");
+          const day = String(fechaSolDate.getDate()).padStart(2, "0");
+          const hours = String(fechaSolDate.getHours()).padStart(2, "0");
+          const minutes = String(fechaSolDate.getMinutes()).padStart(2, "0");
+          const seconds = String(fechaSolDate.getSeconds()).padStart(2, "0");
 
-        setFechaSolicitud(
-          parseZonedDateTime(
-            `${fechaSolDate.toISOString().split("T")[0]}T${fechaSolDate.toTimeString().split(" ")[0]}[America/Bogota]`,
-          ),
-        );
+          setFechaSolicitud(
+            parseZonedDateTime(
+              `${year}-${month}-${day}T${hours}:${minutes}:${seconds}[America/Bogota]`,
+            ),
+          );
+        } catch (error) {
+          console.error("Error al parsear fecha_solicitud:", error);
+          // Usar fecha actual como fallback
+          setFechaSolicitud(
+            parseZonedDateTime(
+              `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+            ),
+          );
+        }
       }
 
       if (servicio.fecha_realizacion) {
-        const fechaRealDate = new Date(servicio.fecha_realizacion);
+        try {
+          const fechaRealDate = new Date(servicio.fecha_realizacion);
+          const year = fechaRealDate.getFullYear();
+          const month = String(fechaRealDate.getMonth() + 1).padStart(2, "0");
+          const day = String(fechaRealDate.getDate()).padStart(2, "0");
+          const hours = String(fechaRealDate.getHours()).padStart(2, "0");
+          const minutes = String(fechaRealDate.getMinutes()).padStart(2, "0");
+          const seconds = String(fechaRealDate.getSeconds()).padStart(2, "0");
 
-        setFechaRealizacion(
-          parseZonedDateTime(
-            `${fechaRealDate.toISOString().split("T")[0]}T${fechaRealDate.toTimeString().split(" ")[0]}[America/Bogota]`,
-          ),
-        );
+          setFechaRealizacion(
+            parseZonedDateTime(
+              `${year}-${month}-${day}T${hours}:${minutes}:${seconds}[America/Bogota]`,
+            ),
+          );
+        } catch (error) {
+          console.error("Error al parsear fecha_realizacion:", error);
+          // Usar fecha actual como fallback
+          setFechaRealizacion(
+            parseZonedDateTime(
+              `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+            ),
+          );
+        }
       }
 
       setSelectedOriginMun(servicio.origen_id || "");
@@ -318,25 +351,46 @@ export default function ModalFormServicio() {
   };
 
   // Función para convertir un objeto ZonedDateTime a formato para la base de datos
-  const convertirFechaParaDB = (zonedDateTime) => {
+  const convertirFechaParaDB = (
+    zonedDateTime: ZonedDateTime | null,
+  ): string | null => {
     if (!zonedDateTime) return null;
 
     // Convertir a objeto Date de JavaScript
-    const jsDate = zonedDateTime.toDate(zonedDateTime.timeZone);
+    const jsDate = zonedDateTime.toDate();
 
-    // Para MySQL/PostgreSQL puedes usar directamente el objeto Date
-    // o la representación ISO si prefieres
-    return jsDate;
+    // Convertir el Date a string en formato ISO (o el formato que necesite tu BD)
+    return jsDate.toISOString();
   };
 
   const nextStep = () => {
     // Validate required fields based on current step
     if (currentStep === 1) {
       // Step 1: Basic Info validation
-      if (!clienteSelected || !fechaSolicitud || !fechaRealizacion) {
+      if (!clienteSelected) {
         addToast({
           title: "Campos requeridos",
-          description: "Por favor diligencie todos los campos",
+          description: "Por favor seleccione un cliente",
+          color: "danger",
+        });
+
+        return;
+      }
+
+      if (!fechaSolicitud) {
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor seleccione una fecha de solicitud",
+          color: "danger",
+        });
+
+        return;
+      }
+
+      if (!fechaRealizacion) {
+        addToast({
+          title: "Campos requeridos",
+          description: "Por favor seleccione una fecha de realización",
           color: "danger",
         });
 
@@ -415,7 +469,7 @@ export default function ModalFormServicio() {
       }
 
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
-      const servicioData: CreateServicioDTO = {
+      const servicioData = {
         origen_id: selectedOriginMun,
         destino_id: selectedDestMun,
         origen_especifico: originSpecific,
@@ -805,7 +859,9 @@ export default function ModalFormServicio() {
                                   )}
                                   granularity="minute"
                                   value={fechaSolicitud}
-                                  onChange={setFechaSolicitud}
+                                  onChange={(value) => {
+                                    if (value) setFechaSolicitud(value);
+                                  }}
                                 />
                                 <p className="text-default-500 text-sm">
                                   Fecha:{" "}
@@ -817,11 +873,7 @@ export default function ModalFormServicio() {
                                         day: "numeric",
                                         hour: "2-digit",
                                         minute: "2-digit",
-                                      }).format(
-                                        fechaSolicitud.toDate(
-                                          getLocalTimeZone(),
-                                        ),
-                                      )
+                                      }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -851,7 +903,9 @@ export default function ModalFormServicio() {
                                   )}
                                   granularity="minute"
                                   value={fechaRealizacion}
-                                  onChange={setFechaRealizacion}
+                                  onChange={(value) => {
+                                    if (value) setFechaRealizacion(value);
+                                  }}
                                 />
                                 <p className="text-default-500 text-sm">
                                   Fecha:{" "}
@@ -863,11 +917,7 @@ export default function ModalFormServicio() {
                                         day: "numeric",
                                         hour: "2-digit",
                                         minute: "2-digit",
-                                      }).format(
-                                        fechaRealizacion.toDate(
-                                          getLocalTimeZone("CO"),
-                                        ),
-                                      )
+                                      }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -1438,36 +1488,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                  onClick={async () => {
-                                    if (
-                                      servicio.id &&
-                                      window.confirm(
-                                        "¿Estás seguro de que deseas cancelar este servicio?",
-                                      )
-                                    ) {
-                                      try {
-                                        await actualizarEstadoServicio(
-                                          servicio.id,
-                                          "cancelado",
-                                        );
-                                        addToast({
-                                          title: "Éxito",
-                                          description:
-                                            "Servicio cancelado correctamente",
-                                          color: "success",
-                                        });
-                                        handleModalForm(); // Cerrar modal
-                                        resetFormStates();
-                                      } catch (error) {
-                                        addToast({
-                                          title: "Error",
-                                          description:
-                                            "No se pudo cancelar el servicio",
-                                          color: "danger",
-                                        });
-                                      }
-                                    }
-                                  }}
+                                  // onClick={async () => {
+                                  //   if (
+                                  //     servicio.id &&
+                                  //     window.confirm(
+                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                  //     )
+                                  //   ) {
+                                  //     try {
+                                  //       await actualizarEstadoServicio(
+                                  //         servicio.id,
+                                  //         "cancelado",
+                                  //       );
+                                  //       addToast({
+                                  //         title: "Éxito",
+                                  //         description:
+                                  //           "Servicio cancelado correctamente",
+                                  //         color: "success",
+                                  //       });
+                                  //       handleModalForm(); // Cerrar modal
+                                  //       resetFormStates();
+                                  //     } catch (error) {
+                                  //       addToast({
+                                  //         title: "Error",
+                                  //         description:
+                                  //           "No se pudo cancelar el servicio",
+                                  //         color: "danger",
+                                  //       });
+                                  //     }
+                                  //   }
+                                  // }}
                                 >
                                   Cancelar Servicio
                                 </button>

@@ -133,8 +133,8 @@ export interface Servicio {
   cliente_id: string;
   estado: EstadoServicio;
   proposito_servicio: string;
-  fecha_solicitud: Date | string;
-  fecha_realizacion?: Date | string;
+  fecha_solicitud: string;
+  fecha_realizacion?: string;
   hora_salida: string;
   distancia_km: number;
   valor: number;
@@ -150,8 +150,10 @@ export interface Servicio {
   destino_latitud: number | null;
   destino_longitud: number | null;
   geometry: LatLngExpression[];
-  routeDistance: string | number;
+  routeDistance: string;
   routeDuration: number | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateServicioDTO {
@@ -167,9 +169,9 @@ export interface CreateServicioDTO {
   vehiculo_id: string;
   cliente_id: string;
   proposito_servicio: string;
-  fecha_solicitud: Date | string;
+  fecha_solicitud: string | null;
   estado: EstadoServicio;
-  fecha_realizacion: Date | string;
+  fecha_realizacion: string | null;
   valor: number;
   observaciones?: string;
 }
@@ -265,8 +267,8 @@ export interface Cliente {
   Cedula?: string;
   Telefono?: string;
   Direccion?: string;
-  created_at?: Date | string;
-  updated_at?: Date | string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 // Interface para crear un nuevo servicio
@@ -280,8 +282,8 @@ export interface CrearServicioDTO {
   cliente_id: number;
   estado?: EstadoServicio;
   proposito_servicio: string;
-  fecha_solicitud: Date | string;
-  fecha_realizacion?: Date | string;
+  fecha_solicitud: string;
+  fecha_realizacion?: string;
   distancia_km: number;
   valor: number;
   observaciones?: string;
@@ -298,8 +300,8 @@ export interface ActualizarServicioDTO {
   cliente_id?: number;
   estado?: EstadoServicio;
   proposito_servicio?: string;
-  fecha_solicitud?: Date | string;
-  fecha_realizacion?: Date | string;
+  fecha_solicitud?: string;
+  fecha_realizacion?: string;
   distancia_km?: number;
   valor?: number;
   observaciones?: string;
@@ -314,8 +316,8 @@ export interface CambiarEstadoDTO {
 export interface BuscarServiciosParams {
   estado?: EstadoServicio;
   proposito_servicio?: string;
-  fecha_solicitud?: Date | string;
-  fecha_realizacion?: Date | string;
+  fecha_solicitud?: string;
+  fecha_realizacion?: string;
   conductor_id?: string;
   cliente_id?: number;
   origen_id?: string;
@@ -572,36 +574,36 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
-  const actualizarEstadoServicio = async (
-    id: string,
-    estado: EstadoServicio,
-  ): Promise<ServicioConRelaciones> => {
-    try {
-      // Realizar la petición PATCH al endpoint de servicios
-      const response = await apiClient.patch<
-        ApiResponse<ServicioConRelaciones>
-      >(`/api/servicios/${id}/estado`, { estado });
+  // const actualizarEstadoServicio = async (
+  //   id: string,
+  //   estado: EstadoServicio,
+  // ): Promise<ServicioConRelaciones> => {
+  //   try {
+  //     // Realizar la petición PATCH al endpoint de servicios
+  //     const response = await apiClient.patch<
+  //       ApiResponse<ServicioConRelaciones>
+  //     >(`/api/servicios/${id}/estado`, { estado });
 
-      // Verificar si la operación fue exitosa
-      if (response.data.success && response.data.data) {
-        return response.data.data;
-      } else {
-        // Si hay un mensaje de error específico, usarlo
-        throw new Error(
-          response.data.message || "Error al actualizar el estado del servicio",
-        );
-      }
-    } catch (error) {
-      // Manejar errores de red o del servidor
-      if (error instanceof Error) {
-        throw error;
-      } else {
-        throw new Error(
-          "Error desconocido al actualizar el estado del servicio",
-        );
-      }
-    }
-  };
+  //     // Verificar si la operación fue exitosa
+  //     if (response.data.success && response.data.data) {
+  //       return response.data.data;
+  //     } else {
+  //       // Si hay un mensaje de error específico, usarlo
+  //       throw new Error(
+  //         response.data.message || "Error al actualizar el estado del servicio",
+  //       );
+  //     }
+  //   } catch (error) {
+  //     // Manejar errores de red o del servidor
+  //     if (error instanceof Error) {
+  //       throw error;
+  //     } else {
+  //       throw new Error(
+  //         "Error desconocido al actualizar el estado del servicio",
+  //       );
+  //     }
+  //   }
+  // };
 
   const handleModalForm = (servicio?: ServicioConRelaciones | null) => {
     // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si
@@ -1035,7 +1037,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     handleModalForm,
     handleModalTicket,
     actualizarServicio,
-    actualizarEstadoServicio,
 
     // Socket properties
     socketConnected,
