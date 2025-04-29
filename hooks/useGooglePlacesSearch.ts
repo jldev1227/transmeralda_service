@@ -2,11 +2,33 @@
 import { useState, useCallback, useRef } from "react";
 import axios from "axios";
 
+// Prediction interface
+interface Prediction {
+  description: string;
+  place_id: string;
+  structured_formatting?: {
+    main_text: string;
+    secondary_text: string;
+    main_text_matched_substrings?: Array<{
+      offset: number;
+      length: number;
+    }>;
+  };
+  terms?: Array<{
+    offset: number;
+    value: string;
+  }>;
+  types?: string[];
+}
+
 // Función de debounce personalizada
-const debounce = (func: Function, delay: number) => {
+function debounce<T extends (...args: any[]) => any>(
+  func: T, 
+  delay: number
+): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout;
 
-  return function (...args: any[]) {
+  return function(this: any, ...args: Parameters<T>) {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       func.apply(this, args);
@@ -51,7 +73,7 @@ export const useGooglePlacesSearch = (
   }, []);
 
   const debouncedFetch = useRef(
-    debounce((input: string) => fetchPredictions(input), 300),
+    debounce<(input: string) => Promise<void>>((input: string) => fetchPredictions(input), 300),
   ).current;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
