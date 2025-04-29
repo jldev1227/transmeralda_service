@@ -1,11 +1,15 @@
 import { Edit, Ticket } from "lucide-react";
 import { MouseEvent } from "react";
 
-import { EstadoServicio, ServicioConRelaciones, useService } from "@/context/serviceContext";
+import {
+  EstadoServicio,
+  ServicioConRelaciones,
+  useService,
+} from "@/context/serviceContext";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
-  selectedServicio: ServicioConRelaciones | null;
+  selectedServicio: ServicioConRelaciones | null | undefined;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
   getStatusColor: (estado: string) => string;
   getStatusText: (estado: string) => string;
@@ -69,7 +73,7 @@ const ServiciosListCards = ({
   };
 
   // Determinar si se debe mostrar el botón de edición
-  const shouldGetTicket = (estado: EstadoServicio)  => {
+  const shouldGetTicket = (estado: EstadoServicio) => {
     return estado !== "solicitado" && estado !== "cancelado";
   };
 
@@ -91,8 +95,6 @@ const ServiciosListCards = ({
     }
   };
 
-  console.log(selectedServicio);
-
   return (
     <div className="servicios-slider-container space-y-3">
       {filteredServicios.map((servicio: ServicioConRelaciones) => (
@@ -105,26 +107,33 @@ const ServiciosListCards = ({
             className={`select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative ${
               selectedServicio?.id === servicio.id ? getColorCard(servicio) : ""
             }`}
+            role="button"
+            tabIndex={0}
             onClick={() => handleSelectServicio(servicio)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                handleSelectServicio(servicio);
+              }
+            }}
           >
             {/* Botón de edición que aparece al deslizar/hover */}
 
             {shouldShowEditButton(servicio.estado) && (
               <button
-              className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-              onClick={(e) => handleEdit(e, servicio)}
+                className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+                onClick={(e) => handleEdit(e, servicio)}
               >
                 <Edit size={16} />
               </button>
             )}
 
             {shouldGetTicket(servicio.estado) && (
-            <button
-              className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-              onClick={(e) => handleViewTicket(e, servicio)}
+              <button
+                className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+                onClick={(e) => handleViewTicket(e, servicio)}
               >
-              <Ticket size={16} />
-            </button>
+                <Ticket size={16} />
+              </button>
             )}
 
             <div className="flex justify-between items-start mb-2">

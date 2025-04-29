@@ -9,20 +9,18 @@ import React, {
   Dispatch,
 } from "react";
 import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { Button } from "@heroui/button";
+import { Tooltip } from "@heroui/tooltip";
+import { PlusIcon } from "lucide-react";
+
+import LoadingComponent from "./ui/LoadingComponent";
 
 import {
   ServicioConRelaciones,
   useService,
   VehicleTracking,
 } from "@/context/serviceContext";
-
-import "mapbox-gl/dist/mapbox-gl.css";
-import { Button, PressEvent } from "@heroui/button";
-import { Tooltip } from "@heroui/tooltip";
-import { PlusIcon } from "lucide-react";
-
-import LoadingComponent from "./ui/LoadingComponent";
-
 import { formatearFecha } from "@/helpers";
 
 interface EnhancedMapComponentProps {
@@ -1009,7 +1007,7 @@ const EnhancedMapComponent = ({
     }
   };
 
-  const handleButtonPress = (e: PressEvent) => {
+  const handleButtonPress = () => {
     // Primero limpiar el mapa completamente
     clearMapObjects();
     setDetallesVisible(false);

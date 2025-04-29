@@ -86,8 +86,8 @@ interface ServiceContextType {
     React.SetStateAction<ServicioConRelaciones[]>
   >;
   selectServicio?: (servicio: ServicioConRelaciones) => void;
-  clearSelectedServicio?: () => void;
-  setSelectedServicio?: React.Dispatch<
+  clearSelectedServicio: () => void;
+  setSelectedServicio: React.Dispatch<
     React.SetStateAction<ServicioConRelaciones | null>
   >;
 

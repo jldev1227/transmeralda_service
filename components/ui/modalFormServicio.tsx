@@ -529,7 +529,7 @@ export default function ModalFormServicio() {
         }}
       >
         <ModalContent className="p-6">
-          {(onClose) => (
+          {() => (
             <>
               <ModalHeader className="flex flex-col gap-1">
                 {isEditing
@@ -1058,7 +1058,10 @@ export default function ModalFormServicio() {
                           </div>
                           {/* Purpose */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-2"
+                              htmlFor="purpose-personnel"
+                            >
                               Propósito del Servicio
                             </label>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1381,9 +1384,9 @@ export default function ModalFormServicio() {
                               </Select>
                             </div>
                             <p className="mt-2 text-xs text-gray-500">
-                              El estado inicial suele ser 'Solicitado' o
-                              'Planificado'. Otros estados se actualizarán
-                              durante el seguimiento.
+                              El estado inicial suele ser &apos;Solicitado&apos;
+                              o &apos;Planificado&apos;. Otros estados se
+                              actualizarán durante el seguimiento.
                             </p>
                           </div>
                         </div>
@@ -1417,13 +1420,13 @@ export default function ModalFormServicio() {
                           Anterior
                         </button>
                         {currentStep < totalSteps ? (
-                          <div
+                          <button
                             className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                            role="button"
+                            type="button"
                             onClick={nextStep}
                           >
                             Siguiente
-                          </div>
+                          </button>
                         ) : (
                           <div className="flex gap-2">
                             {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en curso */}
