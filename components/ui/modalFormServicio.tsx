@@ -213,7 +213,7 @@ export default function ModalFormServicio() {
     // Si el modal está abierto y es para editar
     if (modalForm && isEditing && servicio) {
       // Determinar si el servicio está en estado no editable
-      // Se permite la edición para servicios en estado 'en curso'
+      // Se permite la edición para servicios en estado 'en_curso'
       const isServiceReadOnly =
         servicio.estado === "realizado" || servicio.estado === "cancelado";
 
@@ -1438,12 +1438,12 @@ export default function ModalFormServicio() {
                           </button>
                         ) : (
                           <div className="flex gap-2">
-                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en curso */}
+                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en_curso */}
                             {isEditing &&
                               servicio &&
                               (servicio.estado === "solicitado" ||
                                 servicio.estado === "planificado" ||
-                                servicio.estado === "en curso") && (
+                                servicio.estado === "en_curso") && (
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"

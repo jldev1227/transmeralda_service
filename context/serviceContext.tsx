@@ -78,6 +78,14 @@ interface ServiceContextType {
     id: string,
     servicioData: CreateServicioDTO,
   ) => Promise<ServicioConRelaciones>;
+  actualizarEstadoServicio: (
+    id: string,
+    estado: EstadoServicio,
+  ) => Promise<ServicioConRelaciones>;
+  asignarPlanilla: (
+    servicioId: string,
+    numeroPlanilla: string,
+  ) => Promise<ServicioConRelaciones>;
   obtenerServicio: (id: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
@@ -98,7 +106,7 @@ interface ServiceContextType {
   // modalStates
   modalForm: boolean;
   modalTicket: boolean;
-  modalLiquidacion: boolean;
+  modalPlanilla: boolean;
   servicioEditar: ServicioEditar;
   servicioTicket: ServicioTicket;
   servicioLiquidar: ServicioLiquidar;
@@ -106,7 +114,7 @@ interface ServiceContextType {
   // handle Modals
   handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
   handleModalTicket: (servicio?: ServicioConRelaciones | null) => void;
-  handleModalLiquidacion: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalPlanilla: (servicio?: ServicioConRelaciones | null) => void;
 
   // Propiedades para Socket.IO
   socketConnected: boolean;
@@ -123,11 +131,12 @@ interface ServicesProviderContext {
 
 export type EstadoServicio =
   | "solicitado"
-  | "en curso"
+  | "en_curso"
   | "planificado"
   | "realizado"
   | "cancelado"
-  | "liquidado";
+  | "liquidado"
+  | "planilla_asignada";
 
 // Interface para el modelo Servicio
 export interface Servicio {
@@ -160,6 +169,7 @@ export interface Servicio {
   geometry: LatLngExpression[];
   routeDistance: string;
   routeDuration: number | null;
+  numero_planilla: string
   createdAt: Date;
   updatedAt: Date;
 }
@@ -272,6 +282,8 @@ export interface Cliente {
   Nombre: string;
   NIT?: string;
   Representante?: string;
+  paga_recargos: boolean;
+  requiere_osi: boolean;
   Cedula?: string;
   Telefono?: string;
   Direccion?: string;
@@ -363,7 +375,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [error, setError] = useState<string | null>(null);
   const [modalForm, setModalForm] = useState(false);
   const [modalTicket, setModalTicket] = useState(false);
-  const [modalLiquidacion, SetModalLiquidacion] = useState(false);
+  const [modalPlanilla, SetModalPlanilla] = useState(false);
   const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
     servicio: null,
     isEditing: false,
@@ -586,36 +598,64 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
-  // const actualizarEstadoServicio = async (
-  //   id: string,
-  //   estado: EstadoServicio,
-  // ): Promise<ServicioConRelaciones> => {
-  //   try {
-  //     // Realizar la petición PATCH al endpoint de servicios
-  //     const response = await apiClient.patch<
-  //       ApiResponse<ServicioConRelaciones>
-  //     >(`/api/servicios/${id}/estado`, { estado });
+  const actualizarEstadoServicio = async (
+    id: string,
+    estado: EstadoServicio,
+  ): Promise<ServicioConRelaciones> => {
+    try {
+      // Realizar la petición PATCH al endpoint de servicios
+      const response = await apiClient.patch<
+        ApiResponse<ServicioConRelaciones>
+      >(`/api/servicios/${id}/estado`, { estado });
 
-  //     // Verificar si la operación fue exitosa
-  //     if (response.data.success && response.data.data) {
-  //       return response.data.data;
-  //     } else {
-  //       // Si hay un mensaje de error específico, usarlo
-  //       throw new Error(
-  //         response.data.message || "Error al actualizar el estado del servicio",
-  //       );
-  //     }
-  //   } catch (error) {
-  //     // Manejar errores de red o del servidor
-  //     if (error instanceof Error) {
-  //       throw error;
-  //     } else {
-  //       throw new Error(
-  //         "Error desconocido al actualizar el estado del servicio",
-  //       );
-  //     }
-  //   }
-  // };
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al actualizar el estado del servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(
+          "Error desconocido al actualizar el estado del servicio",
+        );
+      }
+    }
+  };
+
+   const asignarPlanilla = async (servicioId : string, numeroPlanilla : string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiClient.patch<
+      ApiResponse<ServicioConRelaciones>
+    >(`/api/servicios/${servicioId}/planilla`, { numero_planilla: numeroPlanilla });
+      
+       // Verificar si la operación fue exitosa
+       if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else {
+        // Si hay un mensaje de error específico, usarlo
+        throw new Error(
+          response.data.message || "Error al asociar planilla al servicio",
+        );
+      }
+    } catch (error) {
+      // Manejar errores de red o del servidor
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Error desconocido al asociar planilla al servicio");
+      }
+    }
+  };
 
   const handleModalForm = (servicio?: ServicioConRelaciones | null) => {
     // IMPORTANTE: SIEMPRE limpiar el servicio seleccionado, independientemente de si
@@ -679,20 +719,20 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       }, 300);
     }
   };
-  const handleModalLiquidacion = (servicio?: ServicioConRelaciones | null) => {
+  const handleModalPlanilla = (servicio?: ServicioConRelaciones | null) => {
     // Cambiar el estado del modal
-    if (!modalLiquidacion) {
+    if (!modalPlanilla) {
       // Configurar el servicio para edición si se proporcionó uno
       if (servicio) {
         setServicioLiquidar({
           servicio: servicio,
         });
-        SetModalLiquidacion(!modalLiquidacion);
+        SetModalPlanilla(!modalPlanilla);
       } else {
         setServicioLiquidar({
           servicio: null,
         });
-        SetModalLiquidacion(false);
+        SetModalPlanilla(false);
       }
     }
     // Si el modal se está cerrando (actualmente está abierto)
@@ -702,7 +742,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         setServicioLiquidar({
           servicio: null,
         });
-        SetModalLiquidacion(false);
+        SetModalPlanilla(false);
       }, 300);
     }
   };
@@ -735,8 +775,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     async (servicio: ServicioConRelaciones) => {
       setSelectedServicio(servicio);
 
-      // Si el servicio está en curso, intentar obtener tracking del vehículo
-      if (servicio.estado === "en curso" && servicio.vehiculo?.placa) {
+      // Si el servicio está en_curso, intentar obtener tracking del vehículo
+      if (servicio.estado === "en_curso" && servicio.vehiculo?.placa) {
         setTrackingError("");
         try {
           // Aquí se implementaría la lógica para obtener el tracking del vehículo
@@ -981,8 +1021,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         let color: "success" | "warning" | "primary" | "danger" = "primary";
 
         switch (data.servicio.estado) {
-          case "en curso":
-            mensaje = `El servicio hacia ${data.servicio.destino_especifico} está en curso`;
+          case "en_curso":
+            mensaje = `El servicio hacia ${data.servicio.destino_especifico} está en_curso`;
             color = "success";
             break;
           case "realizado":
@@ -1008,6 +1048,33 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
+      const handlePlanillaAsignada = (data: {id : string, servicio: ServicioConRelaciones}) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:numero-planilla-actualizado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Actualizar en la lista de servicios
+        setServicios((prevServicios) =>
+          prevServicios.map((s) => (s.id === data.id ? data.servicio : s)),
+        );
+
+        // Si es el servicio seleccionado actualmente, actualizarlo
+        if (selectedServicio?.id === data.id) {
+          setSelectedServicio(data.servicio);
+        }
+
+        addToast({
+          title: "Planilla asignada",
+          description: `Al servicio ${data.id} se le ha asignado la planilla ${data.servicio.numero_planilla}`,
+          color: "success",
+        });
+      }
+
       // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);
       socketService.on("disconnect", handleDisconnect);
@@ -1022,6 +1089,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "servicio:estado-actualizado",
         handleServicioEstadoActualizado,
       );
+      socketService.on(
+        "servicio:numero-planilla-actualizado",
+        handlePlanillaAsignada,
+      );
 
       return () => {
         // Limpiar al desmontar
@@ -1035,6 +1106,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("servicio:desasignado");
         socketService.off("servicio:eliminado");
         socketService.off("servicio:estado-actualizado");
+        socketService.off("servicio:numero-planilla-actualizado");
       };
     }
   }, [user?.id, selectedServicio, clearSelectedServicio]);
@@ -1071,14 +1143,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     // Modals state
     modalForm,
     modalTicket,
-    modalLiquidacion,
+    modalPlanilla,
     servicioEditar,
 
     // handles Modal
     handleModalForm,
     handleModalTicket,
-    handleModalLiquidacion,
+    handleModalPlanilla,
     actualizarServicio,
+    actualizarEstadoServicio,
+    asignarPlanilla,
 
     // Socket properties
     socketConnected,

@@ -115,7 +115,8 @@ const EnhancedMapComponent = ({
   const statusColors = {
     solicitado: "#6a7282",
     realizado: "#155dfc",
-    "en curso": "#00bc7d",
+    "en_curso": "#00bc7d",
+    "planilla_asignada": "#ad46ff",
     planificado: "#FF9800",
     cancelado: "#F44336",
     default: "#3388ff",
@@ -123,6 +124,7 @@ const EnhancedMapComponent = ({
 
   const color = useMemo(() => {
     if (!selectedServicio) return statusColors.default;
+    console.log(selectedServicio)
 
     return (
       statusColors[selectedServicio.estado as keyof typeof statusColors] ||
@@ -174,7 +176,7 @@ const EnhancedMapComponent = ({
         if (!vehiclesData?.items) return;
 
         const serviciosEnCurso = servicios.filter(
-          (s) => s.estado === "en curso",
+          (s) => s.estado === "en_curso",
         );
         const vehicleMarkers: VehicleMarkerData[] = [];
 
@@ -719,8 +721,8 @@ const EnhancedMapComponent = ({
     }
 
     // 3. Mostrar ruta según el estado del servicio
-    if (selectedServicio.estado === "en curso" && vehicleTracking?.position) {
-      // Para servicios 'en curso' con vehículo activo, mostrar ruta desde vehículo al destino
+    if (selectedServicio.estado === "en_curso" && vehicleTracking?.position) {
+      // Para servicios 'en_curso' con vehículo activo, mostrar ruta desde vehículo al destino
       if (
         selectedServicio.destino_latitud &&
         selectedServicio.destino_longitud
@@ -777,7 +779,7 @@ const EnhancedMapComponent = ({
     if (
       !isMapLoaded ||
       !map.current ||
-      selectedServicio?.estado !== "en curso" ||
+      selectedServicio?.estado !== "en_curso" ||
       !vehicleTracking ||
       !vehicleTracking.position
     ) {
@@ -881,12 +883,12 @@ const EnhancedMapComponent = ({
       clearMapObjects();
       setDetallesVisible(false);
 
-      // Si no hay modal abierto y no hay servicio seleccionado, mostrar solo los marcadores pulsantes de vehículos en curso
+      // Si no hay modal abierto y no hay servicio seleccionado, mostrar solo los marcadores pulsantes de vehículos en_curso
       if (!modalForm && !selectedServicio && activeVehiclesData.length > 0) {
-        // Recrear SOLO los marcadores de vehículos activos con servicios en estado "en curso"
+        // Recrear SOLO los marcadores de vehículos activos con servicios en estado "en_curso"
         activeVehiclesData.forEach((data: VehicleMarkerData) => {
-          // Verificar que el servicio esté en curso antes de crear el marcador
-          if (data.service.estado === "en curso") {
+          // Verificar que el servicio esté en_curso antes de crear el marcador
+          if (data.service.estado === "en_curso") {
             const marker = createPulsingVehicleMarker(
               data.vehicle,
               data.service,
@@ -906,8 +908,8 @@ const EnhancedMapComponent = ({
           const bounds = new mapboxgl.LngLatBounds();
 
           activeVehiclesData.forEach((data) => {
-            // Solo incluir en los bounds los vehículos con servicios en curso
-            if (data.service.estado === "en curso") {
+            // Solo incluir en los bounds los vehículos con servicios en_curso
+            if (data.service.estado === "en_curso") {
               bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
             }
           });
@@ -965,10 +967,10 @@ const EnhancedMapComponent = ({
           markersRef.current.vehicle = undefined;
         }
 
-        // Create markers ONLY for active vehicles with services "en curso"
+        // Create markers ONLY for active vehicles with services "en_curso"
         activeVehiclesData.forEach((data: VehicleMarkerData) => {
-          // Solo crear marcador si el servicio está en curso
-          if (data.service.estado === "en curso") {
+          // Solo crear marcador si el servicio está en_curso
+          if (data.service.estado === "en_curso") {
             const marker = createPulsingVehicleMarker(
               data.vehicle,
               data.service,
@@ -991,7 +993,7 @@ const EnhancedMapComponent = ({
           const bounds = new mapboxgl.LngLatBounds();
 
           activeVehiclesData.forEach((data) => {
-            if (data.service.estado === "en curso") {
+            if (data.service.estado === "en_curso") {
               bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
             }
           });
@@ -1150,7 +1152,7 @@ const EnhancedMapComponent = ({
               </div>
             </div>
 
-            {selectedServicio.estado === "en curso" && (
+            {selectedServicio.estado === "en_curso" && (
               <div className="mt-4 pt-4 border-t">
                 <h4 className="font-semibold mb-2">Tracking del Vehículo</h4>
                 {vehicleTracking ? (
@@ -1190,9 +1192,9 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div className="absolute top-3.5 left-3 md:left-12 bg-white bg-opacity-90 p-2 rounded-md shadow">
+      <div className="absolute top-3.5 left-4  bg-white bg-opacity-90 p-2 rounded-md shadow">
         <span className="text-sm font-medium">
-          Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
+          Vehiculos con servicios en_curso (Wialon): {activeVehiclesData.length}
         </span>
       </div>
 
@@ -1219,7 +1221,7 @@ const EnhancedMapComponent = ({
         </Tooltip>
       </div>
 
-      {selectedServicio?.estado === "en curso" &&
+      {selectedServicio?.estado === "en_curso" &&
         trackingError &&
         !vehicleTracking && (
           <div className="absolute bottom-2 left-2 right-2 z-[1000] bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
