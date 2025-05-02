@@ -12,7 +12,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { PlusIcon } from "lucide-react";
+import { ClipboardList, PlusIcon } from "lucide-react";
 
 import LoadingComponent from "./ui/LoadingComponent";
 
@@ -1196,7 +1196,17 @@ const EnhancedMapComponent = ({
         </span>
       </div>
 
-      <div className="absolute bottom-10 right-5">
+      <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
+        <Tooltip content="Historico de servicios" radius="sm">
+          <Button
+            isIconOnly
+            className="text-sm font-medium bg-white h-12 w-12"
+            radius="sm"
+            onPress={handleButtonPress}
+          >
+            <ClipboardList color="#00bc7d" />
+          </Button>
+        </Tooltip>
         <Tooltip content="Agregar servicio" radius="sm">
           <Button
             isIconOnly

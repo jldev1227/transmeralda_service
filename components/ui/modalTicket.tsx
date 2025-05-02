@@ -120,8 +120,8 @@ export default function ModalTicket() {
                           Vehículo
                         </h3>
                         <p className="text-gray-700">
-                          {servicio.vehiculo?.placa} {servicio.vehiculo?.linea}{" "}
-                          {servicio.vehiculo?.modelo}
+                          {servicio.vehiculo?.placa} {servicio.vehiculo?.marca}{" "}
+                          {servicio.vehiculo?.linea} {servicio.vehiculo?.modelo}
                         </p>
                       </div>
                     </div>

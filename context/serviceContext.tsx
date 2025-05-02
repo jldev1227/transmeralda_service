@@ -59,6 +59,10 @@ export interface ServicioTicket {
   servicio: ServicioConRelaciones | null;
 }
 
+export interface ServicioLiquidar {
+  servicio: ServicioConRelaciones | null;
+}
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
@@ -94,12 +98,15 @@ interface ServiceContextType {
   // modalStates
   modalForm: boolean;
   modalTicket: boolean;
+  modalLiquidacion: boolean;
   servicioEditar: ServicioEditar;
   servicioTicket: ServicioTicket;
+  servicioLiquidar: ServicioLiquidar;
 
   // handle Modals
   handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
   handleModalTicket: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalLiquidacion: (servicio?: ServicioConRelaciones | null) => void;
 
   // Propiedades para Socket.IO
   socketConnected: boolean;
@@ -119,7 +126,8 @@ export type EstadoServicio =
   | "en curso"
   | "planificado"
   | "realizado"
-  | "cancelado";
+  | "cancelado"
+  | "liquidado";
 
 // Interface para el modelo Servicio
 export interface Servicio {
@@ -355,11 +363,15 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [error, setError] = useState<string | null>(null);
   const [modalForm, setModalForm] = useState(false);
   const [modalTicket, setModalTicket] = useState(false);
+  const [modalLiquidacion, SetModalLiquidacion] = useState(false);
   const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
     servicio: null,
     isEditing: false,
   });
   const [servicioTicket, setServicioTicket] = useState<ServicioTicket>({
+    servicio: null,
+  });
+  const [servicioLiquidar, setServicioLiquidar] = useState<ServicioTicket>({
     servicio: null,
   });
 
@@ -664,6 +676,33 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           servicio: null,
         });
         setModalTicket(false);
+      }, 300);
+    }
+  };
+  const handleModalLiquidacion = (servicio?: ServicioConRelaciones | null) => {
+    // Cambiar el estado del modal
+    if (!modalLiquidacion) {
+      // Configurar el servicio para edición si se proporcionó uno
+      if (servicio) {
+        setServicioLiquidar({
+          servicio: servicio,
+        });
+        SetModalLiquidacion(!modalLiquidacion);
+      } else {
+        setServicioLiquidar({
+          servicio: null,
+        });
+        SetModalLiquidacion(false);
+      }
+    }
+    // Si el modal se está cerrando (actualmente está abierto)
+    else {
+      // Retraso para asegurar que la animación de cierre funcione correctamente
+      setTimeout(() => {
+        setServicioLiquidar({
+          servicio: null,
+        });
+        SetModalLiquidacion(false);
       }, 300);
     }
   };
@@ -1010,6 +1049,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicios,
     servicio,
     servicioTicket,
+    servicioLiquidar,
     municipios,
     conductores,
     vehiculos,
@@ -1031,11 +1071,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     // Modals state
     modalForm,
     modalTicket,
+    modalLiquidacion,
     servicioEditar,
 
     // handles Modal
     handleModalForm,
     handleModalTicket,
+    handleModalLiquidacion,
     actualizarServicio,
 
     // Socket properties

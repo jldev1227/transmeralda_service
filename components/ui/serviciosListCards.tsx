@@ -1,5 +1,6 @@
-import { Edit, Ticket } from "lucide-react";
+import { DollarSign, Edit, Ticket } from "lucide-react";
 import { MouseEvent } from "react";
+import { Tooltip } from "@heroui/tooltip";
 
 import {
   EstadoServicio,
@@ -24,8 +25,12 @@ const ServiciosListCards = ({
   getStatusText,
   formatearFecha,
 }: ServiciosListCardsProps) => {
-  const { handleModalForm, handleModalTicket, clearSelectedServicio } =
-    useService();
+  const {
+    handleModalForm,
+    handleModalTicket,
+    handleModalLiquidacion,
+    clearSelectedServicio,
+  } = useService();
 
   // Función para manejar el evento de edición
   const handleEdit = (
@@ -67,14 +72,37 @@ const ServiciosListCards = ({
     }, 50); // Pequeño retraso para asegurar que la limpieza se complete
   };
 
+  // Función para manejar el evento de edición
+  const handleViewLiquidacion = (
+    e: MouseEvent<HTMLButtonElement>,
+    servicio: ServicioConRelaciones,
+  ) => {
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
+
+    // No mostrar botón de edición si el servicio está completado o cancelado
+    if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
+      return;
+    }
+
+    // Después de limpiar, abrimos el modal con el servicio a editar
+    setTimeout(() => {
+      handleModalLiquidacion(servicio);
+    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+  };
+
   // Determinar si se debe mostrar el botón de edición
   const shouldShowEditButton = (estado: EstadoServicio) => {
     return estado !== "realizado" && estado !== "cancelado";
   };
 
-  // Determinar si se debe mostrar el botón de edición
+  // Determinar si se debe mostrar el botón de ticket
   const shouldGetTicket = (estado: EstadoServicio) => {
     return estado !== "solicitado" && estado !== "cancelado";
+  };
+
+  // Determinar si se debe mostrar el botón de proceder a liquidar
+  const showLiquidar = (estado: EstadoServicio) => {
+    return estado === "realizado";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -119,21 +147,36 @@ const ServiciosListCards = ({
             {/* Botón de edición que aparece al deslizar/hover */}
 
             {shouldShowEditButton(servicio.estado) && (
-              <button
-                className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                onClick={(e) => handleEdit(e, servicio)}
-              >
-                <Edit size={16} />
-              </button>
+              <Tooltip color="primary" content="Editar">
+                <button
+                  className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+                  onClick={(e) => handleEdit(e, servicio)}
+                >
+                  <Edit size={16} />
+                </button>
+              </Tooltip>
             )}
 
             {shouldGetTicket(servicio.estado) && (
-              <button
-                className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                onClick={(e) => handleViewTicket(e, servicio)}
-              >
-                <Ticket size={16} />
-              </button>
+              <Tooltip color="primary" content="Ver">
+                <button
+                  className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : showLiquidar(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+                  onClick={(e) => handleViewTicket(e, servicio)}
+                >
+                  <Ticket size={16} />
+                </button>
+              </Tooltip>
+            )}
+
+            {showLiquidar(servicio.estado) && (
+              <Tooltip color="primary" content="Liquidar">
+                <button
+                  className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+                  onClick={(e) => handleViewLiquidacion(e, servicio)}
+                >
+                  <DollarSign size={16} />
+                </button>
+              </Tooltip>
             )}
 
             <div className="flex justify-between items-start mb-2">

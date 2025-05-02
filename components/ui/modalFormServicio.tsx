@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import SelectReact from "react-select";
 // Ajusta esta importación según la biblioteca que uses
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
+import { Building2 } from "lucide-react";
 
 const UserIcon = () => (
   <svg
@@ -95,27 +95,6 @@ const CheckCircleIcon = () => (
   >
     <path
       d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-const BuildingOfficeIcon = () => (
-  <svg
-    className="w-5 h-5 text-gray-400"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M8.25 21h7.5M12 6.75a.75.75 0 0 1 .75.75v11.25a.75.75 0 0 1-1.5 0V7.5a.75.75 0 0 1 .75-.75Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M8.25 6.75h.008v.008H8.25V6.75Zm0 3.75h.008v.008H8.25v-.008Zm0 3.75h.008v.008H8.25v-.008Zm0 3.75h.008v.008H8.25v-.008Zm3-11.25h.008v.008H11.25V6.75Zm0 3.75h.008v.008H11.25v-.008Zm0 3.75h.008v.008H11.25v-.008Zm0 3.75h.008v.008H11.25v-.008Zm3-11.25h.008v.008H14.25V6.75Zm0 3.75h.008v.008H14.25v-.008Zm0 3.75h.008v.008H14.25v-.008Zm0 3.75h.008v.008H14.25v-.008Z"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -468,6 +447,10 @@ export default function ModalFormServicio() {
         clearSelectedServicio();
       }
 
+      // Determinar el estado automáticamente basado en la presencia de conductor y vehículo
+      const estadoServicio: EstadoServicio =
+        conductorSelected && vehicleSelected ? "planificado" : "solicitado";
+
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
       const servicioData = {
         origen_id: selectedOriginMun,
@@ -484,7 +467,7 @@ export default function ModalFormServicio() {
         proposito_servicio: purpose,
         fecha_solicitud: convertirFechaParaDB(fechaSolicitud),
         fecha_realizacion: convertirFechaParaDB(fechaRealizacion),
-        estado: state,
+        estado: estadoServicio,
         valor: 0,
         observaciones: observaciones,
       };
@@ -647,8 +630,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                    servicio.fecha_solicitud,
-                                  ).toLocaleString()
+                                  servicio.fecha_solicitud,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -659,8 +642,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                    servicio.fecha_realizacion,
-                                  ).toLocaleString()
+                                  servicio.fecha_realizacion,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -762,9 +745,10 @@ export default function ModalFormServicio() {
                             </label>
                             <div className="relative shadow-sm rounded-md">
                               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <BuildingOfficeIcon />
+                                <Building2 className="w-5 h-5 text-gray-400" />
                               </div>
                               <SelectReact
+                                isClearable
                                 isSearchable
                                 required
                                 className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
@@ -820,6 +804,12 @@ export default function ModalFormServicio() {
                                     color: "#1f2937",
                                     fontSize: "0.875rem",
                                   }),
+                                  clearIndicator: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    "&:hover": { color: "#ef4444" },
+                                    padding: "0px 8px",
+                                  }),
                                 }}
                                 value={
                                   empresaOptions.find(
@@ -867,13 +857,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaSolicitud.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -911,13 +901,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaRealizacion.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -943,6 +933,7 @@ export default function ModalFormServicio() {
                                   <LocationMarkerIcon />
                                 </div>
                                 <SelectReact
+                                  isClearable
                                   isSearchable
                                   required
                                   className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
@@ -1024,6 +1015,7 @@ export default function ModalFormServicio() {
                                   <LocationMarkerIcon />
                                 </div>
                                 <SelectReact
+                                  isClearable
                                   isSearchable
                                   required
                                   className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
@@ -1179,6 +1171,7 @@ export default function ModalFormServicio() {
                                   <UserIcon />
                                 </div>
                                 <SelectReact
+                                  isClearable
                                   isSearchable
                                   className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
@@ -1269,6 +1262,7 @@ export default function ModalFormServicio() {
                                   <TruckIcon />
                                 </div>
                                 <SelectReact
+                                  isClearable
                                   isSearchable
                                   className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
@@ -1393,51 +1387,16 @@ export default function ModalFormServicio() {
                               Estado del Servicio
                             </label>
                             <div className="relative">
-                              {/* Optional: Add an icon here */}
-                              <Select
-                                classNames={{
-                                  trigger: [
-                                    "!bg-transparent",
-                                    "data-[hover=true]:!bg-transparent",
-                                    "border-1",
-                                    "py-7",
-                                    "group-data-[focus=true]:!bg-transparent",
-                                    "rounded-md",
-                                  ],
-                                }}
-                                id="status"
-                                name="status"
-                                selectedKeys={[state]} // Cambia value por selectedKeys
-                                onSelectionChange={(keys) => {
-                                  const selectedValue = Array.from(
-                                    keys,
-                                  )[0] as EstadoServicio;
-
-                                  setState(selectedValue);
-                                }}
-                              >
-                                <SelectItem
-                                  key="solicitado"
-                                  textValue="Solicitado"
-                                >
-                                  Solicitado
-                                </SelectItem>
-                                <SelectItem
-                                  key="planificado"
-                                  textValue="Planificado"
-                                >
-                                  Planificado
-                                </SelectItem>
-                                <SelectItem key="en curso" textValue="En curso">
-                                  En curso
-                                </SelectItem>
-                              </Select>
+                              <p className="text-md font-medium mb-4">
+                                {conductorSelected && vehicleSelected
+                                  ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
+                                  : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados."}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                El estado se determina automáticamente según las
+                                asignaciones realizadas.
+                              </p>
                             </div>
-                            <p className="mt-2 text-xs text-gray-500">
-                              El estado inicial suele ser &apos;Solicitado&apos;
-                              o &apos;Planificado&apos;. Otros estados se
-                              actualizarán durante el seguimiento.
-                            </p>
                           </div>
                         </div>
                       )}
@@ -1488,36 +1447,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                  // onClick={async () => {
-                                  //   if (
-                                  //     servicio.id &&
-                                  //     window.confirm(
-                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                  //     )
-                                  //   ) {
-                                  //     try {
-                                  //       await actualizarEstadoServicio(
-                                  //         servicio.id,
-                                  //         "cancelado",
-                                  //       );
-                                  //       addToast({
-                                  //         title: "Éxito",
-                                  //         description:
-                                  //           "Servicio cancelado correctamente",
-                                  //         color: "success",
-                                  //       });
-                                  //       handleModalForm(); // Cerrar modal
-                                  //       resetFormStates();
-                                  //     } catch (error) {
-                                  //       addToast({
-                                  //         title: "Error",
-                                  //         description:
-                                  //           "No se pudo cancelar el servicio",
-                                  //         color: "danger",
-                                  //       });
-                                  //     }
-                                  //   }
-                                  // }}
+                                // onClick={async () => {
+                                //   if (
+                                //     servicio.id &&
+                                //     window.confirm(
+                                //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                //     )
+                                //   ) {
+                                //     try {
+                                //       await actualizarEstadoServicio(
+                                //         servicio.id,
+                                //         "cancelado",
+                                //       );
+                                //       addToast({
+                                //         title: "Éxito",
+                                //         description:
+                                //           "Servicio cancelado correctamente",
+                                //         color: "success",
+                                //       });
+                                //       handleModalForm(); // Cerrar modal
+                                //       resetFormStates();
+                                //     } catch (error) {
+                                //       addToast({
+                                //         title: "Error",
+                                //         description:
+                                //           "No se pudo cancelar el servicio",
+                                //         color: "danger",
+                                //       });
+                                //     }
+                                //   }
+                                // }}
                                 >
                                   Cancelar Servicio
                                 </button>

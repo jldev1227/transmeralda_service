@@ -16,6 +16,7 @@ import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
 import ModalTicket from "@/components/ui/modalTicket";
+import ModalLiquidacion from "@/components/ui/modalLiquidacion";
 
 interface MapboxRoute {
   distance: number;
@@ -53,7 +54,7 @@ const getStatusColor = (estado: string): string => {
 const statusTextMap: Record<string, string> = {
   realizado: "Realizado",
   "en curso": "En curso",
-  planificado: "Pendiente",
+  planificado: "Planificado",
   cancelado: "Cancelado",
   solicitado: "Solicitado",
 };
@@ -368,6 +369,7 @@ const AdvancedDashboard = () => {
         />
         <ModalFormServicio />
         <ModalTicket />
+        <ModalLiquidacion />
       </div>
 
       {/* Floating toggle button for mobile */}
