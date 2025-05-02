@@ -56,7 +56,7 @@ export default function ModalLiquidacion() {
                         <>
                             <ModalHeader>Liquidando servicio #{servicio?.id}</ModalHeader>
                             <ModalBody>
-                                <div className="grid">
+                                <div className="relative">
                                     <label className="block text-sm font-medium text-gray-700 mb-1"
                                         htmlFor="operadora">Operadora</label>
                                     <div className="relative shadow-sm rounded-md">
@@ -64,7 +64,37 @@ export default function ModalLiquidacion() {
                                             <Building2 className="w-5 h-5 text-gray-400" />
                                         </div>
                                         <input
-                                            className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                            className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-5 appearance-none outline-emerald-600"
+                                            id="operadora"
+                                            type="text"
+                                            placeholder="Ingresa el nombre de la operadora"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1"
+                                        htmlFor="operadora">Operadora</label>
+                                    <div className="relative shadow-sm rounded-md">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Building2 className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-5 appearance-none outline-emerald-600"
+                                            id="operadora"
+                                            type="text"
+                                            placeholder="Ingresa el nombre de la operadora"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1"
+                                        htmlFor="operadora">Operadora</label>
+                                    <div className="relative shadow-sm rounded-md">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Building2 className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-5 appearance-none outline-emerald-600"
                                             id="operadora"
                                             type="text"
                                             placeholder="Ingresa el nombre de la operadora"
