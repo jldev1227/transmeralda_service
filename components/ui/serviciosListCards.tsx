@@ -120,8 +120,8 @@ const ServiciosListCards = ({
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
-  const getColorCard = (servicio: ServicioConRelaciones) => {
-    switch (servicio.estado) {
+  const getColorCard = (estado: EstadoServicio) => {
+    switch (estado) {
       case "planilla_asignada":
         return "border-purple-500 bg-purple-50";
       case "en_curso":
@@ -139,128 +139,144 @@ const ServiciosListCards = ({
     }
   };
 
-  // Procesar eventos de socket para marcar filas como nuevas o actualizadas
+  const getBorderLeftColorByEvent = (eventType: string) => {
+    switch (eventType) {
+      case "servicio:creado":
+        return "border-l-4 border-l-green-500"; // Success para creación
+      case "servicio:actualizado":
+      case "servicio:estado-actualizado":
+        return "border-l-4 border-l-blue-500"; // Primary para actualizaciones
+      case "servicio:numero-planilla-actualizado":
+        return "border-l-4 border-l-purple-500"; // Purple para asignación de planilla
+      case "servicio:eliminado":
+      case "servicio:cancelado":
+        return "border-l-4 border-l-red-500"; // Red para eliminaciones/cancelaciones
+      case "servicio:asignado":
+        return "border-l-4 border-l-amber-500"; // Amber para asignaciones
+      case "servicio:desasignado":
+        return "border-l-4 border-l-gray-500"; // Gray para desasignaciones
+      default:
+        return "border-l-4 border-l-gray-300";
+    }
+  };
+  
+  // Modifica la interfaz RowAnimationState para incluir el tipo de evento
+  interface RowAnimationState {
+    [key: string]: {
+      isNew: boolean;
+      isUpdated: boolean;
+      eventType: string; // Añadir el tipo de evento
+      timestamp: number;
+    };
+  }
+  
+  // Actualiza el useEffect donde procesas los eventos de socket
   useEffect(() => {
     if (!socketEventLogs || socketEventLogs.length === 0) return;
-
+  
     // Obtener el evento más reciente
     const latestEvents = [...socketEventLogs]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, 5); // Solo procesar los 5 eventos más recientes
-
+  
     const now = Date.now();
     const newAnimations: RowAnimationState = { ...rowAnimations };
-
+  
     latestEvents.forEach((event) => {
-      // Manejar creación de servicio
-      if (event.eventName === "servicio:creado" && event.data.servicio) {
-        const servicioId = event.data.servicio.id;
-
+      // Obtener ID del servicio según el tipo de evento
+      let servicioId = '';
+      if (event.data.servicio) {
+        servicioId = event.data.servicio.id;
+      } else if (event.data.id) {
+        servicioId = event.data.id;
+      }
+  
+      if (!servicioId) return;
+  
+      if (event.eventName === "servicio:creado") {
         newAnimations[servicioId] = {
           isNew: true,
           isUpdated: false,
+          eventType: event.eventName,
           timestamp: now,
         };
-
-        // Scroll a la servicio nueva (en el siguiente ciclo de renderizado)
+      } else {
+        // Para cualquier otro evento, marcar como actualizado
+        newAnimations[servicioId] = {
+          isNew: false,
+          isUpdated: true,
+          eventType: event.eventName,
+          timestamp: now,
+        };
+      }
+  
+      // Scroll al servicio si es nuevo
+      if (event.eventName === "servicio:creado") {
         setTimeout(() => {
-          const row = document.getElementById(
-            `servicio-row-${servicioId}`,
-          );
-
+          const row = document.getElementById(`servicio-row-${servicioId}`);
           if (row) {
             row.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         }, 100);
       }
-
-      // Manejar actualización de servicio
-      else if (
-        event.eventName === "servicio:actualizado" &&
-        event.data.servicio
-      ) {
-        const servicioId = event.data.servicio.id;
-
-        // Solo marcar como actualizada si no es nueva
-        if (!newAnimations[servicioId]?.isNew) {
-          newAnimations[servicioId] = {
-            isNew: false,
-            isUpdated: true,
-            timestamp: now,
-          };
-        }
-      }
-      // Manejar asignacion de planilla de servicio
-      else if (
-        event.eventName === "servicio:numero-planilla-actualizado" &&
-        event.data.servicio
-      ) {
-        console.log(event)
-        const servicioId = event.data.servicio.id;
-
-        // Solo marcar como actualizada si no es nueva
-        if (!newAnimations[servicioId]?.isNew) {
-          newAnimations[servicioId] = {
-            isNew: false,
-            isUpdated: true,
-            timestamp: now,
-          };
-        }
-      }
     });
-
+  
     setRowAnimations(newAnimations);
-
+  
     // Limpiar animaciones después de 5 segundos
     const timer = setTimeout(() => {
       setRowAnimations((prev) => {
         const updated: RowAnimationState = {};
-
         // Solo mantener animaciones que sean más recientes que 5 segundos
         Object.entries(prev).forEach(([id, state]) => {
           if (now - state.timestamp < 5000) {
             updated[id] = state;
           }
         });
-
         return updated;
       });
     }, 5000);
-
+  
     return () => clearTimeout(timer);
   }, [socketEventLogs]);
-
   return (
     <div className="servicios-slider-container space-y-3">
       {filteredServicios.map((servicio: ServicioConRelaciones) => {
 
-        const animation = rowAnimations[servicio.id];
+        // Usar una verificación de nulidad para garantizar que id no sea undefined
+        const serviceId = servicio.id || '';
+        const animation = rowAnimations[serviceId];
         const isNew = animation?.isNew || false;
         const isUpdated = animation?.isUpdated || false;
+        const eventType = animation?.eventType || '';
+        
+        // Determinar si mostrar el borde y qué color usar
+        const showAnimation = isNew || isUpdated;
 
         return (
           <div
-            key={servicio.id}
-            id={`servicio-${servicio.id}`}
+          key={servicio.id}
+          id={`servicio-${servicio.id}`}
+          className="px-1 relative group"
+          style={{ width: "auto", minWidth: "280px", maxWidth: "350px" }}
+        >
+          <div
             className={`
-              px-1 relative group 
-              ${isNew ? "animate-highlight-new bg-green-50" : ""}
-              ${isUpdated ? "" : ""}
+              select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative
+              ${showAnimation ? getBorderLeftColorByEvent(eventType) : "border-l"}
+              ${isNew ? "animate-pulse" : ""}
+              ${isUpdated ? "animate-fadeIn" : ""}
+              ${selectedServicio?.id === servicio.id ? getColorCard(servicio) : ""}
             `}
-            style={{ width: "auto", minWidth: "280px", maxWidth: "350px" }}
+            role="button"
+            tabIndex={0}
+            onClick={() => handleSelectServicio(servicio)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                handleSelectServicio(servicio);
+              }
+            }}
           >
-            <div
-              className={`select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative ${selectedServicio?.id === servicio.id ? getColorCard(servicio) : ""
-                }`}
-              role="button"
-              tabIndex={0}
-              onClick={() => handleSelectServicio(servicio)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleSelectServicio(servicio);
-                }
-              }}
-            >
               {/* Botón de edición que aparece al deslizar/hover */}
 
               {shouldShowEditButton(servicio.estado) && (
@@ -326,7 +342,8 @@ const ServiciosListCards = ({
             </div>
           </div>
         )
-      })}
+      })
+      }
     </div>
   );
 };
