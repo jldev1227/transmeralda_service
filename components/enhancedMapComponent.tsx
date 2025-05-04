@@ -96,7 +96,7 @@ const EnhancedMapComponent = ({
   wialonToken,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
-  const { handleModalForm } = useService();
+  const { handleModalForm, handleModalLiquidar } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkersRef>({
@@ -1009,7 +1009,7 @@ const EnhancedMapComponent = ({
     }
   };
 
-  const handleButtonPress = () => {
+  const handleButtonPressForm = () => {
     // Primero limpiar el mapa completamente
     clearMapObjects();
     setDetallesVisible(false);
@@ -1018,6 +1018,18 @@ const EnhancedMapComponent = ({
     setTimeout(() => {
       // Abrir el modal de agregar servicio
       handleModalForm();
+    }, 50);
+  };
+
+  const handleButtonPressLiquidar = () => {
+    // Primero limpiar el mapa completamente
+    clearMapObjects();
+    setDetallesVisible(false);
+
+    // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
+    setTimeout(() => {
+      // Abrir el modal de agregar servicio
+      handleModalLiquidar();
     }, 50);
   };
 
@@ -1204,7 +1216,7 @@ const EnhancedMapComponent = ({
             isIconOnly
             className="text-sm font-medium bg-white h-12 w-12"
             radius="sm"
-            onPress={handleButtonPress}
+            onPress={handleButtonPressLiquidar}
           >
             <ClipboardList color="#00bc7d" />
           </Button>
@@ -1214,7 +1226,7 @@ const EnhancedMapComponent = ({
             isIconOnly
             className="text-sm font-medium bg-white h-12 w-12"
             radius="sm"
-            onPress={handleButtonPress}
+            onPress={handleButtonPressForm}
           >
             <PlusIcon color="#00bc7d" />
           </Button>

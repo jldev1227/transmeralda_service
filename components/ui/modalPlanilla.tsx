@@ -8,10 +8,10 @@ import { formatCurrency, formatearFecha } from "@/helpers";
 import RouteAndDetails from "./routeAndDetails";
 
 export default function ModalPlanilla() {
-  const { servicioLiquidar, modalPlanilla, handleModalPlanilla, asignarPlanilla } = useService();
+  const { servicioPlanilla, modalPlanilla, handleModalPlanilla, asignarPlanilla } = useService();
 
   // Obtener el servicio real del contexto
-  const servicio = servicioLiquidar?.servicio;
+  const servicio = servicioPlanilla?.servicio;
 
   // Estado para el valor de la planilla y errores
   const [planillaValue, setPlanillaValue] = useState('TM-');

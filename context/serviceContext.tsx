@@ -107,14 +107,16 @@ interface ServiceContextType {
   modalForm: boolean;
   modalTicket: boolean;
   modalPlanilla: boolean;
+  modalLiquidar: boolean;
   servicioEditar: ServicioEditar;
   servicioTicket: ServicioTicket;
-  servicioLiquidar: ServicioLiquidar;
+  servicioPlanilla: ServicioLiquidar;
 
   // handle Modals
   handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
   handleModalTicket: (servicio?: ServicioConRelaciones | null) => void;
   handleModalPlanilla: (servicio?: ServicioConRelaciones | null) => void;
+  handleModalLiquidar: () => void;
 
   // Propiedades para Socket.IO
   socketConnected: boolean;
@@ -375,7 +377,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [error, setError] = useState<string | null>(null);
   const [modalForm, setModalForm] = useState(false);
   const [modalTicket, setModalTicket] = useState(false);
-  const [modalPlanilla, SetModalPlanilla] = useState(false);
+  const [modalPlanilla, setModalPlanilla] = useState(false);
+  const [modalLiquidar, setModalLiquidar] = useState(false);
   const [servicioEditar, setServicioEditar] = useState<ServicioEditar>({
     servicio: null,
     isEditing: false,
@@ -383,9 +386,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [servicioTicket, setServicioTicket] = useState<ServicioTicket>({
     servicio: null,
   });
-  const [servicioLiquidar, setServicioLiquidar] = useState<ServicioTicket>({
+  const [servicioPlanilla, setServicioPlanilla] = useState<ServicioTicket>({
     servicio: null,
   });
+  const [serviciosLiquidar, setServiciosLiquidar] = useState<ServicioConRelaciones[]>([]);
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -404,8 +408,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -427,8 +431,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -452,8 +456,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -475,8 +479,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -498,8 +502,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -527,8 +531,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
         );
 
         return null;
@@ -629,17 +633,17 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
-   const asignarPlanilla = async (servicioId : string, numeroPlanilla : string) => {
+  const asignarPlanilla = async (servicioId: string, numeroPlanilla: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await apiClient.patch<
-      ApiResponse<ServicioConRelaciones>
-    >(`/api/servicios/${servicioId}/planilla`, { numero_planilla: numeroPlanilla });
-      
-       // Verificar si la operación fue exitosa
-       if (response.data.success && response.data.data) {
+        ApiResponse<ServicioConRelaciones>
+      >(`/api/servicios/${servicioId}/planilla`, { numero_planilla: numeroPlanilla });
+
+      // Verificar si la operación fue exitosa
+      if (response.data.success && response.data.data) {
         return response.data.data;
       } else {
         // Si hay un mensaje de error específico, usarlo
@@ -719,32 +723,37 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       }, 300);
     }
   };
+
   const handleModalPlanilla = (servicio?: ServicioConRelaciones | null) => {
     // Cambiar el estado del modal
     if (!modalPlanilla) {
       // Configurar el servicio para edición si se proporcionó uno
       if (servicio) {
-        setServicioLiquidar({
+        setServicioPlanilla({
           servicio: servicio,
         });
-        SetModalPlanilla(!modalPlanilla);
+        setModalPlanilla(!modalPlanilla);
       } else {
-        setServicioLiquidar({
+        setServicioPlanilla({
           servicio: null,
         });
-        SetModalPlanilla(false);
+        setModalPlanilla(false);
       }
     }
     // Si el modal se está cerrando (actualmente está abierto)
     else {
       // Retraso para asegurar que la animación de cierre funcione correctamente
       setTimeout(() => {
-        setServicioLiquidar({
+        setServicioPlanilla({
           servicio: null,
         });
-        SetModalPlanilla(false);
+        setModalPlanilla(false);
       }, 300);
     }
+  };
+
+  const handleModalLiquidar = () => {
+    setModalLiquidar(!modalLiquidar);
   };
 
   useEffect(() => {
@@ -1048,7 +1057,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
-      const handlePlanillaAsignada = (data: {id : string, servicio: ServicioConRelaciones}) => {
+      const handlePlanillaAsignada = (data: { id: string, servicio: ServicioConRelaciones }) => {
         setSocketEventLogs((prev) => [
           ...prev,
           {
@@ -1121,7 +1130,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicios,
     servicio,
     servicioTicket,
-    servicioLiquidar,
+    servicioPlanilla,
     municipios,
     conductores,
     vehiculos,
@@ -1144,12 +1153,14 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     modalForm,
     modalTicket,
     modalPlanilla,
+    modalLiquidar,
     servicioEditar,
 
     // handles Modal
     handleModalForm,
     handleModalTicket,
     handleModalPlanilla,
+    handleModalLiquidar,
     actualizarServicio,
     actualizarEstadoServicio,
     asignarPlanilla,
