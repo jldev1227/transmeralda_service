@@ -34,9 +34,12 @@ interface ServicioItemProps {
 
 // Componente de servicio arrastrable con memoización
 const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: ServicioItemProps) => {
-    const id = isSelected ? `seleccionado-${servicio.id}` : servicio.id;
+    // Asegurarse de que id nunca sea undefined
+    const itemId = servicio.id || `fallback-${Math.random().toString(36).substr(2, 9)}`;
+    const id = isSelected ? `seleccionado-${itemId}` : itemId;
+    
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
-        id,
+        id, // Ahora id siempre será un valor no nulo
         data: { servicio, isSelected }
     });
 
@@ -188,7 +191,40 @@ export default function ModalLiquidarServicios() {
         return [...serviciosFiltrados].sort((a, b) => {
             const valueA = a[sortConfig.key as keyof ServicioConRelaciones];
             const valueB = b[sortConfig.key as keyof ServicioConRelaciones];
-
+            
+            // Manejar casos null/undefined
+            if (valueA === null || valueA === undefined) {
+                return sortConfig.direction === "asc" ? -1 : 1; // Null primero en asc, último en desc
+            }
+            if (valueB === null || valueB === undefined) {
+                return sortConfig.direction === "asc" ? 1 : -1; // Null último en asc, primero en desc
+            }
+            
+            // Para fechas, comparar los timestamps
+            if (valueA instanceof Date && valueB instanceof Date) {
+                return sortConfig.direction === "asc"
+                    ? valueA.getTime() - valueB.getTime()
+                    : valueB.getTime() - valueA.getTime();
+            }
+            
+            // Para objetos (como Municipio, Cliente, etc.), usar alguna propiedad para comparar
+            if (typeof valueA === 'object' && typeof valueB === 'object') {
+                // Si es un objeto relacionado como Municipio, Cliente, etc.
+                const nameA = (valueA as any)?.nombre || '';
+                const nameB = (valueB as any)?.nombre || '';
+                return sortConfig.direction === "asc"
+                    ? nameA.localeCompare(nameB)
+                    : nameB.localeCompare(nameA);
+            }
+            
+            // Para strings, usar localeCompare
+            if (typeof valueA === 'string' && typeof valueB === 'string') {
+                return sortConfig.direction === "asc"
+                    ? valueA.localeCompare(valueB)
+                    : valueB.localeCompare(valueA);
+            }
+            
+            // Para números y otros tipos
             if (valueA < valueB) {
                 return sortConfig.direction === "asc" ? -1 : 1;
             }
