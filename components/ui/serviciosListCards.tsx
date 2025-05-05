@@ -266,7 +266,7 @@ const ServiciosListCards = ({
               ${showAnimation ? getBorderLeftColorByEvent(eventType) : "border-l"}
               ${isNew ? "animate-pulse" : ""}
               ${isUpdated ? "animate-fadeIn" : ""}
-              ${selectedServicio?.id === servicio.id ? getColorCard(servicio) : ""}
+              ${selectedServicio?.id === servicio.id ? getColorCard(servicio.estado) : ""}
             `}
             role="button"
             tabIndex={0}
