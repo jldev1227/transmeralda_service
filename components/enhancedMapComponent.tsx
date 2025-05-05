@@ -1211,7 +1211,7 @@ const EnhancedMapComponent = ({
       </div>
 
       <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
-        <Tooltip content="Historico de servicios" radius="sm">
+        <Tooltip content="Liquidador de servicios" radius="sm">
           <Button
             isIconOnly
             className="text-sm font-medium bg-white h-12 w-12"

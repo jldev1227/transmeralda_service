@@ -5,7 +5,7 @@ import { Input } from "@heroui/input";
 import { format } from "date-fns";
 import { addToast } from "@heroui/toast";
 import { ServicioConRelaciones, useService } from "@/context/serviceContext";
-import { SearchIcon, SortAscIcon, SortDescIcon, XIcon, CheckIcon } from "lucide-react";
+import { SearchIcon, SortAscIcon, SortDescIcon, XIcon, CheckIcon, DollarSignIcon } from "lucide-react";
 
 // Importaciones de dnd-kit
 import {
@@ -23,17 +23,17 @@ import {
     DragOverEvent
 } from "@dnd-kit/core";
 
-// Tipos
-
+// Tipos e interfaces
 interface ServicioItemProps {
     servicio: ServicioConRelaciones;
     isSelected: boolean;
     onClick: () => void;
     isDragging?: boolean;
+    onValorChange?: (valor: number) => void;
 }
 
 // Componente de servicio arrastrable con memoización
-const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: ServicioItemProps) => {
+const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging, onValorChange }: ServicioItemProps) => {
     // Asegurarse de que id nunca sea undefined
     const itemId = servicio.id || `fallback-${Math.random().toString(36).substr(2, 9)}`;
     const id = isSelected ? `seleccionado-${itemId}` : itemId;
@@ -48,6 +48,14 @@ const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: 
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 1 : 'auto'
     } : undefined;
+
+    // Manejar cambio del valor
+    const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValor = parseFloat(e.target.value) || 0;
+        if (onValorChange) {
+            onValorChange(newValor);
+        }
+    };
 
     return (
         <div
@@ -72,16 +80,41 @@ const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: 
             <div className="text-sm text-gray-500">
                 <span className="font-medium">Fecha:</span> {format(new Date(servicio.fecha_realizacion || servicio.createdAt), "dd/MM/yyyy")}
             </div>
+
             {isSelected && (
-                <div className="mt-2">
-                    <button
-                        onClick={onClick}
-                        type="button"
-                        className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 transition-colors flex items-center"
-                    >
-                        <XIcon className="h-3 w-3 mr-1" /> Quitar
-                    </button>
-                </div>
+                <>
+                    <div className="mt-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Valor a liquidar:
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                startContent={<DollarSignIcon className="w-5 h-5 text-gray-400"
+                                />}
+                                type="text"
+                                className="text-sm py-1"
+                                value={(servicio as ServicioConRelaciones).valor.toLocaleString('es-CO')}
+                                onChange={(e) => {
+                                  // Limitar a 4 dígitos como máximo
+                                  const valorNumerico = e.target.value.replace(/[^\d]/g, '');
+                                  const valorLimitado = valorNumerico.slice(0, 10);
+                                  const newValor = parseInt(valorLimitado, 10) || 0;
+                                  
+                                  if (onValorChange) {
+                                    onValorChange(newValor);
+                                  }
+                                }}
+                            />
+                            <button
+                                onClick={onClick}
+                                type="button"
+                                className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 transition-colors flex items-center"
+                            >
+                                <XIcon className="h-3 w-3 mr-1" /> Quitar
+                            </button>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );
@@ -130,7 +163,7 @@ export default function ModalLiquidarServicios() {
 
     // Estados para el formulario y los servicios
     const [serviciosRealizados, setServiciosRealizados] = useState<ServicioConRelaciones[]>([]);
-    const [serviciosSeleccionados, setServiciosSeleccionados] = useState<ServicioConRelaciones[]>([]);
+    const [serviciosSeleccionados, setServiciosSeleccionados] = useState<ServicioSeleccionado[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortConfig, setSortConfig] = useState({ key: "fecha_realizacion", direction: "desc" });
     const [consecutivoLiquidacion, setConsecutivoLiquidacion] = useState("");
@@ -271,7 +304,12 @@ export default function ModalLiquidarServicios() {
                 if (overIdStr === 'serviciosSeleccionados' || overIdStr.startsWith('seleccionado-')) {
                     const servicio = serviciosOrdenados.find(s => s.id === activeIdStr);
                     if (servicio && !serviciosSeleccionadosIds.includes(servicio.id)) {
-                        setServiciosSeleccionados(prev => [...prev, servicio]);
+                        // Añadir servicio con valor inicial igual al valor del servicio
+                        const servicioSeleccionado: ServicioConRelaciones = {
+                            ...servicio,
+                            valor: servicio.valor
+                        };
+                        setServiciosSeleccionados(prev => [...prev, servicioSeleccionado]);
                     }
                 }
             }
@@ -321,9 +359,24 @@ export default function ModalLiquidarServicios() {
     // Añadir servicio a seleccionados (useCallback)
     const agregarServicio = useCallback((servicio: ServicioConRelaciones) => {
         if (!serviciosSeleccionadosIds.includes(servicio.id)) {
-            setServiciosSeleccionados(prev => [...prev, servicio]);
+            const servicioSeleccionado: ServicioConRelaciones = {
+                ...servicio,
+                valor: servicio.valor
+            };
+            setServiciosSeleccionados(prev => [...prev, servicioSeleccionado]);
         }
     }, [serviciosSeleccionadosIds]);
+
+    // Actualizar valor de liquidación de un servicio
+    const actualizarValorServicio = useCallback((id: string, nuevoValor: number) => {
+        setServiciosSeleccionados(prev =>
+            prev.map(servicio =>
+                servicio.id === id
+                    ? { ...servicio, valor: nuevoValor }
+                    : servicio
+            )
+        );
+    }, []);
 
     // Cambiar el criterio de ordenación (useCallback)
     const requestSort = useCallback((key: string) => {
@@ -368,7 +421,10 @@ export default function ModalLiquidarServicios() {
         const datosLiquidacion = {
             consecutivo: consecutivoLiquidacion,
             fecha: fechaLiquidacion,
-            servicios: serviciosSeleccionados.map(s => s.id)
+            servicios: serviciosSeleccionados.map(s => ({
+                id: s.id,
+                valor: s.valor
+            }))
         };
 
         console.log("Datos para liquidación:", datosLiquidacion);
@@ -381,6 +437,7 @@ export default function ModalLiquidarServicios() {
 
         handleReset();
         handleModalLiquidar();
+
     }, [serviciosSeleccionados, consecutivoLiquidacion, fechaLiquidacion, handleReset, handleModalLiquidar]);
 
     // Obtener el elemento activo para mostrar en el overlay (memoizado)
@@ -524,8 +581,9 @@ export default function ModalLiquidarServicios() {
                                                             key={`seleccionado-${servicio.id}`}
                                                             servicio={servicio}
                                                             isSelected={true}
-                                                            onClick={() => quitarServicio(servicio.id ?? '')}
+                                                            onClick={() => quitarServicio(servicio.id || '')}
                                                             isDragging={activeId === `seleccionado-${servicio.id}`}
+                                                            onValorChange={(valor) => actualizarValorServicio(servicio.id || '', valor)}
                                                         />
                                                     ))
                                                 ) : (

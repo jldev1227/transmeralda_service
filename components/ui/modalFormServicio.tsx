@@ -199,6 +199,8 @@ export default function ModalFormServicio() {
 
   // Estado para controlar si se puede editar el servicio
   const [isReadOnly, setIsReadOnly] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
 
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
   useEffect(() => {
@@ -439,6 +441,7 @@ export default function ModalFormServicio() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setLoading(true)
 
     try {
       // Asegurarse de limpiar el servicio seleccionado primero
@@ -472,6 +475,7 @@ export default function ModalFormServicio() {
         observaciones: observaciones,
       };
 
+
       if (isEditing && servicio?.id) {
         // Si estamos editando, actualizamos el servicio existente
         await actualizarServicio(servicio.id, servicioData);
@@ -484,30 +488,33 @@ export default function ModalFormServicio() {
       handleModalForm();
       resetFormStates();
     } catch (error) {
+      setLoading(false)
       // Manejar errores
       console.error(
         isEditing
-          ? "Error al actualizar el servicio:"
-          : "Error al registrar el servicio:",
+        ? "Error al actualizar el servicio:"
+        : "Error al registrar el servicio:",
         error,
       );
-
+      
       setError(
         error instanceof Error
-          ? error.message
-          : isEditing
-            ? "Error desconocido al actualizar el servicio"
-            : "Error desconocido al registrar el servicio",
+        ? error.message
+        : isEditing
+        ? "Error desconocido al actualizar el servicio"
+        : "Error desconocido al registrar el servicio",
       );
-
+      
       addToast({
         title: "Error",
         description:
-          error instanceof Error
-            ? error.message
-            : "Error al procesar el servicio",
+        error instanceof Error
+        ? error.message
+        : "Error al procesar el servicio",
         color: "danger",
       });
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -1484,6 +1491,7 @@ export default function ModalFormServicio() {
                             <button
                               className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                               type="submit"
+                              disabled={loading}
                             >
                               {isEditing
                                 ? "Actualizar Servicio"
