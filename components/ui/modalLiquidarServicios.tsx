@@ -37,7 +37,7 @@ const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: 
     // Asegurarse de que id nunca sea undefined
     const itemId = servicio.id || `fallback-${Math.random().toString(36).substr(2, 9)}`;
     const id = isSelected ? `seleccionado-${itemId}` : itemId;
-    
+
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id, // Ahora id siempre será un valor no nulo
         data: { servicio, isSelected }
@@ -61,9 +61,6 @@ const ServicioItem = React.memo(({ servicio, isSelected, onClick, isDragging }: 
             <div className="flex justify-between">
                 <div className="font-medium">
                     {servicio.origen_especifico} → {servicio.destino_especifico}
-                </div>
-                <div className="text-sm font-semibold">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(servicio.valor)}
                 </div>
             </div>
             <div className="text-sm text-gray-500 mt-1">
@@ -161,15 +158,24 @@ export default function ModalLiquidarServicios() {
     // Filtrar servicios realizados con número de planilla (memoizado)
     useEffect(() => {
         if (servicios && servicios.length > 0) {
+            // Crear un conjunto con los IDs de los servicios seleccionados para búsqueda rápida
+            const serviciosSeleccionadosIds = new Set(
+                serviciosSeleccionados.map(servicio => servicio.id)
+            );
+
             const filtrados = servicios.filter(
                 (servicio) =>
+                    // Verificar estado y número de planilla
                     servicio.estado === "planilla_asignada" &&
                     servicio.numero_planilla &&
-                    servicio.numero_planilla.trim() !== ""
+                    servicio.numero_planilla.trim() !== "" &&
+                    // Verificar que no esté ya en los seleccionados
+                    !serviciosSeleccionadosIds.has(servicio.id)
             );
+
             setServiciosRealizados(filtrados);
         }
-    }, [servicios]);
+    }, [servicios, serviciosSeleccionados]); // Incluir serviciosSeleccionados en las dependencias
 
     // Aplicar búsqueda y filtros a los servicios (memoizado)
     const serviciosFiltrados = useMemo(() => {
@@ -191,7 +197,7 @@ export default function ModalLiquidarServicios() {
         return [...serviciosFiltrados].sort((a, b) => {
             const valueA = a[sortConfig.key as keyof ServicioConRelaciones];
             const valueB = b[sortConfig.key as keyof ServicioConRelaciones];
-            
+
             // Manejar casos null/undefined
             if (valueA === null || valueA === undefined) {
                 return sortConfig.direction === "asc" ? -1 : 1; // Null primero en asc, último en desc
@@ -199,14 +205,14 @@ export default function ModalLiquidarServicios() {
             if (valueB === null || valueB === undefined) {
                 return sortConfig.direction === "asc" ? 1 : -1; // Null último en asc, primero en desc
             }
-            
+
             // Para fechas, comparar los timestamps
             if (valueA instanceof Date && valueB instanceof Date) {
                 return sortConfig.direction === "asc"
                     ? valueA.getTime() - valueB.getTime()
                     : valueB.getTime() - valueA.getTime();
             }
-            
+
             // Para objetos (como Municipio, Cliente, etc.), usar alguna propiedad para comparar
             if (typeof valueA === 'object' && typeof valueB === 'object') {
                 // Si es un objeto relacionado como Municipio, Cliente, etc.
@@ -216,14 +222,14 @@ export default function ModalLiquidarServicios() {
                     ? nameA.localeCompare(nameB)
                     : nameB.localeCompare(nameA);
             }
-            
+
             // Para strings, usar localeCompare
             if (typeof valueA === 'string' && typeof valueB === 'string') {
                 return sortConfig.direction === "asc"
                     ? valueA.localeCompare(valueB)
                     : valueB.localeCompare(valueA);
             }
-            
+
             // Para números y otros tipos
             if (valueA < valueB) {
                 return sortConfig.direction === "asc" ? -1 : 1;
@@ -392,7 +398,7 @@ export default function ModalLiquidarServicios() {
             size={"full"}
             onClose={handleModalLiquidar}
         >
-            <ModalContent className="p-6">
+            <ModalContent className="p-6 overflow-scroll">
                 {() => (
                     <>
                         <ModalHeader className="flex flex-col gap-1 border-b pb-4">
@@ -554,9 +560,6 @@ export default function ModalLiquidarServicios() {
                                             <div className="flex justify-between">
                                                 <div className="font-medium">
                                                     {activeItem.origen_especifico} → {activeItem.destino_especifico}
-                                                </div>
-                                                <div className="text-sm font-semibold">
-                                                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(activeItem.valor)}
                                                 </div>
                                             </div>
                                             <div className="text-sm text-gray-500 mt-1">
