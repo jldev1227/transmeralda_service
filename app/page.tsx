@@ -17,7 +17,6 @@ import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
 import ModalTicket from "@/components/ui/modalTicket";
 import ModalPlanilla from "@/components/ui/modalPlanilla";
-import ModalLiquidarServicios from "@/components/ui/modalLiquidarServicios";
 
 interface MapboxRoute {
   distance: number;
@@ -514,7 +513,6 @@ const AdvancedDashboard = () => {
         <ModalFormServicio />
         <ModalTicket />
         <ModalPlanilla />
-        <ModalLiquidarServicios />
       </div>
 
 

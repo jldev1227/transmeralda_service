@@ -12,7 +12,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, PlusIcon } from "lucide-react";
+import { ClipboardList, Link, PlusIcon } from "lucide-react";
 
 import LoadingComponent from "./ui/LoadingComponent";
 
@@ -22,6 +22,7 @@ import {
   VehicleTracking,
 } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
+import { useRouter } from "next/navigation";
 
 interface EnhancedMapComponentProps {
   servicios: ServicioConRelaciones[];
@@ -102,6 +103,8 @@ const EnhancedMapComponent = ({
   const markersRef = useRef<MarkersRef>({
     activeVehicles: new Map(),
   });
+
+  const router = useRouter()
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string>("");
@@ -387,21 +390,20 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${
-            isOrigin
-              ? `<div class="text-sm">
+          ${isOrigin
+        ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-              : `<div class="text-sm">
+        : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-          }
+      }
         </div>
       </div>
     `;
@@ -1029,7 +1031,7 @@ const EnhancedMapComponent = ({
     // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
     setTimeout(() => {
       // Abrir el modal de agregar servicio
-      handleModalLiquidar();
+      router.push("/liquidaciones");
     }, 50);
   };
 

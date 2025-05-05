@@ -302,7 +302,7 @@ const ServiciosListCards = ({
               )}
 
               {showPlanillaNumber(servicio.estado) && (
-                <Tooltip color="primary" content="Añadir TM">
+                <Tooltip color="primary" content={servicio.numero_planilla ? "Editar TM" : "Añadir TM"}>
                   <button
                     className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
                     onClick={(e) => handleViewLiquidacion(e, servicio)}
