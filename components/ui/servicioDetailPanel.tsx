@@ -65,8 +65,8 @@ const ServiceDetailPanel = ({
 
     hourOut.setHours(6, 0, 0, 0); // 6:00 AM
 
-    // Si el servicio está en curso, calcular tiempo transcurrido
-    if (servicioWithRoutes.estado === "en curso") {
+    // Si el servicio está en_curso, calcular tiempo transcurrido
+    if (servicioWithRoutes.estado === "en_curso") {
       const totalMinutes = differenceInMinutes(currentTime, hourOut);
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -119,7 +119,7 @@ const ServiceDetailPanel = ({
     switch (servicioWithRoutes.estado) {
       case "realizado":
         return "bg-primary-500";
-      case "en curso":
+      case "en_curso":
         return "bg-emerald-500";
       case "planificado":
         return "bg-amber-500";
@@ -170,8 +170,8 @@ const ServiceDetailPanel = ({
         </div>
       </div>
 
-      {/* Información de progreso (Solo para servicios en curso) */}
-      {servicioWithRoutes.estado === "en curso" && (
+      {/* Información de progreso (Solo para servicios en_curso) */}
+      {servicioWithRoutes.estado === "en_curso" && (
         <div className="bg-emerald-50 mx-4 mt-3 rounded-lg p-3 mb-4">
           <h3 className="text-sm font-semibold text-emerald-800 mb-2">
             Progreso del servicio

@@ -16,6 +16,7 @@ import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
 import ModalTicket from "@/components/ui/modalTicket";
+import ModalPlanilla from "@/components/ui/modalPlanilla";
 
 interface MapboxRoute {
   distance: number;
@@ -38,13 +39,14 @@ interface Filters {
 const statusColors = {
   solicitado: "#6a7282",
   realizado: "#155dfc",
-  "en curso": "#00bc7d",
+  en_curso: "#00bc7d",
   planificado: "#FF9800",
   cancelado: "#F44336",
   default: "#3388ff",
+  planilla_asignada: "#9C27B0",
 };
 
-const getStatusColor = (estado: string): string => {
+export const getStatusColor = (estado: string): string => {
   return (
     statusColors[estado as keyof typeof statusColors] || statusColors.default
   );
@@ -52,13 +54,14 @@ const getStatusColor = (estado: string): string => {
 
 const statusTextMap: Record<string, string> = {
   realizado: "Realizado",
-  "en curso": "En curso",
-  planificado: "Pendiente",
+  en_curso: "En curso",
+  planificado: "Planificado",
   cancelado: "Cancelado",
   solicitado: "Solicitado",
+  planilla_asignada: "Planilla asignada",
 };
 
-const getStatusText = (estado: string): string => {
+export const getStatusText = (estado: string): string => {
   return statusTextMap[estado] || estado;
 };
 
@@ -138,13 +141,13 @@ const AdvancedDashboard = () => {
       }
 
       try {
-        // For 'en curso' services, try to get the vehicle position from Wialon first
+        // For 'en_curso' services, try to get the vehicle position from Wialon first
         let origenLat = servicio.origen_latitud;
         let origenLng = servicio.origen_longitud;
         let useVehiclePosition = false;
 
         if (
-          servicio.estado === "en curso" &&
+          servicio.estado === "en_curso" &&
           servicio.vehiculo?.placa &&
           token
         ) {
@@ -345,86 +348,12 @@ const AdvancedDashboard = () => {
     return true;
   });
 
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
-
   return (
-    <div className="h-screen relative overflow-hidden">
-      {/* Main map panel - takes full width/height when sidebar is closed */}
-      <div
-        className={`h-full w-full transition-all duration-300 ${isPanelOpen ? "md:pl-[370px]" : ""}`}
-      >
-        <EnhancedMapComponent
-          getServiceTypeText={getServiceTypeText}
-          getStatusText={getStatusText}
-          handleSelectServicio={handleSelectServicio}
-          mapboxToken={MAPBOX_ACCESS_TOKEN}
-          selectedServicio={servicioWithRoutes}
-          servicios={servicios}
-          setServicioWithRoutes={setServicioWithRoutes}
-          trackingError={trackingError}
-          vehicleTracking={vehicleTracking}
-          wialonToken={WIALON_API_TOKEN}
-          onWialonRequest={callWialonApi}
-        />
-        <ModalFormServicio />
-        <ModalTicket />
-      </div>
-
-      {/* Floating toggle button for mobile */}
-      <button
-        className={`md:hidden fixed top-4 right-14 z-50 bg-white p-3 rounded-full shadow-lg ${isPanelOpen ? "hidden" : ""}`}
-        onClick={() => setIsPanelOpen(!isPanelOpen)}
-      >
-        <svg
-          className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M19 9l-7 7-7-7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
-      </button>
-
-      {/* Fixed toggle button for desktop */}
-      <button
-        className="hidden md:flex fixed top-4 left-[370px] z-50 bg-white h-8 w-8 items-center justify-center rounded-r-md shadow-md transition-all duration-300"
-        style={{ left: isPanelOpen ? "370px" : "0" }}
-        onClick={() => setIsPanelOpen(!isPanelOpen)}
-      >
-        <svg
-          className={`h-5 w-5 transition-transform duration-300 ${!isPanelOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M15 19l-7-7 7-7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
-      </button>
-
+    <div className="flex h-screen relative overflow-hidden">
       {/* Sidebar/floating panel */}
-      <div
-        className={`absolute transition-all duration-300 ease-in-out bg-white shadow-lg 
-                   md:h-full md:w-[370px] md:fixed md:top-0 md:left-0
-                   ${
-                     isPanelOpen
-                       ? "top-0 left-0 right-0 max-h-[80vh] rounded-t-xl md:rounded-none md:max-h-full md:translate-x-0"
-                       : "top-[-100vh] left-0 right-0 md:translate-x-[-100%] md:top-0"
-                   }`}
-      >
+      <div>
         {/* Panel header with handle for mobile */}
-        <div className="p-3 md:p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+        <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0 z-10">
           <div className="w-full space-y-2">
             <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
             {socketConnected ? (
@@ -445,30 +374,10 @@ const AdvancedDashboard = () => {
               />
             )}
           </div>
-
-          <button
-            className="md:hidden p-1 rounded-full hover:bg-gray-100"
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-          >
-            <svg
-              className={`h-6 w-6 transition-transform duration-300 ${isPanelOpen ? "" : "rotate-180"}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 15l7-7 7 7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-              />
-            </svg>
-          </button>
         </div>
 
         {/* Panel content with scrolling */}
-        <div className="h-[calc(100%-56px)] overflow-auto">
+        <div className="bg-white h-[calc(100%-56px)] overflow-auto">
           {/* Filters */}
           <div className="p-3 md:p-4 border-b">
             <div className="flex items-center justify-between mb-3">
@@ -493,7 +402,7 @@ const AdvancedDashboard = () => {
                   <option value="">Todos</option>
                   <option value="solicitado">Solicitado</option>
                   <option value="planificado">Planificado</option>
-                  <option value="en curso">En curso</option>
+                  <option value="en_curso">En curso</option>
                   <option value="realizado">Realizado</option>
                   <option value="cancelado">Cancelado</option>
                 </select>
@@ -582,6 +491,26 @@ const AdvancedDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Main map panel - takes full width/height when sidebar is closed */}
+      <div className="h-full w-full transition-all duration-300">
+        <EnhancedMapComponent
+          getServiceTypeText={getServiceTypeText}
+          getStatusText={getStatusText}
+          handleSelectServicio={handleSelectServicio}
+          mapboxToken={MAPBOX_ACCESS_TOKEN}
+          selectedServicio={servicioWithRoutes}
+          servicios={servicios}
+          setServicioWithRoutes={setServicioWithRoutes}
+          trackingError={trackingError}
+          vehicleTracking={vehicleTracking}
+          wialonToken={WIALON_API_TOKEN}
+          onWialonRequest={callWialonApi}
+        />
+        <ModalFormServicio />
+        <ModalTicket />
+        <ModalPlanilla />
       </div>
 
       {/* Additional styles */}
