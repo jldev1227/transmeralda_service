@@ -131,13 +131,17 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
       classNames={{
         backdrop:
           "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+        // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
+        wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
+        // Asegurar que el contenido ocupe todo el ancho del modal
+        base: "w-full"
       }}
       isOpen={isOpen}
       scrollBehavior="inside"
-      size="5xl"
+      size="5xl" // Mantenemos el valor estándar, pero lo sobreescribimos con classNames
       onClose={onClose}
     >
-      <ModalContent>
+      <ModalContent className="w-full max-w-full">
         {() => (
           <>
             <ModalHeader>

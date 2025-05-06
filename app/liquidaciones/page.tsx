@@ -13,6 +13,8 @@ import {
   CheckIcon,
   DollarSignIcon,
   FileClockIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 
 // Importaciones de dnd-kit
@@ -44,6 +46,11 @@ interface ServicioItemProps {
   onClick: () => void;
   isDragging?: boolean;
   onValorChange?: (valor: number) => void;
+  position?: number;  // Posición del servicio
+  onMoveUp?: () => void;  // Mover hacia arriba
+  onMoveDown?: () => void;  // Mover hacia abajo
+  isFirst?: boolean;  // ¿Es el primer elemento?
+  isLast?: boolean;  // ¿Es el último elemento?
 }
 
 // Componente de servicio arrastrable con memoización
@@ -54,6 +61,11 @@ const ServicioItem = React.memo(
     onClick,
     isDragging,
     onValorChange,
+    position,
+    onMoveUp,
+    onMoveDown,
+    isFirst,
+    isLast,
   }: ServicioItemProps) => {
     // Asegurarse de que id nunca sea undefined
     const itemId =
@@ -62,16 +74,25 @@ const ServicioItem = React.memo(
 
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
       id, // Ahora id siempre será un valor no nulo
-      data: { servicio, isSelected },
+      data: { servicio, isSelected, position },
     });
 
     const style = transform
-      ? {
-          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-          opacity: isDragging ? 0.4 : 1,
-          zIndex: isDragging ? 1 : "auto",
-        }
-      : undefined;
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 1 : "auto",
+        userSelect: "none" as const, // Tipado correcto para React
+        WebkitUserSelect: "none" as const,
+        MozUserSelect: "none" as const,
+        msUserSelect: "none" as const
+      }
+    : {
+        userSelect: "none" as const,
+        WebkitUserSelect: "none" as const,
+        MozUserSelect: "none" as const,
+        msUserSelect: "none" as const
+      };
 
     return (
       <div
@@ -81,12 +102,47 @@ const ServicioItem = React.memo(
         {...listeners}
         className={`p-3 mb-2 rounded-md bg-white border transition-shadow ${
           isDragging ? "opacity-40" : "hover:shadow-md"
-        } cursor-grab`}
+        } cursor-grab touch-manipulation relative`}
+        role="button"
+        tabIndex={0}
+        aria-roledescription="draggable item"
+        data-position={position}
       >
+        {isSelected && position !== undefined && (
+          <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+            {position + 1}
+          </div>
+        )}
         <div className="flex justify-between">
           <div className="font-medium">
             {servicio.origen_especifico} → {servicio.destino_especifico}
           </div>
+          {isSelected && (
+            <div className="flex space-x-1">
+              <button
+                className={`p-1 rounded-full hover:bg-gray-100 ${isFirst ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isFirst}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onMoveUp && !isFirst) onMoveUp();
+                }}
+              >
+                <ChevronUpIcon className="h-4 w-4 text-gray-600" />
+              </button>
+              <button
+                className={`p-1 rounded-full hover:bg-gray-100 ${isLast ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isLast}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onMoveDown && !isLast) onMoveDown();
+                }}
+              >
+                <ChevronDownIcon className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="text-sm text-gray-500 mt-1">
           <span className="font-medium">Planilla:</span>{" "}
@@ -161,11 +217,13 @@ const ServiciosContainer = React.memo(
     children,
     onDragEnter,
     className = "",
+    onReorder,
   }: {
     id: string;
     children: React.ReactNode;
     onDragEnter?: () => void;
     className?: string;
+    onReorder?: (sourceIndex: number, destinationIndex: number) => void;
   }) => {
     const { setNodeRef, isOver } = useDroppable({
       id,
@@ -183,7 +241,9 @@ const ServiciosContainer = React.memo(
         ref={setNodeRef}
         className={`bg-gray-50 border rounded-md p-2 overflow-y-auto flex-1 min-h-[300px] ${
           isOver ? "ring-2 ring-blue-400" : ""
-        } ${className}`}
+        } ${className} touch-pan-y`}
+        role="region"
+        aria-roledescription="droppable container"
       >
         {children}
       </div>
@@ -217,12 +277,17 @@ export default function ModalLiquidarServicios() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedServicio, setDraggedServicio] =
     useState<ServicioConRelaciones | null>(null);
+  // Estado para la posición del elemento arrastrado dentro de servicios seleccionados
+  // Estado para la posición del elemento arrastrado
+  const [draggedPosition, setDraggedPosition] = useState<number | null>(null);
 
-  // Sensores para dnd-kit optimizados
+  // Sensores para dnd-kit optimizados para mejor soporte en dispositivos móviles
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      // Configuración optimizada para móviles y tablets
       activationConstraint: {
-        distance: 5, // Distancia mínima para activar el arrastre
+        delay: 150, // Añade un ligero retraso para distinguir entre toques y arrastres
+        tolerance: 8, // Aumenta la tolerancia para dispositivos táctiles
       },
     }),
     useSensor(KeyboardSensor, {
@@ -336,10 +401,16 @@ export default function ModalLiquidarServicios() {
     setActiveId(active.id.toString());
 
     // Extraer información del elemento arrastrado
-    const { servicio } = active.data.current || {};
+    const { servicio, position } = active.data.current || {};
 
     if (servicio) {
       setDraggedServicio(servicio);
+    }
+
+    if (position !== undefined) {
+      setDraggedPosition(position);
+    } else {
+      setDraggedPosition(null);
     }
   }, []);
 
@@ -380,8 +451,24 @@ export default function ModalLiquidarServicios() {
         else if (activeIdStr.startsWith("seleccionado-")) {
           const servicioId = activeIdStr.replace("seleccionado-", "");
 
-          // Y estamos soltando en el contenedor de realizados
-          if (
+          // Reordenando dentro del contenedor de seleccionados
+          if (overIdStr.startsWith("seleccionado-") && draggedPosition !== null) {
+            const targetId = overIdStr.replace("seleccionado-", "");
+            const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
+            
+            if (targetIndex !== -1 && targetIndex !== draggedPosition) {
+              // Reordenar los servicios seleccionados
+              setServiciosSeleccionados(prevServicios => {
+                const newServicios = [...prevServicios];
+                const [movedItem] = newServicios.splice(draggedPosition, 1);
+                // Insertar en la nueva posición
+                newServicios.splice(targetIndex, 0, movedItem);
+                return newServicios;
+              });
+            }
+          } 
+          // Y estamos soltando en el contenedor de realizados (quitar de seleccionados)
+          else if (
             overIdStr === "serviciosRealizados" ||
             !overIdStr.startsWith("seleccionado-")
           ) {
@@ -395,8 +482,9 @@ export default function ModalLiquidarServicios() {
       // Limpiar estados
       setActiveId(null);
       setDraggedServicio(null);
+      setDraggedPosition(null);
     },
-    [serviciosOrdenados, serviciosSeleccionadosIds],
+    [serviciosOrdenados, serviciosSeleccionadosIds, draggedPosition],
   );
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
@@ -460,6 +548,29 @@ export default function ModalLiquidarServicios() {
     [],
   );
 
+  // Mover un servicio seleccionado hacia arriba en la lista
+  const moverServicioArriba = useCallback((index: number) => {
+    if (index <= 0) return; // No hacer nada si es el primer elemento
+    setServiciosSeleccionados(prev => {
+      const nuevaLista = [...prev];
+      // Intercambiar posiciones
+      [nuevaLista[index], nuevaLista[index - 1]] = [nuevaLista[index - 1], nuevaLista[index]];
+      return nuevaLista;
+    });
+  }, []);
+
+  // Mover un servicio seleccionado hacia abajo en la lista
+  const moverServicioAbajo = useCallback((index: number) => {
+    setServiciosSeleccionados(prev => {
+      if (index >= prev.length - 1) return prev; // No hacer nada si es el último elemento
+      
+      const nuevaLista = [...prev];
+      // Intercambiar posiciones
+      [nuevaLista[index], nuevaLista[index + 1]] = [nuevaLista[index + 1], nuevaLista[index]];
+      return nuevaLista;
+    });
+  }, []);
+
   // Cambiar el criterio de ordenación (useCallback)
   const requestSort = useCallback((key: string) => {
     setSortConfig((prevConfig) => ({
@@ -490,10 +601,12 @@ export default function ModalLiquidarServicios() {
   // Calcular valor total (memoizado)
   const valorTotal = useMemo(() => {
     return serviciosSeleccionados.reduce(
-      (sum, servicio) => sum + servicio.valor,
+      (sum, servicio) => sum + Number(servicio.valor),
       0,
     );
   }, [serviciosSeleccionados]);
+
+  console.log(valorTotal)
 
   function validarConsecutivo(consecutivo: string): boolean {
     const regex = /^[A-Z]{2,4}-\d{4}$/;
@@ -519,7 +632,7 @@ export default function ModalLiquidarServicios() {
         addToast({
           title: "Error",
           description:
-            "El consecutivo debe tener formato AA-0000 a AAAA-0000 (letras mayúsculas-números)",
+            "El consecutivo debe tener formato AA-0000 o AAAA-0000 (letras mayúsculas-números)",
           color: "danger",
         });
 
@@ -545,9 +658,10 @@ export default function ModalLiquidarServicios() {
         fecha_liquidacion: fechaLiquidacion,
         observaciones: "",
         // Asegurarse que todos los valores son números válidos
-        servicios: serviciosSeleccionados.map((s) => ({
+        servicios: serviciosSeleccionados.map((s, index) => ({
           id: s.id,
           valor: s.valor, // Asegurarse que este es un número
+          posicion: index, // Incluimos la posición jerárquica
         })),
       };
 
@@ -627,6 +741,9 @@ export default function ModalLiquidarServicios() {
               Arrastre los servicios realizados al panel de servicios
               seleccionados para incluirlos en la liquidación
             </p>
+            <p className="text-xs text-blue-600 md:hidden">
+              <strong>Nota para dispositivos móviles:</strong> Mantenga pulsado brevemente un servicio para comenzar a arrastrarlo
+            </p>
           </div>
           <div className="my-4">
             <DndContext
@@ -662,15 +779,15 @@ export default function ModalLiquidarServicios() {
                         className="flex items-center"
                         size="sm"
                         variant="light"
-                        onPress={() => requestSort("valor")}
+                        onPress={() => requestSort("numero_planilla")}
                       >
-                        {sortConfig.key === "valor" &&
+                        {sortConfig.key === "numero_planilla" &&
                         sortConfig.direction === "asc" ? (
                           <SortAscIcon className="h-4 w-4 mr-1" />
                         ) : (
                           <SortDescIcon className="h-4 w-4 mr-1" />
                         )}
-                        Valor
+                        Planilla
                       </Button>
                     </div>
                   </div>
@@ -751,16 +868,23 @@ export default function ModalLiquidarServicios() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">
-                      Servicios seleccionados
-                    </h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">
+                        Servicios seleccionados
+                      </h3>
+                      <div>
+                        <p className="text-xs text-gray-500">
+                          Arrastra los servicios para reordenarlos según el orden deseado
+                        </p>
+                      </div>
+                    </div>
                     <ServiciosContainer
                       className="transition-all duration-200"
                       id="serviciosSeleccionados"
                       onDragEnter={handleDragEnterSeleccionados}
                     >
                       {serviciosSeleccionados.length > 0 ? (
-                        serviciosSeleccionados.map((servicio) => (
+                        serviciosSeleccionados.map((servicio, index) => (
                           <ServicioItem
                             key={`seleccionado-${servicio.id}`}
                             isDragging={
@@ -772,6 +896,11 @@ export default function ModalLiquidarServicios() {
                             onValorChange={(valor) =>
                               actualizarValorServicio(servicio.id || "", valor)
                             }
+                            position={index}
+                            onMoveUp={() => moverServicioArriba(index)}
+                            onMoveDown={() => moverServicioAbajo(index)}
+                            isFirst={index === 0}
+                            isLast={index === serviciosSeleccionados.length - 1}
                           />
                         ))
                       ) : (
@@ -803,10 +932,21 @@ export default function ModalLiquidarServicios() {
                 </div>
               </div>
 
-              {/* Overlay para el elemento que se está arrastrando */}
-              <DragOverlay>
+              {/* Overlay para el elemento que se está arrastrando - optimizado para móviles */}
+              <DragOverlay dropAnimation={{
+                duration: 300,
+                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+              }}>
                 {activeItem ? (
-                  <div className="p-3 rounded-md bg-white border shadow-lg">
+                  <div className="p-3 rounded-md bg-white border shadow-xl scale-105 z-40 transform-gpu relative" style={{
+                    touchAction: 'none',
+                    pointerEvents: 'none',
+                  }}>
+                    {activeId?.startsWith('seleccionado-') && draggedPosition !== null && (
+                      <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                        {draggedPosition + 1}
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <div className="font-medium">
                         {activeItem.origen_especifico} →{" "}

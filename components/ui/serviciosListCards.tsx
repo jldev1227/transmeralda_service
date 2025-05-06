@@ -1,6 +1,6 @@
-import { Hash, Edit, Ticket } from "lucide-react";
+import React from "react";
+import { Hash, Edit, Ticket, History } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
-import { Tooltip } from "@heroui/tooltip";
 
 import {
   EstadoServicio,
@@ -22,6 +22,11 @@ const ServiciosListCards = ({
   handleSelectServicio,
   formatearFecha,
 }: ServiciosListCardsProps) => {
+  // Variable de estado para controlar la apertura/cierre del modal de historial
+  const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
+  // Variable de estado para almacenar el ID del servicio del cual mostrar el historial
+  const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(null);
+
   const {
     handleModalForm,
     handleModalTicket,
@@ -89,6 +94,18 @@ const ServiciosListCards = ({
     setTimeout(() => {
       handleModalPlanilla(servicio);
     }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+  };
+
+  // Función para manejar la apertura del modal de historial
+  const handleViewHistorial = (
+    e: MouseEvent<HTMLButtonElement>,
+    servicio: ServicioConRelaciones,
+  ) => {
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
+
+    // Establecer el ID del servicio y abrir el modal
+    setServicioHistorialId(servicio.id);
+    setModalHistorialOpen(true);
   };
 
   // Determinar si se debe mostrar el botón de edición
@@ -235,8 +252,22 @@ const ServiciosListCards = ({
     return () => clearTimeout(timer);
   }, [socketEventLogs]);
 
+  // Importar el componente modal de historial
+  const ModalHistorialServicio = React.lazy(() => import('./modalHistorialServicio'));
+
   return (
     <div className="servicios-slider-container space-y-3">
+      {/* Modal de Historial de Servicio */}
+      <React.Suspense>
+        {modalHistorialOpen && (
+          <ModalHistorialServicio
+            isOpen={modalHistorialOpen}
+            onClose={() => setModalHistorialOpen(false)}
+            servicioId={servicioHistorialId}
+          />
+        )}
+      </React.Suspense>
+
       {filteredServicios.map((servicio: ServicioConRelaciones) => {
         // Usar una verificación de nulidad para garantizar que id no sea undefined
         const serviceId = servicio.id || "";
@@ -272,43 +303,49 @@ const ServiciosListCards = ({
                 }
               }}
             >
-              {/* Botón de edición que aparece al deslizar/hover */}
-
-              {shouldShowEditButton(servicio.estado) && (
-                <Tooltip color="primary" content="Editar">
+              {/* Contenedor para los botones flotantes */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
+                {/* Botones con posición fija y manejo simplificado */}
+                <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Botón para ver historial - siempre visible */}
                   <button
-                    className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                    onClick={(e) => handleEdit(e, servicio)}
+                    className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                    onClick={(e) => handleViewHistorial(e, servicio)}
                   >
-                    <Edit size={16} />
+                    <History size={16} />
                   </button>
-                </Tooltip>
-              )}
-
-              {shouldGetTicket(servicio.estado) && (
-                <Tooltip color="primary" content="Ver">
-                  <button
-                    className={`absolute right-0 ${shouldShowEditButton(servicio.estado) ? "top-3/4" : showPlanillaNumber(servicio.estado) ? "top-1/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                    onClick={(e) => handleViewTicket(e, servicio)}
-                  >
-                    <Ticket size={16} />
-                  </button>
-                </Tooltip>
-              )}
-
-              {showPlanillaNumber(servicio.estado) && (
-                <Tooltip
-                  color="primary"
-                  content={servicio.numero_planilla ? "Editar TM" : "Añadir TM"}
-                >
-                  <button
-                    className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-                    onClick={(e) => handleViewLiquidacion(e, servicio)}
-                  >
-                    <Hash size={16} />
-                  </button>
-                </Tooltip>
-              )}
+                  
+                  {/* Botón de editar */}
+                  {shouldShowEditButton(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleEdit(e, servicio)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
+                  
+                  {/* Botón de ticket */}
+                  {shouldGetTicket(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleViewTicket(e, servicio)}
+                    >
+                      <Ticket size={16} />
+                    </button>
+                  )}
+                  
+                  {/* Botón de planilla */}
+                  {showPlanillaNumber(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleViewLiquidacion(e, servicio)}
+                    >
+                      <Hash size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div className="flex justify-between items-start mb-2">
                 <div className="overflow-hidden">
