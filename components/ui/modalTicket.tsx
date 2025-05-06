@@ -5,7 +5,7 @@ import Image from "next/image";
 import RouteAndDetails from "./routeAndDetails";
 
 import { useService } from "@/context/serviceContext";
-import { getStatusColor, getStatusText } from "@/app/page";
+import { getStatusColor, getStatusText } from "@/utils/indext";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
