@@ -1,25 +1,16 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/modal";
-import { Button } from "@heroui/button";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { Spinner } from "@heroui/spinner";
-import CustomTable, { Column } from "./CustomTable";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import {
-  PrinterIcon,
   CalendarIcon,
   UserIcon,
   ClipboardListIcon,
   MapPinIcon,
 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+
+import CustomTable from "./CustomTable";
 
 import { apiClient } from "@/config/apiClient";
 import { ServicioConRelaciones } from "@/context/serviceContext";
@@ -158,7 +149,12 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                     </h2>
                     <p className="text-sm text-gray-500">
                       Creada el{" "}
-                      {formatearFecha(liquidacion.createdAt, true, false, false)}
+                      {formatearFecha(
+                        liquidacion.createdAt,
+                        true,
+                        false,
+                        false,
+                      )}
                     </p>
                   </div>
                   {renderEstadoChip(liquidacion.estado)}
@@ -191,7 +187,12 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                               Fecha de Liquidación
                             </span>
                             <span className="font-medium">
-                              {formatearFecha(liquidacion.fecha_liquidacion, false, false, false)}
+                              {formatearFecha(
+                                liquidacion.fecha_liquidacion,
+                                false,
+                                false,
+                                false,
+                              )}
                             </span>
                           </div>
                         </div>
@@ -257,6 +258,7 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                     </h3>
 
                     <CustomTable
+                      className="rounded-lg"
                       columns={[
                         {
                           key: "planilla",
@@ -272,7 +274,7 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                   : "Personal y herramienta"}
                               </div>
                             </div>
-                          )
+                          ),
                         },
                         {
                           key: "origen_destino",
@@ -293,17 +295,19 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                 </div>
                               </div>
                             </div>
-                          )
+                          ),
                         },
                         {
                           key: "cliente",
                           label: "CLIENTE",
                           renderCell: (servicio) => (
                             <div>
-                                <p>{servicio.cliente?.Nombre || "N/A"}</p>
-                                <p className="text-xs text-gray-500">{servicio.cliente?.NIT || "N/A"}</p>
+                              <p>{servicio.cliente?.Nombre || "N/A"}</p>
+                              <p className="text-xs text-gray-500">
+                                {servicio.cliente?.NIT || "N/A"}
+                              </p>
                             </div>
-                          )
+                          ),
                         },
                         {
                           key: "valor",
@@ -314,8 +318,8 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                 servicio.ServicioLiquidacion.valor_liquidado,
                               )}
                             </div>
-                          )
-                        }
+                          ),
+                        },
                       ]}
                       data={liquidacion.servicios}
                       emptyContent={
@@ -323,7 +327,6 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                           No se encontraron servicios
                         </div>
                       }
-                      className="rounded-lg"
                     />
                   </div>
                 </>
