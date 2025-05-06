@@ -38,14 +38,19 @@ const CustomTable: React.FC<CustomTableProps> = ({
 }) => {
   // Manejar cambio de ordenamiento
   const handleSort = (column: string) => {
-    if (!onSortChange || !columns.find(col => col.key === column)?.allowsSorting) return;
+    if (
+      !onSortChange ||
+      !columns.find((col) => col.key === column)?.allowsSorting
+    )
+      return;
 
     let direction: "ascending" | "descending" = "ascending";
-    
+
     if (sortDescriptor?.column === column) {
-      direction = sortDescriptor.direction === "ascending" ? "descending" : "ascending";
+      direction =
+        sortDescriptor.direction === "ascending" ? "descending" : "ascending";
     }
-    
+
     onSortChange({ column, direction });
   };
 
@@ -57,21 +62,21 @@ const CustomTable: React.FC<CustomTableProps> = ({
             {columns.map((column) => (
               <th
                 key={column.key}
-                scope="col"
                 className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                   column.allowsSorting ? "cursor-pointer hover:bg-gray-100" : ""
                 }`}
+                scope="col"
                 onClick={() => column.allowsSorting && handleSort(column.key)}
               >
                 <div className="flex flex-row items-center space-x-1">
                   <span>{column.label}</span>
-                  {column.allowsSorting && sortDescriptor?.column === column.key && (
-                    sortDescriptor.direction === "ascending" ? (
+                  {column.allowsSorting &&
+                    sortDescriptor?.column === column.key &&
+                    (sortDescriptor.direction === "ascending" ? (
                       <ArrowUpIcon className="h-4 w-4 ml-2" />
                     ) : (
                       <ArrowDownIcon className="h-4 w-4 ml-2" />
-                    )
-                  )}
+                    ))}
                 </div>
               </th>
             ))}
@@ -80,30 +85,41 @@ const CustomTable: React.FC<CustomTableProps> = ({
         <tbody className="bg-white divide-y divide-gray-200">
           {isLoading ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-4 whitespace-nowrap">
+              <td
+                className="px-6 py-4 whitespace-nowrap"
+                colSpan={columns.length}
+              >
                 {loadingContent || (
                   <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
                   </div>
                 )}
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+              <td
+                className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500"
+                colSpan={columns.length}
+              >
                 {emptyContent}
               </td>
             </tr>
           ) : (
             data.map((item, rowIndex) => (
-              <tr 
-                key={rowIndex} 
+              <tr
+                key={rowIndex}
                 className="hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => onRowClick && onRowClick(item)}
               >
                 {columns.map((column) => (
-                  <td key={`${rowIndex}-${column.key}`} className="px-6 py-4 whitespace-nowrap">
-                    {column.renderCell ? column.renderCell(item) : item[column.key]}
+                  <td
+                    key={`${rowIndex}-${column.key}`}
+                    className="px-6 py-4 whitespace-nowrap"
+                  >
+                    {column.renderCell
+                      ? column.renderCell(item)
+                      : item[column.key]}
                   </td>
                 ))}
               </tr>
