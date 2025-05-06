@@ -171,7 +171,7 @@ export interface Servicio {
   geometry: LatLngExpression[];
   routeDistance: string;
   routeDuration: number | null;
-  numero_planilla: string
+  numero_planilla: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -389,7 +389,9 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [servicioPlanilla, setServicioPlanilla] = useState<ServicioTicket>({
     servicio: null,
   });
-  const [serviciosLiquidar, setServiciosLiquidar] = useState<ServicioConRelaciones[]>([]);
+  const [serviciosLiquidar, setServiciosLiquidar] = useState<
+    ServicioConRelaciones[]
+  >([]);
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -408,8 +410,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -431,8 +433,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -456,8 +458,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -479,8 +481,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -502,8 +504,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -531,8 +533,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+            err.message ||
+            "Error al conectar con el servidor",
         );
 
         return null;
@@ -633,14 +635,19 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     }
   };
 
-  const asignarPlanilla = async (servicioId: string, numeroPlanilla: string) => {
+  const asignarPlanilla = async (
+    servicioId: string,
+    numeroPlanilla: string,
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
       const response = await apiClient.patch<
         ApiResponse<ServicioConRelaciones>
-      >(`/api/servicios/${servicioId}/planilla`, { numero_planilla: numeroPlanilla });
+      >(`/api/servicios/${servicioId}/planilla`, {
+        numero_planilla: numeroPlanilla,
+      });
 
       // Verificar si la operación fue exitosa
       if (response.data.success && response.data.data) {
@@ -1057,7 +1064,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
-      const handlePlanillaAsignada = (data: { id: string, servicio: ServicioConRelaciones }) => {
+      const handlePlanillaAsignada = (data: {
+        id: string;
+        servicio: ServicioConRelaciones;
+      }) => {
         setSocketEventLogs((prev) => [
           ...prev,
           {
@@ -1082,7 +1092,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           description: `Al servicio ${data.id} se le ha asignado la planilla ${data.servicio.numero_planilla}`,
           color: "success",
         });
-      }
+      };
 
       // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);

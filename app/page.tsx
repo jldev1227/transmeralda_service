@@ -39,11 +39,11 @@ interface Filters {
 const statusColors = {
   solicitado: "#6a7282",
   realizado: "#155dfc",
-  "en_curso": "#00bc7d",
+  en_curso: "#00bc7d",
   planificado: "#FF9800",
   cancelado: "#F44336",
   default: "#3388ff",
-  "planilla_asignada": "#9C27B0",
+  planilla_asignada: "#9C27B0",
 };
 
 export const getStatusColor = (estado: string): string => {
@@ -54,11 +54,11 @@ export const getStatusColor = (estado: string): string => {
 
 const statusTextMap: Record<string, string> = {
   realizado: "Realizado",
-  "en_curso": "En curso",
+  en_curso: "En curso",
   planificado: "Planificado",
   cancelado: "Cancelado",
   solicitado: "Solicitado",
-  "planilla_asignada": "Planilla asignada",
+  planilla_asignada: "Planilla asignada",
 };
 
 export const getStatusText = (estado: string): string => {
@@ -185,7 +185,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                    servicio.vehiculo.placa.toLowerCase(),
+                      servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -358,19 +358,19 @@ const AdvancedDashboard = () => {
             <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
             {socketConnected ? (
               <Alert
-              className="py-2"
-              color="success"
-              radius="sm"
-              title="Obteniendo cambios en tiempo real"
-              variant="faded"
+                className="py-2"
+                color="success"
+                radius="sm"
+                title="Obteniendo cambios en tiempo real"
+                variant="faded"
               />
             ) : (
               <Alert
-              className="py-2"
-              color="danger"
-              radius="sm"
-              title="Desconectado de conexión en tiempo real"
-              variant="faded"
+                className="py-2"
+                color="danger"
+                radius="sm"
+                title="Desconectado de conexión en tiempo real"
+                variant="faded"
               />
             )}
           </div>
@@ -437,7 +437,7 @@ const AdvancedDashboard = () => {
                 <label
                   className="block text-sm font-medium mb-1"
                   htmlFor="origen"
-                  >
+                >
                   Origen
                 </label>
                 <input
@@ -449,14 +449,14 @@ const AdvancedDashboard = () => {
                   onChange={(e) =>
                     setFilters({ ...filters, origen: e.target.value })
                   }
-                  />
+                />
               </div>
 
               <div className="md:col-span-2">
                 <label
                   className="block text-sm font-medium mb-1"
                   htmlFor="destino"
-                  >
+                >
                   Destino
                 </label>
                 <input
@@ -468,7 +468,7 @@ const AdvancedDashboard = () => {
                   onChange={(e) =>
                     setFilters({ ...filters, destino: e.target.value })
                   }
-                  />
+                />
               </div>
             </div>
           </div>
@@ -481,12 +481,12 @@ const AdvancedDashboard = () => {
               </div>
             ) : (
               <ServiciosListCards
-              filteredServicios={filteredServicios}
-              formatearFecha={formatearFecha}
-              getStatusColor={getStatusColor}
-              getStatusText={getStatusText}
-              handleSelectServicio={handleSelectServicio}
-              selectedServicio={selectedServicio}
+                filteredServicios={filteredServicios}
+                formatearFecha={formatearFecha}
+                getStatusColor={getStatusColor}
+                getStatusText={getStatusText}
+                handleSelectServicio={handleSelectServicio}
+                selectedServicio={selectedServicio}
               />
             )}
           </div>
@@ -494,9 +494,7 @@ const AdvancedDashboard = () => {
       </div>
 
       {/* Main map panel - takes full width/height when sidebar is closed */}
-      <div
-        className="h-full w-full transition-all duration-300"
-        >
+      <div className="h-full w-full transition-all duration-300">
         <EnhancedMapComponent
           getServiceTypeText={getServiceTypeText}
           getStatusText={getStatusText}
@@ -514,7 +512,6 @@ const AdvancedDashboard = () => {
         <ModalTicket />
         <ModalPlanilla />
       </div>
-
 
       {/* Additional styles */}
       <style global jsx>{`

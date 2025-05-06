@@ -12,7 +12,8 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, Link, PlusIcon } from "lucide-react";
+import { ClipboardList, PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import LoadingComponent from "./ui/LoadingComponent";
 
@@ -22,7 +23,6 @@ import {
   VehicleTracking,
 } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
-import { useRouter } from "next/navigation";
 
 interface EnhancedMapComponentProps {
   servicios: ServicioConRelaciones[];
@@ -97,14 +97,14 @@ const EnhancedMapComponent = ({
   wialonToken,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
-  const { handleModalForm, handleModalLiquidar } = useService();
+  const { handleModalForm } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkersRef>({
     activeVehicles: new Map(),
   });
 
-  const router = useRouter()
+  const router = useRouter();
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string>("");
@@ -118,8 +118,8 @@ const EnhancedMapComponent = ({
   const statusColors = {
     solicitado: "#6a7282",
     realizado: "#155dfc",
-    "en_curso": "#00bc7d",
-    "planilla_asignada": "#ad46ff",
+    en_curso: "#00bc7d",
+    planilla_asignada: "#ad46ff",
     planificado: "#FF9800",
     cancelado: "#F44336",
     default: "#3388ff",
@@ -127,7 +127,7 @@ const EnhancedMapComponent = ({
 
   const color = useMemo(() => {
     if (!selectedServicio) return statusColors.default;
-    console.log(selectedServicio)
+    console.log(selectedServicio);
 
     return (
       statusColors[selectedServicio.estado as keyof typeof statusColors] ||
@@ -390,20 +390,21 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${isOrigin
-        ? `<div class="text-sm">
+          ${
+            isOrigin
+              ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-        : `<div class="text-sm">
+              : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-      }
+          }
         </div>
       </div>
     `;

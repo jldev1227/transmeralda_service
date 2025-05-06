@@ -1,12 +1,11 @@
 import React from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
-import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 
-import { useService } from "@/context/serviceContext";
-import { formatCurrency, formatearFecha } from "@/helpers";
-import { getStatusColor, getStatusText } from "@/app/page";
 import RouteAndDetails from "./routeAndDetails";
+
+import { useService } from "@/context/serviceContext";
+import { getStatusColor, getStatusText } from "@/app/page";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
@@ -18,7 +17,13 @@ export default function ModalTicket() {
   if (!servicio) {
     return (
       <Modal
+        backdrop="opaque"
+        classNames={{
+          backdrop:
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-20",
+        }}
         isOpen={modalTicket}
+        scrollBehavior="inside"
         size={"4xl"}
         onClose={() => handleModalTicket()}
       >
@@ -40,7 +45,13 @@ export default function ModalTicket() {
   return (
     <>
       <Modal
+        backdrop="opaque"
+        classNames={{
+          backdrop:
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-20",
+        }}
         isOpen={modalTicket}
+        scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
           handleModalTicket();
@@ -105,9 +116,7 @@ export default function ModalTicket() {
                     <div className="w-full md:w-3/4 p-6">
                       {/* Número de ticket */}
                       <div className="flex justify-between items-center mb-6">
-                        <h1
-                          className={`text-xl font-bold text-emerald-600`}
-                        >
+                        <h1 className={`text-xl font-bold text-emerald-600`}>
                           Servicio #{servicio.id}
                         </h1>
                         <span
@@ -122,7 +131,7 @@ export default function ModalTicket() {
                       </div>
 
                       {/* Ruta */}
-                      <RouteAndDetails servicio={servicio}/>
+                      <RouteAndDetails servicio={servicio} />
                     </div>
                   </div>
                 </div>

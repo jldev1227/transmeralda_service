@@ -7,10 +7,10 @@ import { Textarea } from "@heroui/input";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
+import { Building2 } from "lucide-react";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
-import { Building2 } from "lucide-react";
 
 const UserIcon = () => (
   <svg
@@ -199,7 +199,7 @@ export default function ModalFormServicio() {
 
   // Estado para controlar si se puede editar el servicio
   const [isReadOnly, setIsReadOnly] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
 
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
@@ -441,7 +441,7 @@ export default function ModalFormServicio() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setLoading(true)
+    setLoading(true);
 
     try {
       // Asegurarse de limpiar el servicio seleccionado primero
@@ -475,7 +475,6 @@ export default function ModalFormServicio() {
         observaciones: observaciones,
       };
 
-
       if (isEditing && servicio?.id) {
         // Si estamos editando, actualizamos el servicio existente
         await actualizarServicio(servicio.id, servicioData);
@@ -488,33 +487,33 @@ export default function ModalFormServicio() {
       handleModalForm();
       resetFormStates();
     } catch (error) {
-      setLoading(false)
+      setLoading(false);
       // Manejar errores
       console.error(
         isEditing
-        ? "Error al actualizar el servicio:"
-        : "Error al registrar el servicio:",
+          ? "Error al actualizar el servicio:"
+          : "Error al registrar el servicio:",
         error,
       );
-      
+
       setError(
         error instanceof Error
-        ? error.message
-        : isEditing
-        ? "Error desconocido al actualizar el servicio"
-        : "Error desconocido al registrar el servicio",
+          ? error.message
+          : isEditing
+            ? "Error desconocido al actualizar el servicio"
+            : "Error desconocido al registrar el servicio",
       );
-      
+
       addToast({
         title: "Error",
         description:
-        error instanceof Error
-        ? error.message
-        : "Error al procesar el servicio",
+          error instanceof Error
+            ? error.message
+            : "Error al procesar el servicio",
         color: "danger",
       });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -560,7 +559,13 @@ export default function ModalFormServicio() {
   return (
     <>
       <Modal
+        backdrop="opaque"
+        classNames={{
+          backdrop:
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+        }}
         isOpen={modalForm}
+        scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
           // Primero limpiar el servicio seleccionado para eliminar cualquier ruta/marcador en el mapa
@@ -637,8 +642,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                  servicio.fecha_solicitud,
-                                ).toLocaleString()
+                                    servicio.fecha_solicitud,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -649,8 +654,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                  servicio.fecha_realizacion,
-                                ).toLocaleString()
+                                    servicio.fecha_realizacion,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -864,13 +869,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaSolicitud.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -908,13 +913,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaRealizacion.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -1454,44 +1459,44 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                // onClick={async () => {
-                                //   if (
-                                //     servicio.id &&
-                                //     window.confirm(
-                                //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                //     )
-                                //   ) {
-                                //     try {
-                                //       await actualizarEstadoServicio(
-                                //         servicio.id,
-                                //         "cancelado",
-                                //       );
-                                //       addToast({
-                                //         title: "Éxito",
-                                //         description:
-                                //           "Servicio cancelado correctamente",
-                                //         color: "success",
-                                //       });
-                                //       handleModalForm(); // Cerrar modal
-                                //       resetFormStates();
-                                //     } catch (error) {
-                                //       addToast({
-                                //         title: "Error",
-                                //         description:
-                                //           "No se pudo cancelar el servicio",
-                                //         color: "danger",
-                                //       });
-                                //     }
-                                //   }
-                                // }}
+                                  // onClick={async () => {
+                                  //   if (
+                                  //     servicio.id &&
+                                  //     window.confirm(
+                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                  //     )
+                                  //   ) {
+                                  //     try {
+                                  //       await actualizarEstadoServicio(
+                                  //         servicio.id,
+                                  //         "cancelado",
+                                  //       );
+                                  //       addToast({
+                                  //         title: "Éxito",
+                                  //         description:
+                                  //           "Servicio cancelado correctamente",
+                                  //         color: "success",
+                                  //       });
+                                  //       handleModalForm(); // Cerrar modal
+                                  //       resetFormStates();
+                                  //     } catch (error) {
+                                  //       addToast({
+                                  //         title: "Error",
+                                  //         description:
+                                  //           "No se pudo cancelar el servicio",
+                                  //         color: "danger",
+                                  //       });
+                                  //     }
+                                  //   }
+                                  // }}
                                 >
                                   Cancelar Servicio
                                 </button>
                               )}
                             <button
                               className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                              type="submit"
                               disabled={loading}
+                              type="submit"
                             >
                               {isEditing
                                 ? "Actualizar Servicio"

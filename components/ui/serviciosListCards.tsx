@@ -39,12 +39,11 @@ const ServiciosListCards = ({
     handleModalTicket,
     handleModalPlanilla,
     clearSelectedServicio,
-    socketEventLogs
+    socketEventLogs,
   } = useService();
 
   // Estado para animaciones de servicios
   const [rowAnimations, setRowAnimations] = useState<RowAnimationState>({});
-
 
   // Función para manejar el evento de edición
   const handleEdit = (
@@ -106,7 +105,11 @@ const ServiciosListCards = ({
 
   // Determinar si se debe mostrar el botón de edición
   const shouldShowEditButton = (estado: EstadoServicio) => {
-    return estado === "solicitado" || estado === "planificado" || estado === "en_curso";
+    return (
+      estado === "solicitado" ||
+      estado === "planificado" ||
+      estado === "en_curso"
+    );
   };
 
   // Determinar si se debe mostrar el botón de ticket
@@ -159,7 +162,7 @@ const ServiciosListCards = ({
         return "border-l-4 border-l-gray-300";
     }
   };
-  
+
   // Modifica la interfaz RowAnimationState para incluir el tipo de evento
   interface RowAnimationState {
     [key: string]: {
@@ -169,30 +172,31 @@ const ServiciosListCards = ({
       timestamp: number;
     };
   }
-  
+
   // Actualiza el useEffect donde procesas los eventos de socket
   useEffect(() => {
     if (!socketEventLogs || socketEventLogs.length === 0) return;
-  
+
     // Obtener el evento más reciente
     const latestEvents = [...socketEventLogs]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, 5); // Solo procesar los 5 eventos más recientes
-  
+
     const now = Date.now();
     const newAnimations: RowAnimationState = { ...rowAnimations };
-  
+
     latestEvents.forEach((event) => {
       // Obtener ID del servicio según el tipo de evento
-      let servicioId = '';
+      let servicioId = "";
+
       if (event.data.servicio) {
         servicioId = event.data.servicio.id;
       } else if (event.data.id) {
         servicioId = event.data.id;
       }
-  
+
       if (!servicioId) return;
-  
+
       if (event.eventName === "servicio:creado") {
         newAnimations[servicioId] = {
           isNew: true,
@@ -209,74 +213,77 @@ const ServiciosListCards = ({
           timestamp: now,
         };
       }
-  
+
       // Scroll al servicio si es nuevo
       if (event.eventName === "servicio:creado") {
         setTimeout(() => {
           const row = document.getElementById(`servicio-row-${servicioId}`);
+
           if (row) {
             row.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         }, 100);
       }
     });
-  
+
     setRowAnimations(newAnimations);
-  
+
     // Limpiar animaciones después de 5 segundos
     const timer = setTimeout(() => {
       setRowAnimations((prev) => {
         const updated: RowAnimationState = {};
+
         // Solo mantener animaciones que sean más recientes que 5 segundos
         Object.entries(prev).forEach(([id, state]) => {
           if (now - state.timestamp < 5000) {
             updated[id] = state;
           }
         });
+
         return updated;
       });
     }, 5000);
-  
+
     return () => clearTimeout(timer);
   }, [socketEventLogs]);
+
   return (
     <div className="servicios-slider-container space-y-3">
       {filteredServicios.map((servicio: ServicioConRelaciones) => {
-
         // Usar una verificación de nulidad para garantizar que id no sea undefined
-        const serviceId = servicio.id || '';
+        const serviceId = servicio.id || "";
         const animation = rowAnimations[serviceId];
         const isNew = animation?.isNew || false;
         const isUpdated = animation?.isUpdated || false;
-        const eventType = animation?.eventType || '';
-        
+        const eventType = animation?.eventType || "";
+
         // Determinar si mostrar el borde y qué color usar
         const showAnimation = isNew || isUpdated;
 
         return (
           <div
-          key={servicio.id}
-          id={`servicio-${servicio.id}`}
-          className="px-1 relative group"
-          style={{ width: "auto", minWidth: "280px", maxWidth: "350px" }}
-        >
-          <div
-            className={`
+            key={servicio.id}
+            className="px-1 relative group"
+            id={`servicio-${servicio.id}`}
+            style={{ width: "auto", minWidth: "280px", maxWidth: "350px" }}
+          >
+            <div
+              className={`
               select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative
               ${showAnimation ? getBorderLeftColorByEvent(eventType) : "border-l"}
               ${isNew ? "animate-pulse" : ""}
               ${isUpdated ? "animate-fadeIn" : ""}
               ${selectedServicio?.id === servicio.id ? getColorCard(servicio.estado) : ""}
             `}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleSelectServicio(servicio)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                handleSelectServicio(servicio);
-              }
-            }}
-          >
+              role="button"
+              tabIndex={0}
+              onClick={() => handleSelectServicio(servicio)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleSelectServicio(servicio);
+                }
+              }}
+            >
               {/* Botón de edición que aparece al deslizar/hover */}
 
               {shouldShowEditButton(servicio.estado) && (
@@ -302,7 +309,10 @@ const ServiciosListCards = ({
               )}
 
               {showPlanillaNumber(servicio.estado) && (
-                <Tooltip color="primary" content={servicio.numero_planilla ? "Editar TM" : "Añadir TM"}>
+                <Tooltip
+                  color="primary"
+                  content={servicio.numero_planilla ? "Editar TM" : "Añadir TM"}
+                >
                   <button
                     className={`absolute right-0 ${shouldGetTicket(servicio.estado) ? "top-3/4" : "top-1/2"} transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
                     onClick={(e) => handleViewLiquidacion(e, servicio)}
@@ -341,9 +351,8 @@ const ServiciosListCards = ({
               </div>
             </div>
           </div>
-        )
-      })
-      }
+        );
+      })}
     </div>
   );
 };

@@ -1,21 +1,33 @@
 import React from "react";
-import { Modal, ModalContent, ModalBody, ModalHeader, ModalFooter } from "@heroui/modal";
-import { useState, useEffect } from 'react';
-import { useService } from "@/context/serviceContext";
-import { ArrowRight, Hash } from "lucide-react";
+import {
+  Modal,
+  ModalContent,
+  ModalBody,
+  ModalHeader,
+  ModalFooter,
+} from "@heroui/modal";
+import { useState, useEffect } from "react";
+import { Hash } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import { formatCurrency, formatearFecha } from "@/helpers";
+
 import RouteAndDetails from "./routeAndDetails";
 
+import { useService } from "@/context/serviceContext";
+
 export default function ModalPlanilla() {
-  const { servicioPlanilla, modalPlanilla, handleModalPlanilla, asignarPlanilla } = useService();
+  const {
+    servicioPlanilla,
+    modalPlanilla,
+    handleModalPlanilla,
+    asignarPlanilla,
+  } = useService();
 
   // Obtener el servicio real del contexto
   const servicio = servicioPlanilla?.servicio;
 
   // Estado para el valor de la planilla y errores
-  const [planillaValue, setPlanillaValue] = useState('TM-');
-  const [error, setError] = useState('');
+  const [planillaValue, setPlanillaValue] = useState("TM-");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Verificar si ya existe un número de planilla (modo edición)
@@ -26,7 +38,7 @@ export default function ModalPlanilla() {
     if (servicio && servicio.numero_planilla) {
       setPlanillaValue(servicio.numero_planilla);
     } else {
-      setPlanillaValue('TM-');
+      setPlanillaValue("TM-");
     }
   }, [servicio]);
 
@@ -34,22 +46,24 @@ export default function ModalPlanilla() {
     let value = e.target.value;
 
     // Si el usuario borró el prefijo TM-, restaurarlo
-    if (!value.startsWith('TM-')) {
-      value = 'TM-' + value.replace('TM-', '');
+    if (!value.startsWith("TM-")) {
+      value = "TM-" + value.replace("TM-", "");
     }
 
     // Asegurar que solo haya dígitos después del prefijo TM-
     const regex = /^TM-\d{0,5}$/;
-    if (regex.test(value) || value === 'TM-') {
+
+    if (regex.test(value) || value === "TM-") {
       setPlanillaValue(value);
-      setError('');
+      setError("");
     }
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     // Posicionar cursor después del prefijo TM-
     const input = e.target as HTMLInputElement;
-    if (input.value === 'TM-') {
+
+    if (input.value === "TM-") {
       setTimeout(() => {
         if (input.selectionStart !== null && input.selectionEnd !== null) {
           input.selectionStart = input.selectionEnd = 3;
@@ -61,11 +75,14 @@ export default function ModalPlanilla() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Prevenir borrar el prefijo TM-
     const input = e.target as HTMLInputElement;
-    if (e.key === 'Backspace' &&
+
+    if (
+      e.key === "Backspace" &&
       input.selectionStart !== null &&
       input.selectionEnd !== null &&
       input.selectionStart <= 3 &&
-      input.selectionEnd <= 3) {
+      input.selectionEnd <= 3
+    ) {
       e.preventDefault();
     }
   };
@@ -75,15 +92,15 @@ export default function ModalPlanilla() {
     e.preventDefault();
 
     // Validar que se haya ingresado algo más que solo el prefijo
-    if (planillaValue === 'TM-' || planillaValue.length <= 3) {
-      setError('Por favor, ingresa un número de planilla válido');
+    if (planillaValue === "TM-" || planillaValue.length <= 3) {
+      setError("Por favor, ingresa un número de planilla válido");
+
       return;
     }
 
     setLoading(true);
 
     try {
-
       if (servicio?.id) {
         // Llamar a la función del contexto para agregar/actualizar la planilla
         await asignarPlanilla(servicio.id, planillaValue);
@@ -124,7 +141,13 @@ export default function ModalPlanilla() {
   if (!servicio) {
     return (
       <Modal
+        backdrop="opaque"
+        classNames={{
+          backdrop:
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-20",
+        }}
         isOpen={modalPlanilla}
+        scrollBehavior="inside"
         size={"4xl"}
         onClose={() => handleModalPlanilla()}
       >
@@ -144,8 +167,14 @@ export default function ModalPlanilla() {
   return (
     <>
       <Modal
+        backdrop="opaque"
+        classNames={{
+          backdrop:
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-20",
+        }}
         isOpen={modalPlanilla}
         radius="sm"
+        scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
           handleModalPlanilla();
@@ -155,10 +184,9 @@ export default function ModalPlanilla() {
           {() => (
             <form onSubmit={handleSubmit}>
               <ModalHeader>
-                {isEditing ?
-                  'Actualizar número de planilla' :
-                  'Asignar número de planilla'
-                }
+                {isEditing
+                  ? "Actualizar número de planilla"
+                  : "Asignar número de planilla"}
               </ModalHeader>
               <ModalBody>
                 <div className="relative">
@@ -168,8 +196,12 @@ export default function ModalPlanilla() {
                   <RouteAndDetails servicio={servicio} />
                 </div>
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1"
-                    htmlFor="planilla">Número planilla</label>
+                  <label
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                    htmlFor="planilla"
+                  >
+                    Número planilla
+                  </label>
                   <div className="relative shadow-sm rounded-md">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Hash className="w-5 h-5 text-gray-400" />
@@ -177,8 +209,8 @@ export default function ModalPlanilla() {
                     <input
                       className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-5 appearance-none outline-emerald-600"
                       id="planilla"
-                      type="text"
                       placeholder="Ingresa el número de la planilla"
+                      type="text"
                       value={planillaValue}
                       onChange={handlePlanillaChange}
                       onFocus={handleFocus}
@@ -193,21 +225,23 @@ export default function ModalPlanilla() {
               <ModalFooter>
                 <div className="flex justify-end space-x-3">
                   <button
-                    type="button"
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
-                    onClick={() => handleModalPlanilla()}
                     disabled={loading}
+                    type="button"
+                    onClick={() => handleModalPlanilla()}
                   >
                     Cancelar
                   </button>
                   <button
                     className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:bg-emerald-300"
-                    type="submit"
                     disabled={loading}
+                    type="submit"
                   >
-                    {loading ? 'Procesando...' : isEditing
-                      ? "Actualizar planilla"
-                      : "Registrar planilla"}
+                    {loading
+                      ? "Procesando..."
+                      : isEditing
+                        ? "Actualizar planilla"
+                        : "Registrar planilla"}
                   </button>
                 </div>
               </ModalFooter>
