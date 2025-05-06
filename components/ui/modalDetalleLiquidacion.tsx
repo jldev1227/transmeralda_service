@@ -299,7 +299,10 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                           key: "cliente",
                           label: "CLIENTE",
                           renderCell: (servicio) => (
-                            servicio.cliente?.Nombre || "N/A"
+                            <div>
+                                <p>{servicio.cliente?.Nombre || "N/A"}</p>
+                                <p className="text-xs text-gray-500">{servicio.cliente?.NIT || "N/A"}</p>
+                            </div>
                           )
                         },
                         {
