@@ -35,36 +35,6 @@ interface Filters {
   propositoServicio: string;
 }
 
-// Helper functions
-const statusColors = {
-  solicitado: "#6a7282",
-  realizado: "#155dfc",
-  en_curso: "#00bc7d",
-  planificado: "#FF9800",
-  cancelado: "#F44336",
-  default: "#3388ff",
-  planilla_asignada: "#9C27B0",
-};
-
-export const getStatusColor = (estado: string): string => {
-  return (
-    statusColors[estado as keyof typeof statusColors] || statusColors.default
-  );
-};
-
-const statusTextMap: Record<string, string> = {
-  realizado: "Realizado",
-  en_curso: "En curso",
-  planificado: "Planificado",
-  cancelado: "Cancelado",
-  solicitado: "Solicitado",
-  planilla_asignada: "Planilla asignada",
-};
-
-export const getStatusText = (estado: string): string => {
-  return statusTextMap[estado] || estado;
-};
-
 const serviceTypeTextMap: Record<string, string> = {
   herramienta: "Cargado con herramienta",
   personal: "Deplazamineto de personal",
@@ -483,8 +453,6 @@ const AdvancedDashboard = () => {
               <ServiciosListCards
                 filteredServicios={filteredServicios}
                 formatearFecha={formatearFecha}
-                getStatusColor={getStatusColor}
-                getStatusText={getStatusText}
                 handleSelectServicio={handleSelectServicio}
                 selectedServicio={selectedServicio}
               />
@@ -497,7 +465,6 @@ const AdvancedDashboard = () => {
       <div className="h-full w-full transition-all duration-300">
         <EnhancedMapComponent
           getServiceTypeText={getServiceTypeText}
-          getStatusText={getStatusText}
           handleSelectServicio={handleSelectServicio}
           mapboxToken={MAPBOX_ACCESS_TOKEN}
           selectedServicio={servicioWithRoutes}

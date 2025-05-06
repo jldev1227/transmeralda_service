@@ -17,8 +17,6 @@ import {
   CalendarIcon,
   ChevronDownIcon,
   UserIcon,
-  ArrowDownIcon,
-  ArrowUpIcon,
   XIcon,
 } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
@@ -85,7 +83,7 @@ const HistoricoLiquidaciones = () => {
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
   // Ahora los filtros siempre son visibles - eliminamos este estado
   const [totalResults, setTotalResults] = useState(0);
   const [allLiquidaciones, setAllLiquidaciones] = useState<Liquidacion[]>([]);
@@ -283,14 +281,6 @@ const HistoricoLiquidaciones = () => {
     }
   };
 
-  // Manejar filtro de fechas
-  const aplicarFiltroFechas = () => {
-    setPage(1);
-    // La actualización de filtrados se maneja en el useEffect
-  };
-
-  // Esta función se eliminó porque se integrará con socket más adelante
-
   // Resetear filtros
   const resetearFiltros = () => {
     setSearchTerm("");
@@ -318,11 +308,6 @@ const HistoricoLiquidaciones = () => {
   const cerrarModal = () => {
     setModalOpen(false);
     setSelectedLiquidacionId(null);
-  };
-
-  // Generar reporte PDF
-  const generarReportePDF = (id: string) => {
-    window.open(`/api/liquidaciones_servicios/${id}/pdf`, "_blank");
   };
 
   // Renderizar chip de estado
@@ -366,17 +351,6 @@ const HistoricoLiquidaciones = () => {
       style: "currency",
       currency: "COP",
     }).format(parseFloat(valor));
-  };
-
-  // Renderizar ícono de ordenamiento
-  const renderSortIcon = (column: string) => {
-    if (sortDescriptor.column !== column) return null;
-
-    return sortDescriptor.direction === "ascending" ? (
-      <ArrowUpIcon className="h-4 w-4 ml-1" />
-    ) : (
-      <ArrowDownIcon className="h-4 w-4 ml-1" />
-    );
   };
 
   // Determinar las columnas a mostrar según el tamaño de pantalla

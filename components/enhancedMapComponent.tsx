@@ -23,6 +23,7 @@ import {
   VehicleTracking,
 } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
+import { getStatusText } from "@/utils/indext";
 
 interface EnhancedMapComponentProps {
   servicios: ServicioConRelaciones[];
@@ -30,7 +31,6 @@ interface EnhancedMapComponentProps {
   vehicleTracking: VehicleTracking | null;
   trackingError: string;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
-  getStatusText: (status: string) => string;
   getServiceTypeText: (text: string) => string;
   mapboxToken: string;
   onWialonRequest: (
@@ -90,7 +90,6 @@ const EnhancedMapComponent = ({
   vehicleTracking,
   trackingError,
   handleSelectServicio,
-  getStatusText,
   getServiceTypeText,
   mapboxToken,
   onWialonRequest,

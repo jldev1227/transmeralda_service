@@ -7,31 +7,19 @@ import {
   ServicioConRelaciones,
   useService,
 } from "@/context/serviceContext";
+import { getStatusColor, getStatusText } from "@/utils/indext";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
   selectedServicio: ServicioConRelaciones | null | undefined;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
-  getStatusColor: (estado: string) => string;
-  getStatusText: (estado: string) => string;
   formatearFecha: (fechaISOString: Date | string | undefined) => string;
-}
-
-// Nueva interfaz para controlar animaciones de filas
-interface RowAnimationState {
-  [key: string]: {
-    isNew: boolean;
-    isUpdated: boolean;
-    timestamp: number;
-  };
 }
 
 const ServiciosListCards = ({
   filteredServicios,
   selectedServicio,
   handleSelectServicio,
-  getStatusColor,
-  getStatusText,
   formatearFecha,
 }: ServiciosListCardsProps) => {
   const {
