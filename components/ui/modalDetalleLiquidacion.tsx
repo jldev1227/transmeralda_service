@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -16,6 +16,8 @@ import CustomTable from "./CustomTable";
 import { apiClient } from "@/config/apiClient";
 import { ServicioConRelaciones } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
+import { Button } from "@heroui/button";
+import { useAuth } from "@/context/AuthContext";
 
 // Tipado para la liquidación
 interface Liquidacion {
@@ -46,6 +48,9 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
   onClose,
   liquidacionId,
 }) => {
+
+  // Auth context
+  const { user } = useAuth()
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,17 +108,14 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
       | undefined;
 
     switch (estado) {
-      case "pendiente":
+      case "liquidado":
         color = "warning";
         break;
-      case "procesada":
+      case "aprobado":
         color = "success";
         break;
       case "anulada":
         color = "danger";
-        break;
-      case "liquidado":
-        color = "success";
         break;
       default:
         color = "default";
@@ -126,13 +128,14 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
     );
   };
 
+  const aprobarLiquidacion = async ()=>{
+    console.log("aprobada la liquidacion")
+  }
+
   return (
     <Modal
-      backdrop="opaque"
+      backdrop="blur"
       classNames={{
-        backdrop:
-          "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
-        // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
         wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
         // Asegurar que el contenido ocupe todo el ancho del modal
         base: "w-full"
@@ -342,6 +345,17 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                 </div>
               )}
             </ModalBody>
+            <ModalFooter>
+              {user?.permisos.aprobador && (
+                <Button
+                  radius="sm"
+                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  onPress={aprobarLiquidacion}
+                >
+                  Aprobar liquidación
+                </Button>
+              )}
+            </ModalFooter>
           </>
         )}
       </ModalContent>

@@ -5,19 +5,24 @@ import { AxiosError, isAxiosError } from "axios";
 
 import { apiClient } from "@/config/apiClient";
 import LoadingPage from "@/components/loadingPage";
-// Importar para acceder a la función handleLogout
 
 // Definir la interfaz para el usuario
 export interface User {
   id: string;
   nombre: string;
   correo: string;
-  role: "admin" | "gestor_flota" | "gestor_nomina" | "usuario";
+  role: "admin" | "gestor_flota" | "gestor_nomina" | "gestor_servicio" | "gestor_planillas" | "liquidador" | "usuario";
   telefono: string;
   permisos: {
     flota: boolean;
     nomina: boolean;
     admin: boolean;
+    liquidador?: boolean;
+    aprobador?: boolean;
+    facturador?: boolean;
+    gestor_servicio?: boolean;
+    gestor_planillas?: boolean;
+    [key: string]: boolean | undefined;
   };
   ultimo_acceso: string;
 }
@@ -27,8 +32,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  logout: () => void;
   refreshProfile: () => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 interface ApiResponse<T> {
@@ -42,8 +47,8 @@ const defaultAuthContext: AuthContextType = {
   user: null,
   loading: true,
   error: null,
-  logout: () => {},
   refreshProfile: async () => {},
+  isAuthenticated: false,
 };
 
 // Crear el contexto con el valor predeterminado
@@ -51,34 +56,6 @@ const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 // Hook personalizado para usar el contexto
 export const useAuth = () => useContext(AuthContext);
-
-// Obtener la función handleLogout del apiClient
-// Técnica para acceder a la función interna sin exponer directamente
-const getLogoutFunction = () => {
-  // Definir una función que simule un error de autenticación para invocar handleLogout
-  return () => {
-    // Limpiar cookies (similares a las de handleLogout)
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie =
-      "userInfo=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-    // Intentar con dominios más generales
-    const domainParts = window.location.hostname.split(".");
-
-    if (domainParts.length > 1) {
-      const rootDomain = domainParts.slice(-2).join(".");
-
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain}`;
-      document.cookie = `userInfo=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain}`;
-    }
-
-    // Redirigir al sistema de autenticación
-    const authSystem =
-      process.env.NEXT_PUBLIC_AUTH_SYSTEM || "http://auth.midominio.local:3001";
-
-    window.location.href = `${authSystem}?returnUrl=${encodeURIComponent(window.location.href)}`;
-  };
-};
 
 // Proveedor del contexto
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -89,9 +66,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState<boolean>(true);
 
-  // Usar la función de logout del apiClient
-  const logout = getLogoutFunction();
-
   // Función para obtener el perfil del usuario
   const fetchUserProfile = async (): Promise<void> => {
     try {
@@ -100,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await apiClient.get("/api/usuarios/perfil");
 
       if (response.data && response.data.success) {
+        console.log(response.data)
         setUser(response.data.data);
         setError(null);
       } else {
@@ -162,13 +137,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => clearTimeout(timeoutId);
   }, []);
 
+  // Determinar si el usuario está autenticado
+  const isAuthenticated = !!user;
+
   // Contexto que será proporcionado
   const authContext: AuthContextType = {
     user,
     loading,
     error,
-    logout,
     refreshProfile: fetchUserProfile,
+    isAuthenticated,
   };
 
   // Mostrar pantalla de carga durante la inicialización

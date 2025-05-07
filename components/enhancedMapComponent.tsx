@@ -1208,7 +1208,7 @@ const EnhancedMapComponent = ({
 
       <div className="absolute top-3.5 left-4  bg-white bg-opacity-90 p-2 rounded-md shadow">
         <span className="text-sm font-medium">
-          Vehiculos con servicios en_curso (Wialon): {activeVehiclesData.length}
+          Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
         </span>
       </div>
 

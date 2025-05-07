@@ -104,8 +104,11 @@ const ServiciosListCards = ({
     e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // Establecer el ID del servicio y abrir el modal
-    setServicioHistorialId(servicio.id);
-    setModalHistorialOpen(true);
+    // Asegurarse de que el ID no sea undefined antes de establecerlo
+    if (servicio.id) {
+      setServicioHistorialId(servicio.id);
+      setModalHistorialOpen(true);
+    }
   };
 
   // Determinar si se debe mostrar el botón de edición

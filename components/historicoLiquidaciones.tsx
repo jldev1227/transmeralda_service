@@ -1,9 +1,14 @@
+"use client"
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+import { addToast } from "@heroui/toast";
 import {
   Dropdown,
   DropdownTrigger,
@@ -20,6 +25,8 @@ import {
   UserIcon,
   BuildingIcon,
   XIcon,
+  ReceiptIcon,
+  CheckCircleIcon,
 } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
 
@@ -35,7 +42,7 @@ interface Liquidacion {
   consecutivo: string;
   fecha_liquidacion: string;
   valor_total: string;
-  estado: "pendiente" | "procesada" | "anulada" | "liquidado";
+  estado: "liquidado" |  "aprobado" | "facturado" | "anulada";
   observaciones: string;
   createdAt: string;
   updatedAt: string;
@@ -118,6 +125,16 @@ const HistoricoLiquidaciones = () => {
     string | null
   >(null);
 
+  // Estados para el modal de facturación
+  const [numeroFactura, setNumeroFactura] = useState("");
+  const [observacionesFactura, setObservacionesFactura] = useState("");
+  const [loadingFacturar, setLoadingFacturar] = useState(false);
+
+  // Estados para la selección múltiple
+  const [liquidacionesSeleccionadas, setLiquidacionesSeleccionadas] = useState<Liquidacion[]>([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<{ id: string, nombre: string } | null>(null);
+  const [modalFacturacionMultipleOpen, setModalFacturacionMultipleOpen] = useState(false);
+
   // Cargar datos de usuarios
   const fetchUsuarios = async () => {
     try {
@@ -153,7 +170,7 @@ const HistoricoLiquidaciones = () => {
 
       // Extraer clientes únicos para el selector
       const clientesMap = new Map<string, ClienteOption>();
-      
+
       response.data.liquidaciones.forEach(liquidacion => {
         if (liquidacion.servicios.length > 0) {
           const cliente = liquidacion.servicios[0].cliente;
@@ -166,7 +183,7 @@ const HistoricoLiquidaciones = () => {
           }
         }
       });
-      
+
       setOpcionesClientes(Array.from(clientesMap.values()));
 
       // Aplicar filtros y ordenamiento a los datos cargados
@@ -207,7 +224,7 @@ const HistoricoLiquidaciones = () => {
       if (filtroCliente) {
         filtered = filtered.filter((item) => {
           if (item.servicios.length === 0) return false;
-          
+
           // Comprobamos si el primer servicio de la liquidación tiene el cliente filtrado
           const clienteServicio = item.servicios[0].cliente;
           return clienteServicio && clienteServicio.id === filtroCliente.value;
@@ -357,6 +374,147 @@ const HistoricoLiquidaciones = () => {
     setSelectedLiquidacionId(null);
   };
 
+  // Función para manejar la selección o deselección de una liquidación
+  const toggleSeleccionLiquidacion = (liquidacion: Liquidacion) => {
+    // Solo permitir seleccionar liquidaciones en estado "pendiente" o "procesada"
+    if (liquidacion.estado !== "aprobado") {
+      addToast({
+        title: "No se puede seleccionar",
+        description: "Solo liquidaciones en estado aprobado pueden ser seleccionadas",
+        color: "danger",
+      });
+      return;
+    }
+
+    // Verificar si la liquidación ya está seleccionada
+    const isSelected = liquidacionesSeleccionadas.some(item => item.id === liquidacion.id);
+
+    if (isSelected) {
+      // Quitar de la selección
+      setLiquidacionesSeleccionadas(prev => prev.filter(item => item.id !== liquidacion.id));
+
+      // Si quedaron 0 liquidaciones seleccionadas, resetear el cliente seleccionado
+      if (liquidacionesSeleccionadas.length === 1) {
+        setClienteSeleccionado(null);
+      }
+
+      return;
+    }
+
+    // Obtener el cliente de la liquidación actual
+    const clienteLiquidacion = liquidacion.servicios[0]?.cliente;
+    if (!clienteLiquidacion) {
+      addToast({
+        title: "Error",
+        description: "No se pudo determinar el cliente de la liquidación",
+        color: "danger",
+      });
+      return;
+    }
+
+    // Si es la primera selección, establecer el cliente
+    if (liquidacionesSeleccionadas.length === 0) {
+      setClienteSeleccionado({
+        id: clienteLiquidacion.id,
+        nombre: clienteLiquidacion.Nombre
+      });
+      setLiquidacionesSeleccionadas([liquidacion]);
+      return;
+    }
+
+    // Validar que la liquidación corresponda al mismo cliente ya seleccionado
+    if (clienteSeleccionado && clienteLiquidacion.id !== clienteSeleccionado.id) {
+      addToast({
+        title: "Cliente diferente",
+        description: `Solo puede seleccionar liquidaciones del cliente ${clienteSeleccionado.nombre}`,
+        color: "danger",
+      });
+      return;
+    }
+
+    // Añadir a las seleccionadas
+    setLiquidacionesSeleccionadas(prev => [...prev, liquidacion]);
+  };
+
+  // Abrir el modal de facturación para múltiples liquidaciones
+  const abrirModalFacturacionMultiple = () => {
+    if (liquidacionesSeleccionadas.length === 0) {
+      addToast({
+        title: "Sin selección",
+        description: "Debe seleccionar al menos una liquidación para facturar",
+        color: "danger",
+      });
+      return;
+    }
+
+    setNumeroFactura("");
+    setObservacionesFactura("");
+    setModalFacturacionMultipleOpen(true);
+  };
+
+  // Cerrar el modal de facturación múltiple
+  const cerrarModalFacturacionMultiple = () => {
+    setModalFacturacionMultipleOpen(false);
+  };
+
+  // Limpiar selección de liquidaciones
+  const limpiarSeleccion = () => {
+    setLiquidacionesSeleccionadas([]);
+    setClienteSeleccionado(null);
+  };
+
+  // Procesar la facturación de múltiples liquidaciones
+  const procesarFacturacionMultiple = async () => {
+    if (liquidacionesSeleccionadas.length === 0 || !numeroFactura.trim()) {
+      addToast({
+        title: "Error",
+        description: "El número de factura es obligatorio",
+        color: "danger",
+      });
+      return;
+    }
+
+    setLoadingFacturar(true);
+
+    try {
+      // Crear un array con todas las promesas de facturación
+      const promesasFacturacion = liquidacionesSeleccionadas.map(liquidacion =>
+        apiClient.patch(`/api/liquidaciones_servicios/${liquidacion.id}/facturar`, {
+          numero_factura: numeroFactura.trim(),
+          observaciones: observacionesFactura.trim()
+        })
+      );
+
+      // Ejecutar todas las peticiones en paralelo
+      await Promise.all(promesasFacturacion);
+
+      // Actualizar la lista después de facturar
+      fetchAllLiquidaciones();
+
+      addToast({
+        title: "Éxito",
+        description: `${liquidacionesSeleccionadas.length} liquidaciones han sido marcadas como facturadas`,
+        color: "success",
+      });
+
+      // Cerrar modal y limpiar selección
+      cerrarModalFacturacionMultiple();
+      limpiarSeleccion();
+    } catch (error: any) {
+      console.error("Error al facturar las liquidaciones:", error);
+
+      const mensaje = error.response?.data?.error || "Ocurrió un error al procesar la facturación múltiple";
+
+      addToast({
+        title: "Error",
+        description: mensaje,
+        color: "danger",
+      });
+    } finally {
+      setLoadingFacturar(false);
+    }
+  };
+
   // Renderizar chip de estado
   const renderEstadoChip = (estado: string) => {
     let color:
@@ -369,17 +527,17 @@ const HistoricoLiquidaciones = () => {
       | undefined;
 
     switch (estado) {
-      case "pendiente":
+      case "liquidado":
         color = "warning";
         break;
-      case "procesada":
+      case "aprobado":
         color = "success";
+        break;
+      case "facturado":
+        color = "primary";
         break;
       case "anulada":
         color = "danger";
-        break;
-      case "liquidado":
-        color = "success";
         break;
       default:
         color = "default";
@@ -391,18 +549,18 @@ const HistoricoLiquidaciones = () => {
       </Chip>
     );
   };
-  
+
   // Renderizar información del cliente
   const renderClienteInfo = (liquidacion: Liquidacion) => {
     if (liquidacion.servicios.length === 0) {
       return <span className="text-gray-400">Sin cliente</span>;
     }
-    
+
     const cliente = liquidacion.servicios[0].cliente;
     if (!cliente) {
       return <span className="text-gray-400">Sin cliente</span>;
     }
-    
+
     return (
       <div className="flex items-start">
         <BuildingIcon className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
@@ -426,7 +584,7 @@ const HistoricoLiquidaciones = () => {
   const columnasVisibles = useMemo(() => {
     if (isMobile) {
       // En móvil solo mostramos las columnas más importantes
-      return ["consecutivo", "valor_total", "estado"];
+      return ["consecutivo", "estado"];
     } else if (isTablet) {
       // En tablet mostramos más columnas
       return ["consecutivo", "fecha_liquidacion", "valor_total", "estado"];
@@ -501,6 +659,38 @@ const HistoricoLiquidaciones = () => {
         <h1 className="text-xl sm:text-2xl font-bold">
           Histórico de Liquidaciones
         </h1>
+
+        {/* Controles para la selección múltiple */}
+        <div className="flex items-center gap-2">
+          {liquidacionesSeleccionadas.length > 0 && (
+            <>
+              <div className="hidden sm:flex items-center text-sm bg-gray-100 px-2 py-1 rounded">
+                <span className="font-medium">{clienteSeleccionado?.nombre}</span>
+                <span className="mx-1 text-gray-500">|</span>
+                <span className="text-emerald-600 font-bold">{liquidacionesSeleccionadas.length}</span>
+                <span className="ml-1 text-gray-500">seleccionadas</span>
+              </div>
+
+              <Button
+                radius="sm"
+                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors" size="sm"
+                startContent={<ReceiptIcon className="h-4 w-4" />}
+                onPress={abrirModalFacturacionMultiple}
+              >
+                Facturar Selección
+              </Button>
+
+              <Button
+                color="default"
+                size="sm"
+                variant="light"
+                onPress={limpiarSeleccion}
+              >
+                Limpiar
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Panel de filtros (siempre visible) */}
@@ -524,16 +714,16 @@ const HistoricoLiquidaciones = () => {
             filtroUsuario ||
             fechaInicio ||
             fechaFin) && (
-            <Button
-              className="sm:w-auto"
-              color="danger"
-              startContent={<XIcon className="h-4 w-4" />}
-              variant="light"
-              onPress={resetearFiltros}
-            >
-              Limpiar filtros
-            </Button>
-          )}
+              <Button
+                className="sm:w-auto"
+                color="danger"
+                startContent={<XIcon className="h-4 w-4" />}
+                variant="light"
+                onPress={resetearFiltros}
+              >
+                Limpiar filtros
+              </Button>
+            )}
         </div>
 
         {/* Filtros avanzados (siempre visibles) */}
@@ -585,7 +775,7 @@ const HistoricoLiquidaciones = () => {
               }}
             />
           </div>
-          
+
           {/* Filtro por usuario */}
           <div>
             <label
@@ -626,7 +816,7 @@ const HistoricoLiquidaciones = () => {
                     <FilterIcon className="mr-2 h-4 w-4" />
                     {filtroEstado
                       ? filtroEstado.charAt(0).toUpperCase() +
-                        filtroEstado.slice(1)
+                      filtroEstado.slice(1)
                       : "Todos los estados"}
                   </div>
                 </Button>
@@ -638,10 +828,10 @@ const HistoricoLiquidaciones = () => {
                 }}
               >
                 <DropdownItem key="todos">Todos</DropdownItem>
-                <DropdownItem key="pendiente">Pendiente</DropdownItem>
-                <DropdownItem key="procesada">Procesada</DropdownItem>
-                <DropdownItem key="anulada">Anulada</DropdownItem>
                 <DropdownItem key="liquidado">Liquidado</DropdownItem>
+                <DropdownItem key="aprobado">Aprobado</DropdownItem>
+                <DropdownItem key="facturado">Facturado</DropdownItem>
+                <DropdownItem key="anulada">Anulada</DropdownItem>
               </DropdownMenu>
             </Dropdown>
           </div>
@@ -729,6 +919,9 @@ const HistoricoLiquidaciones = () => {
                 </div>
               }
               sortDescriptor={sortDescriptor}
+              selectable={true}
+              selectedItems={liquidacionesSeleccionadas}
+              onSelectionChange={toggleSeleccionLiquidacion}
               onRowClick={(liquidacion) => abrirModalDetalle(liquidacion.id)}
               onSortChange={handleSortChange}
             />
@@ -771,6 +964,109 @@ const HistoricoLiquidaciones = () => {
         liquidacionId={selectedLiquidacionId}
         onClose={cerrarModal}
       />
+
+      {/* Modal de facturación múltiple */}
+      <Modal
+        backdrop="blur"
+        isOpen={modalFacturacionMultipleOpen}
+        onClose={cerrarModalFacturacionMultiple}
+        size="3xl"
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center space-x-2">
+                  <ReceiptIcon className="h-5 w-5 text-emerald-600" />
+                  <h3 className="text-lg font-semibold">Facturación Múltiple</h3>
+                </div>
+                {clienteSeleccionado && (
+                  <div className="flex flex-col">
+                    <p className="text-sm text-gray-500">
+                      Cliente: <span className="font-medium">{clienteSeleccionado.nombre}</span>
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Liquidaciones seleccionadas: <span className="font-medium">{liquidacionesSeleccionadas.length}</span>
+                    </p>
+                  </div>
+                )}
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Número de Factura
+                    </label>
+                    <Input
+                      radius="sm"
+                      autoFocus
+                      fullWidth
+                      placeholder="Ingrese el número de factura"
+                      type="text"
+                      value={numeroFactura}
+                      onChange={(e) => setNumeroFactura(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Observaciones
+                    </label>
+                    <Textarea
+                      radius="sm"
+                      fullWidth
+                      placeholder="Observaciones adicionales"
+                      rows={3}
+                      value={observacionesFactura}
+                      onChange={(e) => setObservacionesFactura(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Listado de liquidaciones seleccionadas */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Liquidaciones a Facturar
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border rounded-md divide-y">
+                      {liquidacionesSeleccionadas.map(liq => (
+                        <div key={liq.id} className="p-2 hover:bg-gray-50 flex justify-between">
+                          <div className="text-sm">
+                            <span className="font-medium">{liq.consecutivo}</span>
+                            <span className="text-gray-500 ml-2">
+                              {formatearFecha(liq.fecha_liquidacion)}
+                            </span>
+                          </div>
+                          <div className="text-sm font-medium text-emerald-600">
+                            {formatearMoneda(liq.valor_total)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  radius="sm"
+                  color="danger"
+                  variant="light"
+                  onPress={cerrarModalFacturacionMultiple}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  radius="sm"
+                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  isLoading={loadingFacturar}
+                  startContent={!loadingFacturar && <CheckCircleIcon className="h-4 w-4" />}
+                  onPress={procesarFacturacionMultiple}
+                >
+                  Facturar {liquidacionesSeleccionadas.length} Liquidaciones
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

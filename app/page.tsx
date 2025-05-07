@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
 import { Alert } from "@heroui/alert";
+import { useRouter } from "next/navigation";
 
 import EnhancedMapComponent from "@/components/enhancedMapComponent";
 import {
@@ -17,6 +18,9 @@ import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";
 import ModalTicket from "@/components/ui/modalTicket";
 import ModalPlanilla from "@/components/ui/modalPlanilla";
+import { useAuth } from "@/context/AuthContext";
+import LoadingPage from "@/components/loadingPage";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface MapboxRoute {
   distance: number;
@@ -504,4 +508,82 @@ const AdvancedDashboard = () => {
   );
 };
 
-export default AdvancedDashboard;
+// Componente para manejar permisos en la página y mostrar errores personalizados
+function PermissionHandler({
+  children,
+  requiredPermissions,
+  errorMessage
+}: {
+  children: React.ReactNode;
+  requiredPermissions: string[];
+  errorMessage: string;
+}) {
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter();
+  
+  // Si está cargando, mostrar loading
+  if (loading) {
+    return <LoadingPage>Verificando acceso</LoadingPage>;
+  }
+  
+  // Si no está autenticado, redirigir al login (esto debería ser manejado por el middleware)
+  if (!isAuthenticated || !user) {
+    // En un entorno de cliente, redirigiría automáticamente
+    router.push('/login');
+    return <LoadingPage>Redirigiendo al login</LoadingPage>;
+  }
+  
+  // Verificar permisos
+  const hasPermission = user.role === 'admin' || requiredPermissions.some(
+    permission => 
+      user.role === permission || 
+      (user.permisos && user.permisos[permission] === true)
+  );
+  
+  console.log("Home - PermissionHandler:", { role: user.role, permissions: user.permisos, hasPermission });
+  
+  // Si no tiene permisos, mostrar mensaje de error personalizado
+  if (!hasPermission) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gray-50">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+          <div className="text-red-500 text-5xl mb-4 flex justify-center">
+            <AlertTriangle size={64} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Acceso Restringido
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {errorMessage}
+          </p>
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center justify-center w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Intentar Nuevamente
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Si tiene permisos, mostrar el contenido
+  return <>{children}</>;
+}
+
+// Componente con PermissionHandler para proteger la página principal
+const DashboardPage = () => {
+  return (
+    <PermissionHandler 
+      requiredPermissions={['gestor_servicio', 'gestor_planillas', 'admin']}
+      errorMessage="Necesitas ser gestor de servicios, gestor de planillas o administrador para acceder a esta sección"
+    >
+      <AdvancedDashboard />
+    </PermissionHandler>
+  );
+};
+
+export default DashboardPage;

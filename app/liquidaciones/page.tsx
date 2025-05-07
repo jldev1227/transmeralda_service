@@ -12,10 +12,15 @@ import {
   XIcon,
   CheckIcon,
   DollarSignIcon,
-  FileClockIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  AlertTriangle,
+  HomeIcon,
+  FileClockIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import LoadingPage from "@/components/loadingPage";
 
 // Importaciones de dnd-kit
 import {
@@ -32,12 +37,10 @@ import {
   DragStartEvent,
   DragOverEvent,
 } from "@dnd-kit/core";
-import { useRouter } from "next/navigation";
-import { Tab, Tabs } from "@heroui/tabs";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { apiClient } from "@/config/apiClient";
 import { Cliente, ServicioConRelaciones, useService } from "@/context/serviceContext";
-import HistoricoLiquidaciones from "@/components/historicoLiquidaciones";
 
 // Tipos e interfaces
 interface ServicioItemProps {
@@ -216,7 +219,6 @@ const ServiciosContainer = React.memo(
     children,
     onDragEnter,
     className = "",
-    onReorder,
   }: {
     id: string;
     children: React.ReactNode;
@@ -251,10 +253,14 @@ const ServiciosContainer = React.memo(
 
 ServiciosContainer.displayName = "ServiciosContainer";
 
-export default function ModalLiquidarServicios() {
+function ModalLiquidarServicios() {
   const { servicios } = useService();
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Obtener el valor de la pestaña desde la URL o usar 'liquidar' por defecto
+  const viewParam = searchParams.get('view');
 
   // Estados para el formulario y los servicios
   const [serviciosRealizados, setServiciosRealizados] = useState<
@@ -427,27 +433,27 @@ export default function ModalLiquidarServicios() {
 
       const activeIdStr = active.id.toString();
       const overIdStr = over.id.toString();
-      
+
       // CASO 1: Moviendo desde serviciosRealizados a serviciosSeleccionados
       if (!activeIdStr.startsWith("seleccionado-")) {
         // Solo procesamos si el destino es el contenedor de seleccionados o un elemento dentro de él
         if (overIdStr === "serviciosSeleccionados" || overIdStr.startsWith("seleccionado-")) {
           const servicio = serviciosOrdenados.find(s => s.id === activeIdStr);
-          
+
           if (!servicio) return;
-          
+
           // Si es el primer servicio, este define el cliente para la liquidación
           if (serviciosSeleccionadosIds.length === 0) {
             setCliente(servicio.cliente);
           }
-          
+
           // Verificar que no esté ya en los seleccionados y que pertenezca al mismo cliente
           if (!serviciosSeleccionadosIds.includes(servicio.id)) {
             // Si no hay cliente establecido o el servicio es del mismo cliente
             if (!cliente || servicio.cliente_id === cliente?.id) {
               // Determinar la posición donde insertar el servicio
               let insertPosition = serviciosSeleccionados.length; // Por defecto al final
-              
+
               // Si arrastramos sobre un servicio específico (no sobre el contenedor), insertamos en esa posición
               if (overIdStr.startsWith("seleccionado-")) {
                 const targetId = overIdStr.replace("seleccionado-", "");
@@ -456,13 +462,13 @@ export default function ModalLiquidarServicios() {
                   insertPosition = targetIndex;
                 }
               }
-              
+
               // Crear copia del servicio para la sección de seleccionados
               const servicioSeleccionado: ServicioConRelaciones = {
                 ...servicio,
                 valor: servicio.valor,
               };
-              
+
               // Insertar el servicio en la posición correcta
               setServiciosSeleccionados(prev => {
                 const newServicios = [...prev];
@@ -479,33 +485,33 @@ export default function ModalLiquidarServicios() {
             }
           }
         }
-      } 
+      }
       // CASO 2: Reordenando dentro de serviciosSeleccionados o removiendo
       else if (activeIdStr.startsWith("seleccionado-")) {
         const servicioId = activeIdStr.replace("seleccionado-", "");
-        
+
         // Reordenando dentro del contenedor de seleccionados
         if (overIdStr.startsWith("seleccionado-") && draggedPosition !== null) {
           const targetId = overIdStr.replace("seleccionado-", "");
           const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
-          
+
           // Solo procesamos si el índice es válido y diferente de la posición original
           if (targetIndex !== -1 && targetIndex !== draggedPosition) {
             setServiciosSeleccionados(prevServicios => {
               const newServicios = [...prevServicios];
               const [movedItem] = newServicios.splice(draggedPosition, 1);
-              
+
               // Si estamos arrastrando hacia un índice mayor que el original,
               // ajustamos el índice para tener en cuenta el elemento removido
-              const adjustedTargetIndex = targetIndex > draggedPosition 
-                ? targetIndex - 1 
+              const adjustedTargetIndex = targetIndex > draggedPosition
+                ? targetIndex - 1
                 : targetIndex;
-                
+
               newServicios.splice(adjustedTargetIndex, 0, movedItem);
               return newServicios;
             });
           }
-        } 
+        }
         // Quitar servicio si se arrastra al contenedor de realizados o cualquier otro elemento
         else if (overIdStr === "serviciosRealizados" || !overIdStr.startsWith("seleccionado-")) {
           setServiciosSeleccionados(prev => {
@@ -656,9 +662,9 @@ export default function ModalLiquidarServicios() {
 
     // Pequeño retraso para asegurar que la limpieza se complete antes redirigir
     setTimeout(() => {
-      router.back();
+      router.push('/');
     }, 50);
-  }, []);
+  }, [router]);
 
   // Calcular valor total (memoizado)
   const valorTotal = useMemo(() => {
@@ -742,7 +748,7 @@ export default function ModalLiquidarServicios() {
         color: "success",
       });
 
-      // Cerrar modal y reiniciar formulario
+      // Reiniciar formulario y redirigir al histórico
       handleReset();
     } catch (error: any) {
       console.error("Error al crear liquidación:", error);
@@ -772,6 +778,7 @@ export default function ModalLiquidarServicios() {
     fechaLiquidacion,
     handleReset,
     addToast,
+    router,
   ]);
 
   // Obtener el elemento activo para mostrar en el overlay (memoizado)
@@ -786,297 +793,355 @@ export default function ModalLiquidarServicios() {
   }, [activeId, draggedServicio]);
 
   return (
-    <div className="container mx-auto p-10">
-      <Tabs aria-label="Options" color="primary" variant="bordered">
-        <Tab
-          key="liquidar"
-          title={
-            <div className="flex items-center space-x-2">
-              <DollarSignIcon className="w-6 h-6" />
-              <span>Liquidar</span>
-            </div>
-          }
+    <div className="2xl:container mx-auto p-10">
+      <div className="flex flex-col gap-1 border-b pb-4">
+        <div className="flex justify-between">
+          <h2 className="text-xl font-bold">Liquidación de Servicios</h2>
+          <Button as={Link} href="/historico" color="primary">
+            <FileClockIcon className="w-6 h-6"/>
+            Historico
+          </Button>
+        </div>
+        <p className="text-sm text-gray-500">
+          Arrastre los servicios realizados al panel de servicios
+          seleccionados para incluirlos en la liquidación
+        </p>
+        <p className="text-xs text-blue-600 md:hidden">
+          <strong>Nota para dispositivos móviles:</strong> Mantenga pulsado brevemente un servicio para comenzar a arrastrarlo
+        </p>
+      </div>
+      <div className="my-4">
+        <DndContext
+          collisionDetection={closestCenter}
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDragStart={handleDragStart}
         >
-          <div className="flex flex-col gap-1 border-b pb-4">
-            <h2 className="text-xl font-bold">Liquidación de Servicios</h2>
-            <p className="text-sm text-gray-500">
-              Arrastre los servicios realizados al panel de servicios
-              seleccionados para incluirlos en la liquidación
-            </p>
-            <p className="text-xs text-blue-600 md:hidden">
-              <strong>Nota para dispositivos móviles:</strong> Mantenga pulsado brevemente un servicio para comenzar a arrastrarlo
-            </p>
-          </div>
-          <div className="my-4">
-            <DndContext
-              collisionDetection={closestCenter}
-              sensors={sensors}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver}
-              onDragStart={handleDragStart}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Panel izquierdo: Listado de servicios realizados */}
-                <div className="flex flex-col h-full">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">
-                      Listado de servicios realizados
-                    </h3>
-                    <div className="flex space-x-2">
-                      <Button
-                        className="flex items-center"
-                        size="sm"
-                        variant="light"
-                        onPress={() => requestSort("fecha_realizacion")}
-                      >
-                        {sortConfig.key === "fecha_realizacion" &&
-                          sortConfig.direction === "asc" ? (
-                          <SortAscIcon className="h-4 w-4 mr-1" />
-                        ) : (
-                          <SortDescIcon className="h-4 w-4 mr-1" />
-                        )}
-                        Fecha
-                      </Button>
-                      <Button
-                        className="flex items-center"
-                        size="sm"
-                        variant="light"
-                        onPress={() => requestSort("numero_planilla")}
-                      >
-                        {sortConfig.key === "numero_planilla" &&
-                          sortConfig.direction === "asc" ? (
-                          <SortAscIcon className="h-4 w-4 mr-1" />
-                        ) : (
-                          <SortDescIcon className="h-4 w-4 mr-1" />
-                        )}
-                        Planilla
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mb-4 flex space-x-2">
-                    <div className="flex-1 relative">
-                      <Input
-                        placeholder="Buscar por origen, destino, planilla o cliente..."
-                        radius="sm"
-                        startContent={
-                          <SearchIcon className="h-4 w-4 text-gray-400" />
-                        }
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <ServiciosContainer id="serviciosRealizados">
-                    {serviciosOrdenados.length > 0 ? (
-                      serviciosOrdenados.map((servicio) => (
-                        <ServicioItem
-                          key={servicio.id}
-                          isDragging={activeId === servicio.id}
-                          isSelected={false}
-                          servicio={servicio}
-                          onClick={() => agregarServicio(servicio)}
-                        />
-                      ))
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Panel izquierdo: Listado de servicios realizados */}
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">
+                  Listado de servicios realizados
+                </h3>
+                <div className="flex space-x-2">
+                  <Button
+                    className="flex items-center"
+                    size="sm"
+                    variant="light"
+                    onPress={() => requestSort("fecha_realizacion")}
+                  >
+                    {sortConfig.key === "fecha_realizacion" &&
+                      sortConfig.direction === "asc" ? (
+                      <SortAscIcon className="h-4 w-4 mr-1" />
                     ) : (
-                      <div className="text-center p-4 text-gray-500">
-                        No hay servicios realizados disponibles
-                      </div>
+                      <SortDescIcon className="h-4 w-4 mr-1" />
                     )}
-                  </ServiciosContainer>
-                </div>
-
-                {/* Panel derecho: Formulario y servicios seleccionados */}
-                <div className="flex flex-col h-full">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-4">Formulario</h3>
-                    <form className="space-y-4">
-                      <div>
-                        <label
-                          className="block text-sm font-medium mb-1"
-                          htmlFor="consecutivo"
-                        >
-                          Consecutivo de liquidación
-                        </label>
-                        <Input
-                          required
-                          id="consecutivo"
-                          placeholder="Ingrese el consecutivo"
-                          type="text"
-                          value={consecutivoLiquidacion}
-                          onChange={(e) =>
-                            setConsecutivoLiquidacion(e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label
-                          className="block text-sm font-medium mb-1"
-                          htmlFor="fecha_liquidado"
-                        >
-                          Fecha de liquidación
-                        </label>
-                        <Input
-                          required
-                          id="fecha_liquidado"
-                          type="date"
-                          value={fechaLiquidacion}
-                          onChange={(e) => setFechaLiquidacion(e.target.value)}
-                        />
-                      </div>
-                    </form>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">
-                        Servicios seleccionados
-                      </h3>
-                      <div>
-                        <p className="text-xs text-gray-500">
-                          Arrastra los servicios para reordenarlos según el orden deseado
-                        </p>
-                      </div>
-                    </div>
-                    <ServiciosContainer
-                      className="transition-all duration-200"
-                      id="serviciosSeleccionados"
-                      onDragEnter={handleDragEnterSeleccionados}
-                    >
-                      {serviciosSeleccionados.length > 0 ? (
-                        serviciosSeleccionados.map((servicio, index) => (
-                          <ServicioItem
-                            key={`seleccionado-${servicio.id}`}
-                            isDragging={
-                              activeId === `seleccionado-${servicio.id}`
-                            }
-                            isSelected={true}
-                            servicio={servicio}
-                            onClick={() => quitarServicio(servicio.id || "")}
-                            onValorChange={(valor) =>
-                              actualizarValorServicio(servicio.id || "", valor)
-                            }
-                            position={index}
-                            onMoveUp={() => moverServicioArriba(index)}
-                            onMoveDown={() => moverServicioAbajo(index)}
-                            isFirst={index === 0}
-                            isLast={index === serviciosSeleccionados.length - 1}
-                          />
-                        ))
-                      ) : (
-                        <div className="text-center p-4 text-gray-500">
-                          Arrastre servicios aquí para incluirlos en la
-                          liquidación
-                        </div>
-                      )}
-                    </ServiciosContainer>
-
-                    {serviciosSeleccionados.length > 0 && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded-md">
-                        <div className="flex justify-between font-medium">
-                          <span>Total servicios:</span>
-                          <span>{serviciosSeleccionados.length}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold text-lg mt-1">
-                          <span>Valor total:</span>
-                          <span>
-                            {new Intl.NumberFormat("es-CO", {
-                              style: "currency",
-                              currency: "COP",
-                            }).format(valorTotal)}
-                          </span>
-                        </div>
-                      </div>
+                    Fecha
+                  </Button>
+                  <Button
+                    className="flex items-center"
+                    size="sm"
+                    variant="light"
+                    onPress={() => requestSort("numero_planilla")}
+                  >
+                    {sortConfig.key === "numero_planilla" &&
+                      sortConfig.direction === "asc" ? (
+                      <SortAscIcon className="h-4 w-4 mr-1" />
+                    ) : (
+                      <SortDescIcon className="h-4 w-4 mr-1" />
                     )}
-                  </div>
+                    Planilla
+                  </Button>
                 </div>
               </div>
 
-              {/* Overlay para el elemento que se está arrastrando - optimizado para móviles */}
-              <DragOverlay dropAnimation={{
-                duration: 300,
-                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-              }}>
-                {activeItem ? (
-                  <div className="p-3 rounded-md bg-white border shadow-xl scale-105 z-40 transform-gpu relative" style={{
-                    touchAction: 'none',
-                    pointerEvents: 'none',
-                  }}>
-                    {activeId?.startsWith('seleccionado-') && draggedPosition !== null && (
-                      <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                        {draggedPosition + 1}
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <div className="font-medium">
-                        {activeItem.origen_especifico} →{" "}
-                        {activeItem.destino_especifico}
-                      </div>
+              <div className="mb-4 flex space-x-2">
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder="Buscar por origen, destino, planilla o cliente..."
+                    radius="sm"
+                    startContent={
+                      <SearchIcon className="h-4 w-4 text-gray-400" />
+                    }
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <ServiciosContainer id="serviciosRealizados">
+                {serviciosOrdenados.length > 0 ? (
+                  serviciosOrdenados.map((servicio) => (
+                    <ServicioItem
+                      key={servicio.id}
+                      isDragging={activeId === servicio.id}
+                      isSelected={false}
+                      servicio={servicio}
+                      onClick={() => agregarServicio(servicio)}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center p-4 text-gray-500">
+                    No hay servicios realizados disponibles
+                  </div>
+                )}
+              </ServiciosContainer>
+            </div>
+
+            {/* Panel derecho: Formulario y servicios seleccionados */}
+            <div className="flex flex-col h-full">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4">Formulario</h3>
+                <form className="space-y-4">
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="consecutivo"
+                    >
+                      Consecutivo de liquidación
+                    </label>
+                    <Input
+                      required
+                      id="consecutivo"
+                      placeholder="Ingrese el consecutivo"
+                      type="text"
+                      value={consecutivoLiquidacion}
+                      onChange={(e) =>
+                        setConsecutivoLiquidacion(e.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="fecha_liquidado"
+                    >
+                      Fecha de liquidación
+                    </label>
+                    <Input
+                      required
+                      id="fecha_liquidado"
+                      type="date"
+                      value={fechaLiquidacion}
+                      onChange={(e) => setFechaLiquidacion(e.target.value)}
+                    />
+                  </div>
+                </form>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">
+                    Servicios seleccionados
+                  </h3>
+                  <div>
+                    <p className="text-xs text-gray-500">
+                      Arrastra los servicios para reordenarlos según el orden deseado
+                    </p>
+                  </div>
+                </div>
+                <ServiciosContainer
+                  className="transition-all duration-200"
+                  id="serviciosSeleccionados"
+                  onDragEnter={handleDragEnterSeleccionados}
+                >
+                  {serviciosSeleccionados.length > 0 ? (
+                    serviciosSeleccionados.map((servicio, index) => (
+                      <ServicioItem
+                        key={`seleccionado-${servicio.id}`}
+                        isDragging={
+                          activeId === `seleccionado-${servicio.id}`
+                        }
+                        isSelected={true}
+                        servicio={servicio}
+                        onClick={() => quitarServicio(servicio.id || "")}
+                        onValorChange={(valor) =>
+                          actualizarValorServicio(servicio.id || "", valor)
+                        }
+                        position={index}
+                        onMoveUp={() => moverServicioArriba(index)}
+                        onMoveDown={() => moverServicioAbajo(index)}
+                        isFirst={index === 0}
+                        isLast={index === serviciosSeleccionados.length - 1}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center p-4 text-gray-500">
+                      Arrastre servicios aquí para incluirlos en la
+                      liquidación
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      <span className="font-medium">Planilla:</span>{" "}
-                      {activeItem.numero_planilla}
+                  )}
+                </ServiciosContainer>
+
+                {serviciosSeleccionados.length > 0 && (
+                  <div className="mt-4 p-3 bg-gray-100 rounded-md">
+                    <div className="flex justify-between font-medium">
+                      <span>Total servicios:</span>
+                      <span>{serviciosSeleccionados.length}</span>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium">Cliente:</span>{" "}
-                      {activeItem.cliente?.Nombre}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium">Fecha:</span>{" "}
-                      {format(
-                        new Date(
-                          activeItem.fecha_realizacion || activeItem.createdAt,
-                        ),
-                        "dd/MM/yyyy",
-                      )}
+                    <div className="flex justify-between font-semibold text-lg mt-1">
+                      <span>Valor total:</span>
+                      <span>
+                        {new Intl.NumberFormat("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                        }).format(valorTotal)}
+                      </span>
                     </div>
                   </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </div>
-          <div className="border-t pt-4 flex justify-end space-x-3">
-            <Button
-              color="primary"
-              radius="sm"
-              variant="light"
-              onPress={handleReset}
-            >
-              Limpiar selección
-            </Button>
-            <Button
-              color="danger"
-              radius="sm"
-              variant="light"
-              onPress={handleGoBack}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
-              disabled={serviciosSeleccionados.length === 0}
-              radius="sm"
-              onPress={handleSubmit}
-            >
-              <CheckIcon className="h-4 w-4 mr-1" />
-              Liquidar servicios
-            </Button>
-          </div>
-        </Tab>
-        <Tab
-          key="historico"
-          title={
-            <div className="flex items-center space-x-2">
-              <FileClockIcon className="w-6 h-6" />
-              <span>Historico</span>
+                )}
+              </div>
             </div>
-          }
+          </div>
+
+          {/* Overlay para el elemento que se está arrastrando - optimizado para móviles */}
+          <DragOverlay dropAnimation={{
+            duration: 300,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}>
+            {activeItem ? (
+              <div className="p-3 rounded-md bg-white border shadow-xl scale-105 z-40 transform-gpu relative" style={{
+                touchAction: 'none',
+                pointerEvents: 'none',
+              }}>
+                {activeId?.startsWith('seleccionado-') && draggedPosition !== null && (
+                  <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                    {draggedPosition + 1}
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <div className="font-medium">
+                    {activeItem.origen_especifico} →{" "}
+                    {activeItem.destino_especifico}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  <span className="font-medium">Planilla:</span>{" "}
+                  {activeItem.numero_planilla}
+                </div>
+                <div className="text-sm text-gray-500">
+                  <span className="font-medium">Cliente:</span>{" "}
+                  {activeItem.cliente?.Nombre}
+                </div>
+                <div className="text-sm text-gray-500">
+                  <span className="font-medium">Fecha:</span>{" "}
+                  {format(
+                    new Date(
+                      activeItem.fecha_realizacion || activeItem.createdAt,
+                    ),
+                    "dd/MM/yyyy",
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
+      <div className="border-t pt-4 flex justify-end space-x-3">
+        <Button
+          color="primary"
+          radius="sm"
+          variant="light"
+          onPress={handleReset}
         >
-          <HistoricoLiquidaciones />
-        </Tab>
-      </Tabs>
+          Limpiar selección
+        </Button>
+        <Button
+          color="danger"
+          radius="sm"
+          variant="light"
+          onPress={handleGoBack}
+        >
+          Cancelar
+        </Button>
+        <Button
+          className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
+          disabled={serviciosSeleccionados.length === 0}
+          radius="sm"
+          onPress={handleSubmit}
+        >
+          <CheckIcon className="h-4 w-4 mr-1" />
+          Liquidar servicios
+        </Button>
+      </div>
     </div>
   );
+}
+
+// Exportar el componente envuelto con AuthGuard y manejo de errores personalizado
+export default function LiquidacionesPage() {
+  // Este componente se encarga de verificar los permisos y mostrar el contenido adecuado
+  return (
+    <PermissionHandler
+      requiredPermissions={['liquidador', 'facturador']}
+      errorMessage="Necesitas ser liquidador para acceder a esta sección"
+    >
+      <ModalLiquidarServicios />
+    </PermissionHandler>
+  );
+}
+
+// Componente para manejar permisos en la página y mostrar errores personalizados
+function PermissionHandler({
+  children,
+  requiredPermissions,
+  errorMessage
+}: {
+  children: React.ReactNode;
+  requiredPermissions: string[];
+  errorMessage: string;
+}) {
+  const { user, loading, isAuthenticated } = useAuth();
+
+  // Si está cargando, mostrar loading
+  if (loading) {
+    return <LoadingPage>Verificando acceso</LoadingPage>;
+  }
+
+  // Si no está autenticado, redirigir al login (esto debería ser manejado por el middleware)
+  if (!isAuthenticated || !user) {
+    // En un entorno de cliente, redirigiría automáticamente
+    return <LoadingPage>Redirigiendo al login</LoadingPage>;
+  }
+
+  // Verificar permisos
+  const hasPermission = user.role === 'admin' || requiredPermissions.some(
+    permission =>
+      user.role === permission ||
+      (user.permisos && user.permisos[permission] === true)
+  );
+
+  // Si no tiene permisos, mostrar mensaje de error personalizado
+  if (!hasPermission) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gray-50">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+          <div className="text-red-500 text-5xl mb-4 flex justify-center">
+            <AlertTriangle size={64} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Acceso Restringido
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {errorMessage}
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Link
+              href="/"
+              className="flex items-center justify-center w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 transition-colors"
+            >
+              <HomeIcon className="h-4 w-4 mr-2" />
+              Volver al Inicio
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si tiene permisos, mostrar el contenido
+  return <>{children}</>;
 }
