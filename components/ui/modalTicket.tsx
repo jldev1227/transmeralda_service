@@ -48,7 +48,11 @@ export default function ModalTicket() {
         backdrop="opaque"
         classNames={{
           backdrop:
-            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-20",
+            "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+          // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
+          wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
+          // Asegurar que el contenido ocupe todo el ancho del modal
+          base: "w-full"
         }}
         isOpen={modalTicket}
         scrollBehavior="inside"
@@ -57,7 +61,7 @@ export default function ModalTicket() {
           handleModalTicket();
         }}
       >
-        <ModalContent className="p-6 bg-transparent shadow-none">
+        <ModalContent className="w-full max-w-full p-6 bg-transparent shadow-none">
           {() => (
             <>
               <ModalBody className="p-0">
@@ -77,7 +81,7 @@ export default function ModalTicket() {
                   {/* Cuerpo del ticket */}
                   <div className="flex flex-col md:flex-row">
                     {/* Sección izquierda - espacio para foto del conductor */}
-                    <div className="w-full md:w-2/6 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
+                    <div className="w-full md:w-1/5 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
                       <div className="border-2 border-gray-300 rounded-lg h-56 w-full flex items-center justify-center">
                         <Image
                           alt="Foto conductor asignado"
@@ -113,7 +117,7 @@ export default function ModalTicket() {
                     </div>
 
                     {/* Sección derecha - detalles del viaje */}
-                    <div className="w-full md:w-3/4 p-6">
+                    <div className="w-full md:w-4/5 p-6">
                       {/* Número de ticket */}
                       <div className="flex justify-between items-center mb-6">
                         <h1 className={`text-xl font-bold text-emerald-600`}>

@@ -11,12 +11,14 @@ import {
   DropdownItem,
 } from "@heroui/dropdown";
 import { Select, SelectItem } from "@heroui/select";
+import ReactSelect from "react-select";
 import {
   SearchIcon,
   FilterIcon,
   CalendarIcon,
   ChevronDownIcon,
   UserIcon,
+  BuildingIcon,
   XIcon,
 } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
@@ -48,6 +50,11 @@ interface Liquidacion {
     destino_especifico: string;
     valor: string;
     numero_planilla: string;
+    cliente: {
+      id: string;
+      Nombre: string;
+      NIT: string;
+    };
     ServicioLiquidacion: {
       valor_liquidado: string;
     };
@@ -66,6 +73,12 @@ interface Usuario {
   nombre: string;
 }
 
+interface ClienteOption {
+  value: string;
+  label: string;
+  nit: string;
+}
+
 const HistoricoLiquidaciones = () => {
   // Responsive breakpoints
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -80,6 +93,8 @@ const HistoricoLiquidaciones = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
   const [filtroUsuario, setFiltroUsuario] = useState<string | null>(null);
+  const [filtroCliente, setFiltroCliente] = useState<ClienteOption | null>(null);
+  const [opcionesClientes, setOpcionesClientes] = useState<ClienteOption[]>([]);
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -136,6 +151,24 @@ const HistoricoLiquidaciones = () => {
       setAllLiquidaciones(response.data.liquidaciones);
       setTotalResults(response.data.total || 0);
 
+      // Extraer clientes únicos para el selector
+      const clientesMap = new Map<string, ClienteOption>();
+      
+      response.data.liquidaciones.forEach(liquidacion => {
+        if (liquidacion.servicios.length > 0) {
+          const cliente = liquidacion.servicios[0].cliente;
+          if (cliente && !clientesMap.has(cliente.id)) {
+            clientesMap.set(cliente.id, {
+              value: cliente.id,
+              label: cliente.Nombre,
+              nit: cliente.NIT || ''
+            });
+          }
+        }
+      });
+      
+      setOpcionesClientes(Array.from(clientesMap.values()));
+
       // Aplicar filtros y ordenamiento a los datos cargados
       applyFiltersAndSort(response.data.liquidaciones);
     } catch (err) {
@@ -168,6 +201,17 @@ const HistoricoLiquidaciones = () => {
       // Aplicar filtro de usuario
       if (filtroUsuario) {
         filtered = filtered.filter((item) => item.user.id === filtroUsuario);
+      }
+
+      // Aplicar filtro de cliente
+      if (filtroCliente) {
+        filtered = filtered.filter((item) => {
+          if (item.servicios.length === 0) return false;
+          
+          // Comprobamos si el primer servicio de la liquidación tiene el cliente filtrado
+          const clienteServicio = item.servicios[0].cliente;
+          return clienteServicio && clienteServicio.id === filtroCliente.value;
+        });
       }
 
       // Aplicar filtro de fechas
@@ -240,6 +284,7 @@ const HistoricoLiquidaciones = () => {
       searchTerm,
       filtroEstado,
       filtroUsuario,
+      filtroCliente,
       fechaInicio,
       fechaFin,
       sortDescriptor,
@@ -261,6 +306,7 @@ const HistoricoLiquidaciones = () => {
     page,
     filtroEstado,
     filtroUsuario,
+    filtroCliente,
     searchTerm,
     fechaInicio,
     fechaFin,
@@ -286,6 +332,7 @@ const HistoricoLiquidaciones = () => {
     setSearchTerm("");
     setFiltroEstado(null);
     setFiltroUsuario(null);
+    setFiltroCliente(null);
     setFechaInicio("");
     setFechaFin("");
     setPage(1);
@@ -344,6 +391,28 @@ const HistoricoLiquidaciones = () => {
       </Chip>
     );
   };
+  
+  // Renderizar información del cliente
+  const renderClienteInfo = (liquidacion: Liquidacion) => {
+    if (liquidacion.servicios.length === 0) {
+      return <span className="text-gray-400">Sin cliente</span>;
+    }
+    
+    const cliente = liquidacion.servicios[0].cliente;
+    if (!cliente) {
+      return <span className="text-gray-400">Sin cliente</span>;
+    }
+    
+    return (
+      <div className="flex items-start">
+        <BuildingIcon className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
+        <div>
+          <div className="font-semibold">{cliente.Nombre}</div>
+          <div className="text-xs text-gray-500">NIT: {cliente.NIT || 'N/A'}</div>
+        </div>
+      </div>
+    );
+  };
 
   // Formatear valor como moneda
   const formatearMoneda = (valor: string) => {
@@ -366,6 +435,7 @@ const HistoricoLiquidaciones = () => {
       return [
         "consecutivo",
         "fecha_liquidacion",
+        "cliente",
         "user.nombre",
         "servicios.length",
         "valor_total",
@@ -390,6 +460,8 @@ const HistoricoLiquidaciones = () => {
         );
       case "fecha_liquidacion":
         return formatearFecha(liquidacion.fecha_liquidacion);
+      case "cliente":
+        return renderClienteInfo(liquidacion);
       case "user.nombre":
         return (
           <div className="flex items-center">
@@ -415,6 +487,7 @@ const HistoricoLiquidaciones = () => {
   // Map de nombres de columnas para mostrar
   const columnNames: Record<string, string> = {
     consecutivo: "CONSECUTIVO",
+    cliente: "CLIENTE",
     fecha_liquidacion: "FECHA",
     "user.nombre": "USUARIO",
     "servicios.length": "SERVICIOS",
@@ -465,6 +538,54 @@ const HistoricoLiquidaciones = () => {
 
         {/* Filtros avanzados (siempre visibles) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Filtro por cliente */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="cliente"
+            >
+              Cliente
+            </label>
+            <ReactSelect
+              id="cliente"
+              className="react-select-container"
+              classNamePrefix="react-select"
+              isClearable
+              placeholder="Buscar por nombre o NIT..."
+              options={opcionesClientes}
+              value={filtroCliente}
+              onChange={(selectedOption) => setFiltroCliente(selectedOption as ClienteOption | null)}
+              formatOptionLabel={(option: ClienteOption) => (
+                <div className="flex flex-col">
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-gray-500">NIT: {option.nit || 'N/A'}</span>
+                </div>
+              )}
+              filterOption={(option, input) => {
+                const label = option.data.label.toLowerCase();
+                const nit = option.data.nit?.toLowerCase() || '';
+                const inputValue = input.toLowerCase();
+                return label.includes(inputValue) || nit.includes(inputValue);
+              }}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderRadius: '0.375rem',
+                  borderColor: '#e5e7eb',
+                  minHeight: '38px',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    borderColor: '#d1d5db',
+                  },
+                }),
+                menu: (base) => ({
+                  ...base,
+                  zIndex: 50,
+                }),
+              }}
+            />
+          </div>
+          
           {/* Filtro por usuario */}
           <div>
             <label

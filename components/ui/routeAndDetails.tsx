@@ -58,7 +58,7 @@ export default function RouteAndDetails({
         <div className="absolute right-0 -top-2 h-4 w-4 rounded-full bg-gray-200" />
       </div>
       <div className="flex flex-col md:flex-row items-center gap-10 justify-between mt-4">
-        <div className="mb-4 md:mb-0">
+        <div className="flex-1 mb-4 md:mb-0">
           <p className="text-sm text-gray-500">Cliente</p>
           <p className="font-semibold">
             {servicio.cliente?.Nombre || "Cliente no especificado"}

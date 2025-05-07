@@ -190,7 +190,7 @@ export default function ModalPlanilla() {
               </ModalHeader>
               <ModalBody>
                 <div className="relative">
-                  <h1 className="text-xl">Servicio</h1>
+                  <h1 className="text-xl font-semibold">Servicio #{servicio.id}</h1>
 
                   {/* Ruta */}
                   <RouteAndDetails servicio={servicio} />

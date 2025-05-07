@@ -347,7 +347,7 @@ const AdvancedDashboard = () => {
         </div>
 
         {/* Panel content with scrolling */}
-        <div className="bg-white h-[calc(100%-56px)] overflow-auto">
+        <div className="bg-white h-[calc(100%-56px)] min-w-96 overflow-auto">
           {/* Filters */}
           <div className="p-3 md:p-4 border-b">
             <div className="flex items-center justify-between mb-3">

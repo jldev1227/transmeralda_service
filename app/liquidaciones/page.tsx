@@ -36,7 +36,7 @@ import { useRouter } from "next/navigation";
 import { Tab, Tabs } from "@heroui/tabs";
 
 import { apiClient } from "@/config/apiClient";
-import { ServicioConRelaciones, useService } from "@/context/serviceContext";
+import { Cliente, ServicioConRelaciones, useService } from "@/context/serviceContext";
 import HistoricoLiquidaciones from "@/components/historicoLiquidaciones";
 
 // Tipos e interfaces
@@ -78,7 +78,7 @@ const ServicioItem = React.memo(
     });
 
     const style = transform
-    ? {
+      ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 1 : "auto",
@@ -87,7 +87,7 @@ const ServicioItem = React.memo(
         MozUserSelect: "none" as const,
         msUserSelect: "none" as const
       }
-    : {
+      : {
         userSelect: "none" as const,
         WebkitUserSelect: "none" as const,
         MozUserSelect: "none" as const,
@@ -100,9 +100,8 @@ const ServicioItem = React.memo(
         style={style}
         {...attributes}
         {...listeners}
-        className={`p-3 mb-2 rounded-md bg-white border transition-shadow ${
-          isDragging ? "opacity-40" : "hover:shadow-md"
-        } cursor-grab touch-manipulation relative`}
+        className={`p-3 mb-2 rounded-md bg-white border transition-shadow ${isDragging ? "opacity-40" : "hover:shadow-md"
+          } cursor-grab touch-manipulation relative`}
         role="button"
         tabIndex={0}
         aria-roledescription="draggable item"
@@ -239,9 +238,8 @@ const ServiciosContainer = React.memo(
     return (
       <div
         ref={setNodeRef}
-        className={`bg-gray-50 border rounded-md p-2 overflow-y-auto flex-1 min-h-[300px] ${
-          isOver ? "ring-2 ring-blue-400" : ""
-        } ${className} touch-pan-y`}
+        className={`bg-gray-50 border rounded-md p-2 overflow-y-auto flex-1 min-h-[300px] ${isOver ? "ring-2 ring-blue-400" : ""
+          } ${className} touch-pan-y`}
         role="region"
         aria-roledescription="droppable container"
       >
@@ -271,6 +269,7 @@ export default function ModalLiquidarServicios() {
     direction: "desc",
   });
   const [consecutivoLiquidacion, setConsecutivoLiquidacion] = useState("");
+  const [cliente, setCliente] = useState<Cliente | null>(null);
   const [fechaLiquidacion, setFechaLiquidacion] = useState(
     format(new Date(), "yyyy-MM-dd"),
   );
@@ -418,73 +417,114 @@ export default function ModalLiquidarServicios() {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (over) {
-        const activeIdStr = active.id.toString();
-        const overIdStr = over.id.toString();
+      if (!over) {
+        // Si no hay un "over" destino, simplemente limpiamos el estado
+        setActiveId(null);
+        setDraggedServicio(null);
+        setDraggedPosition(null);
+        return;
+      }
 
-        // Si el elemento arrastrado viene de serviciosRealizados
-        if (!activeIdStr.startsWith("seleccionado-")) {
-          // Y estamos soltando en el contenedor de seleccionados
-          if (
-            overIdStr === "serviciosSeleccionados" ||
-            overIdStr.startsWith("seleccionado-")
-          ) {
-            const servicio = serviciosOrdenados.find(
-              (s) => s.id === activeIdStr,
-            );
-
-            if (servicio && !serviciosSeleccionadosIds.includes(servicio.id)) {
-              // Añadir servicio con valor inicial igual al valor del servicio
+      const activeIdStr = active.id.toString();
+      const overIdStr = over.id.toString();
+      
+      // CASO 1: Moviendo desde serviciosRealizados a serviciosSeleccionados
+      if (!activeIdStr.startsWith("seleccionado-")) {
+        // Solo procesamos si el destino es el contenedor de seleccionados o un elemento dentro de él
+        if (overIdStr === "serviciosSeleccionados" || overIdStr.startsWith("seleccionado-")) {
+          const servicio = serviciosOrdenados.find(s => s.id === activeIdStr);
+          
+          if (!servicio) return;
+          
+          // Si es el primer servicio, este define el cliente para la liquidación
+          if (serviciosSeleccionadosIds.length === 0) {
+            setCliente(servicio.cliente);
+          }
+          
+          // Verificar que no esté ya en los seleccionados y que pertenezca al mismo cliente
+          if (!serviciosSeleccionadosIds.includes(servicio.id)) {
+            // Si no hay cliente establecido o el servicio es del mismo cliente
+            if (!cliente || servicio.cliente_id === cliente?.id) {
+              // Determinar la posición donde insertar el servicio
+              let insertPosition = serviciosSeleccionados.length; // Por defecto al final
+              
+              // Si arrastramos sobre un servicio específico (no sobre el contenedor), insertamos en esa posición
+              if (overIdStr.startsWith("seleccionado-")) {
+                const targetId = overIdStr.replace("seleccionado-", "");
+                const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
+                if (targetIndex !== -1) {
+                  insertPosition = targetIndex;
+                }
+              }
+              
+              // Crear copia del servicio para la sección de seleccionados
               const servicioSeleccionado: ServicioConRelaciones = {
                 ...servicio,
                 valor: servicio.valor,
               };
-
-              setServiciosSeleccionados((prev) => [
-                ...prev,
-                servicioSeleccionado,
-              ]);
+              
+              // Insertar el servicio en la posición correcta
+              setServiciosSeleccionados(prev => {
+                const newServicios = [...prev];
+                newServicios.splice(insertPosition, 0, servicioSeleccionado);
+                return newServicios;
+              });
+            } else {
+              // Mostrar error si se intenta agregar servicio de diferente cliente
+              addToast({
+                title: "Error",
+                description: `Debe agregar servicios realizados al cliente ${cliente?.Nombre}`,
+                color: "danger",
+              });
             }
           }
         }
-        // Si el elemento arrastrado viene de serviciosSeleccionados
-        else if (activeIdStr.startsWith("seleccionado-")) {
-          const servicioId = activeIdStr.replace("seleccionado-", "");
-
-          // Reordenando dentro del contenedor de seleccionados
-          if (overIdStr.startsWith("seleccionado-") && draggedPosition !== null) {
-            const targetId = overIdStr.replace("seleccionado-", "");
-            const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
-            
-            if (targetIndex !== -1 && targetIndex !== draggedPosition) {
-              // Reordenar los servicios seleccionados
-              setServiciosSeleccionados(prevServicios => {
-                const newServicios = [...prevServicios];
-                const [movedItem] = newServicios.splice(draggedPosition, 1);
-                // Insertar en la nueva posición
-                newServicios.splice(targetIndex, 0, movedItem);
-                return newServicios;
-              });
-            }
-          } 
-          // Y estamos soltando en el contenedor de realizados (quitar de seleccionados)
-          else if (
-            overIdStr === "serviciosRealizados" ||
-            !overIdStr.startsWith("seleccionado-")
-          ) {
-            setServiciosSeleccionados((prev) =>
-              prev.filter((s) => s.id !== servicioId),
-            );
+      } 
+      // CASO 2: Reordenando dentro de serviciosSeleccionados o removiendo
+      else if (activeIdStr.startsWith("seleccionado-")) {
+        const servicioId = activeIdStr.replace("seleccionado-", "");
+        
+        // Reordenando dentro del contenedor de seleccionados
+        if (overIdStr.startsWith("seleccionado-") && draggedPosition !== null) {
+          const targetId = overIdStr.replace("seleccionado-", "");
+          const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
+          
+          // Solo procesamos si el índice es válido y diferente de la posición original
+          if (targetIndex !== -1 && targetIndex !== draggedPosition) {
+            setServiciosSeleccionados(prevServicios => {
+              const newServicios = [...prevServicios];
+              const [movedItem] = newServicios.splice(draggedPosition, 1);
+              
+              // Si estamos arrastrando hacia un índice mayor que el original,
+              // ajustamos el índice para tener en cuenta el elemento removido
+              const adjustedTargetIndex = targetIndex > draggedPosition 
+                ? targetIndex - 1 
+                : targetIndex;
+                
+              newServicios.splice(adjustedTargetIndex, 0, movedItem);
+              return newServicios;
+            });
           }
+        } 
+        // Quitar servicio si se arrastra al contenedor de realizados o cualquier otro elemento
+        else if (overIdStr === "serviciosRealizados" || !overIdStr.startsWith("seleccionado-")) {
+          setServiciosSeleccionados(prev => {
+            const newServicios = prev.filter(s => s.id !== servicioId);
+            // Si después de eliminar este servicio no quedan más, resetear el cliente
+            if (newServicios.length === 0) {
+              setCliente(null);
+            }
+            return newServicios;
+          });
         }
       }
 
-      // Limpiar estados
+      // Limpiar estados después de procesar
       setActiveId(null);
       setDraggedServicio(null);
       setDraggedPosition(null);
     },
-    [serviciosOrdenados, serviciosSeleccionadosIds, draggedPosition],
+    [serviciosOrdenados, serviciosSeleccionadosIds, draggedPosition, cliente, serviciosSeleccionados.length, addToast],
   );
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
@@ -518,13 +558,34 @@ export default function ModalLiquidarServicios() {
 
   // Eliminar un servicio de los seleccionados (useCallback)
   const quitarServicio = useCallback((id: string) => {
-    setServiciosSeleccionados((prev) => prev.filter((s) => s.id !== id));
+    setServiciosSeleccionados((prev) => {
+      const newServicios = prev.filter((s) => s.id !== id);
+      // Si después de eliminar este servicio no quedan más, resetear el cliente
+      if (newServicios.length === 0) {
+        setCliente(null);
+      }
+      return newServicios;
+    });
   }, []);
 
   // Añadir servicio a seleccionados (useCallback)
   const agregarServicio = useCallback(
     (servicio: ServicioConRelaciones) => {
       if (!serviciosSeleccionadosIds.includes(servicio.id)) {
+        // Si es el primer servicio o no hay cliente establecido,
+        // usamos este servicio para definir el cliente
+        if (serviciosSeleccionadosIds.length === 0 || !cliente) {
+          setCliente(servicio.cliente);
+        } else if (cliente && servicio.cliente_id !== cliente.id) {
+          // Validamos que el servicio sea del mismo cliente
+          addToast({
+            title: "Error",
+            description: `Debe agregar servicios realizados al cliente ${cliente.Nombre}`,
+            color: "danger",
+          });
+          return;
+        }
+
         const servicioSeleccionado: ServicioConRelaciones = {
           ...servicio,
           valor: servicio.valor,
@@ -533,7 +594,7 @@ export default function ModalLiquidarServicios() {
         setServiciosSeleccionados((prev) => [...prev, servicioSeleccionado]);
       }
     },
-    [serviciosSeleccionadosIds],
+    [serviciosSeleccionadosIds, cliente, addToast],
   );
 
   // Actualizar valor de liquidación de un servicio
@@ -563,7 +624,7 @@ export default function ModalLiquidarServicios() {
   const moverServicioAbajo = useCallback((index: number) => {
     setServiciosSeleccionados(prev => {
       if (index >= prev.length - 1) return prev; // No hacer nada si es el último elemento
-      
+
       const nuevaLista = [...prev];
       // Intercambiar posiciones
       [nuevaLista[index], nuevaLista[index + 1]] = [nuevaLista[index + 1], nuevaLista[index]];
@@ -586,6 +647,7 @@ export default function ModalLiquidarServicios() {
   const handleReset = useCallback(() => {
     setServiciosSeleccionados([]);
     setConsecutivoLiquidacion("");
+    setCliente(null);
   }, []);
 
   // Manejar goBack del formulario (useCallback)
@@ -768,7 +830,7 @@ export default function ModalLiquidarServicios() {
                         onPress={() => requestSort("fecha_realizacion")}
                       >
                         {sortConfig.key === "fecha_realizacion" &&
-                        sortConfig.direction === "asc" ? (
+                          sortConfig.direction === "asc" ? (
                           <SortAscIcon className="h-4 w-4 mr-1" />
                         ) : (
                           <SortDescIcon className="h-4 w-4 mr-1" />
@@ -782,7 +844,7 @@ export default function ModalLiquidarServicios() {
                         onPress={() => requestSort("numero_planilla")}
                       >
                         {sortConfig.key === "numero_planilla" &&
-                        sortConfig.direction === "asc" ? (
+                          sortConfig.direction === "asc" ? (
                           <SortAscIcon className="h-4 w-4 mr-1" />
                         ) : (
                           <SortDescIcon className="h-4 w-4 mr-1" />

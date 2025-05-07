@@ -8,6 +8,7 @@ import {
   UserIcon,
   ClipboardListIcon,
   MapPinIcon,
+  BuildingIcon,
 } from "lucide-react";
 
 import CustomTable from "./CustomTable";
@@ -224,6 +225,19 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                             </span>
                           </div>
                         </div>
+
+                        <div className="flex items-center">
+                          <BuildingIcon className="h-5 w-5 mr-2 text-gray-500" />
+                          <div className="font-medium">
+                            <span className="block text-sm text-gray-500">
+                              Cliente
+                            </span>
+                            <p>{liquidacion.servicios[0].cliente?.Nombre || "N/A"}</p>
+                            <p className="text-xs text-gray-500">
+                              {liquidacion.servicios[0].cliente?.NIT || "N/A"}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -298,18 +312,6 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                     servicio.destino_especifico}
                                 </div>
                               </div>
-                            </div>
-                          ),
-                        },
-                        {
-                          key: "cliente",
-                          label: "CLIENTE",
-                          renderCell: (servicio) => (
-                            <div>
-                              <p>{servicio.cliente?.Nombre || "N/A"}</p>
-                              <p className="text-xs text-gray-500">
-                                {servicio.cliente?.NIT || "N/A"}
-                              </p>
                             </div>
                           ),
                         },

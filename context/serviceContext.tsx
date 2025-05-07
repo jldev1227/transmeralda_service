@@ -280,7 +280,7 @@ export interface Position {
 }
 
 export interface Cliente {
-  id: number;
+  id: string;
   Nombre: string;
   NIT?: string;
   Representante?: string;
