@@ -18,6 +18,7 @@ import { ServicioConRelaciones } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
 import { Button } from "@heroui/button";
 import { useAuth } from "@/context/AuthContext";
+import { addToast } from "@heroui/toast";
 
 // Tipado para la liquidación
 interface Liquidacion {
@@ -25,7 +26,7 @@ interface Liquidacion {
   consecutivo: string;
   fecha_liquidacion: string;
   valor_total: string;
-  estado: "pendiente" | "procesada" | "anulada" | "liquidado";
+  estado: "liquidado" | "aprobado" | "facturado" | "anulada";
   observaciones: string;
   createdAt: string;
   updatedAt: string;
@@ -48,20 +49,17 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
   onClose,
   liquidacionId,
 }) => {
-
   // Auth context
   const { user } = useAuth()
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  
   // Cargar datos de la liquidación cuando cambia el ID
   useEffect(() => {
     const fetchLiquidacion = async () => {
       if (!liquidacionId) return;
 
       setLoading(true);
-      setError(null);
 
       try {
         const response = await apiClient.get<Liquidacion>(
@@ -71,9 +69,13 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
         setLiquidacion(response.data);
       } catch (err) {
         console.error("Error al cargar la liquidación:", err);
-        setError(
-          "Error al cargar los detalles de la liquidación. Por favor, intenta nuevamente.",
-        );
+        const errorMsg = "Error al cargar los detalles de la liquidación. Por favor, intenta nuevamente.";
+        
+        // Mostrar notificación de error
+        addToast({
+          title: "Error",
+          description: errorMsg,
+        });
       } finally {
         setLoading(false);
       }
@@ -128,8 +130,70 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
     );
   };
 
-  const aprobarLiquidacion = async ()=>{
-    console.log("aprobada la liquidacion")
+  const aprobarLiquidacion = async () => {
+    if (!liquidacionId) return;
+
+    setLoading(true);
+
+    try {
+      const response = await apiClient.patch<Liquidacion>(
+        `/api/liquidaciones_servicios/${liquidacionId}/aprobar`,
+      );
+
+      setLiquidacion(response.data);
+      
+      // Mostrar notificación de éxito
+      addToast({
+        title: "Éxito",
+        description: "Liquidación aprobada correctamente",
+      });
+      
+      onClose();
+    } catch (err) {
+      console.error("Error al aprobar la liquidación:", err);
+      const errorMsg = "Error al aprobar la liquidación. Por favor, intenta nuevamente.";
+      
+      // Mostrar notificación de error
+      addToast({
+        title: "Error",
+        description: errorMsg,
+      });
+      
+      setLoading(false);
+    }
+  }
+
+  const rechazarLiquidacion = async () => {
+    if (!liquidacionId) return;
+
+    setLoading(true);
+
+    try {
+      const response = await apiClient.patch<Liquidacion>(
+        `/api/liquidaciones_servicios/${liquidacionId}/rechazar`,
+      );
+
+      setLiquidacion(response.data);
+      
+      // Mostrar notificación de éxito
+      addToast({
+        title: "Acción completada",
+        description: "Liquidación rechazada correctamente",
+      });
+      
+      onClose();
+    } catch (err) {
+      console.error("Error al rechazar la liquidación:", err);
+      const errorMsg = "Error al rechazar la liquidación. Por favor, intenta nuevamente.";
+      
+      // Mostrar notificación de error
+      addToast({
+        title: "Error",
+        description: errorMsg,
+      });
+      
+      setLoading(false);
+    }
   }
 
   return (
@@ -173,12 +237,10 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
             </ModalHeader>
 
             <ModalBody>
-              {loading ? (
+              {!liquidacion && loading ? (
                 <div className="flex justify-center items-center py-8">
-                  <Spinner size="lg" />
+                  <Spinner size="lg" color="success" />
                 </div>
-              ) : error ? (
-                <div className="p-4 text-center text-red-500">{error}</div>
               ) : liquidacion ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -346,14 +408,31 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
               )}
             </ModalBody>
             <ModalFooter>
-              {user?.permisos.aprobador && (
-                <Button
-                  radius="sm"
-                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                  onPress={aprobarLiquidacion}
-                >
-                  Aprobar liquidación
-                </Button>
+              {user?.permisos.aprobador && liquidacion && !loading && (
+                <div className="flex items-center gap-4">
+                  <Button
+                    radius="sm"
+                    className="bg-red-600 hover:bg-red-700 focus:ring-red-500 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors"
+                    isLoading={loading}
+                    onPress={rechazarLiquidacion}
+                  >
+                    Rechazar liquidación
+                  </Button>
+                  <Button
+                    radius="sm"
+                    isLoading={loading}
+                    className={`py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors ${
+                    liquidacion?.estado === "liquidado"
+                      ? "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+                      : "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400"
+                    }`}
+                    onPress={aprobarLiquidacion}
+                  >
+                    {liquidacion?.estado === "aprobado"
+                    ? "Regresar a estado liquidado"
+                    : "Aprobar liquidación"}
+                  </Button>
+                </div>
               )}
             </ModalFooter>
           </>

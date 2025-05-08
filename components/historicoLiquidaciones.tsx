@@ -35,38 +35,7 @@ import ModalDetalleLiquidacion from "./ui/modalDetalleLiquidacion";
 
 import { apiClient } from "@/config/apiClient";
 import { formatearFecha } from "@/helpers";
-
-// Tipado para la respuesta de liquidaciones
-interface Liquidacion {
-  id: string;
-  consecutivo: string;
-  fecha_liquidacion: string;
-  valor_total: string;
-  estado: "liquidado" |  "aprobado" | "facturado" | "anulada";
-  observaciones: string;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    nombre: string;
-    correo: string;
-  };
-  servicios: Array<{
-    id: string;
-    origen_especifico: string;
-    destino_especifico: string;
-    valor: string;
-    numero_planilla: string;
-    cliente: {
-      id: string;
-      Nombre: string;
-      NIT: string;
-    };
-    ServicioLiquidacion: {
-      valor_liquidado: string;
-    };
-  }>;
-}
+import { Liquidacion } from "@/context/serviceContext";
 
 interface LiquidacionesResponse {
   total: number;

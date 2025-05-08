@@ -159,7 +159,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                      servicio.vehiculo.placa.toLowerCase(),
+                    servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -351,7 +351,7 @@ const AdvancedDashboard = () => {
         </div>
 
         {/* Panel content with scrolling */}
-        <div className="bg-white h-[calc(100%-56px)] min-w-96 overflow-auto">
+        <div className="bg-white h-[calc(100vh-56px)] min-w-96 relative flex flex-col">
           {/* Filters */}
           <div className="p-3 md:p-4 border-b">
             <div className="flex items-center justify-between mb-3">
@@ -448,18 +448,20 @@ const AdvancedDashboard = () => {
           </div>
 
           {/* Service list */}
-          <div className="p-3 md:p-4">
+          <div className="p-3 md:p-4 mb-14 flex-1">
             {filteredServicios.length === 0 ? (
               <div className="text-center py-4 text-gray-500">
                 No se encontraron servicios
               </div>
             ) : (
-              <ServiciosListCards
-                filteredServicios={filteredServicios}
-                formatearFecha={formatearFecha}
-                handleSelectServicio={handleSelectServicio}
-                selectedServicio={selectedServicio}
-              />
+              <div className="h-full">
+                <ServiciosListCards
+                  filteredServicios={filteredServicios}
+                  formatearFecha={formatearFecha}
+                  handleSelectServicio={handleSelectServicio}
+                  selectedServicio={selectedServicio}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -520,28 +522,28 @@ function PermissionHandler({
 }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
-  
+
   // Si está cargando, mostrar loading
   if (loading) {
     return <LoadingPage>Verificando acceso</LoadingPage>;
   }
-  
+
   // Si no está autenticado, redirigir al login (esto debería ser manejado por el middleware)
   if (!isAuthenticated || !user) {
     // En un entorno de cliente, redirigiría automáticamente
     router.push('/login');
     return <LoadingPage>Redirigiendo al login</LoadingPage>;
   }
-  
+
   // Verificar permisos
   const hasPermission = user.role === 'admin' || requiredPermissions.some(
-    permission => 
-      user.role === permission || 
+    permission =>
+      user.role === permission ||
       (user.permisos && user.permisos[permission] === true)
   );
-  
+
   console.log("Home - PermissionHandler:", { role: user.role, permissions: user.permisos, hasPermission });
-  
+
   // Si no tiene permisos, mostrar mensaje de error personalizado
   if (!hasPermission) {
     return (
@@ -569,7 +571,7 @@ function PermissionHandler({
       </div>
     );
   }
-  
+
   // Si tiene permisos, mostrar el contenido
   return <>{children}</>;
 }
@@ -577,7 +579,7 @@ function PermissionHandler({
 // Componente con PermissionHandler para proteger la página principal
 const DashboardPage = () => {
   return (
-    <PermissionHandler 
+    <PermissionHandler
       requiredPermissions={['gestor_servicio', 'gestor_planillas', 'admin']}
       errorMessage="Necesitas ser gestor de servicios, gestor de planillas o administrador para acceder a esta sección"
     >

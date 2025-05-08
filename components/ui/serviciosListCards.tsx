@@ -259,7 +259,7 @@ const ServiciosListCards = ({
   const ModalHistorialServicio = React.lazy(() => import('./modalHistorialServicio'));
 
   return (
-    <div className="servicios-slider-container space-y-3">
+    <div className="space-y-3 h-[calc(100vh-375px)] overflow-y-auto pr-3">
       {/* Modal de Historial de Servicio */}
       <React.Suspense>
         {modalHistorialOpen && (

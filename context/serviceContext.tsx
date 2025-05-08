@@ -63,6 +63,39 @@ export interface ServicioLiquidar {
   servicio: ServicioConRelaciones | null;
 }
 
+// Tipado para la respuesta de liquidaciones
+export interface Liquidacion {
+  id: string;
+  consecutivo: string;
+  fecha_liquidacion: string;
+  valor_total: string;
+  estado: "liquidado" | "aprobado" | "rechazada" | "facturado" | "anulada";
+  observaciones: string;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    nombre: string;
+    correo: string;
+  };
+  servicios: Array<{
+    id: string;
+    origen_especifico: string;
+    destino_especifico: string;
+    valor: string;
+    numero_planilla: string;
+    cliente: {
+      id: string;
+      Nombre: string;
+      NIT: string;
+    };
+    ServicioLiquidacion: {
+      valor_liquidado: string;
+    };
+  }>;
+}
+
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
@@ -410,8 +443,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -433,8 +466,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -458,8 +491,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -481,8 +514,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -504,8 +537,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -533,8 +566,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
         );
 
         return null;
@@ -1094,6 +1127,54 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         });
       };
 
+      // Manejadores para eventos de liquidacion
+      const handleLiquidacionAprobada = (data: {
+        liquidacion: Liquidacion,
+        estado: Liquidacion["estado"]
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "liquidacion:estado-aprobado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+
+        if (data.estado === 'aprobado') {
+          addToast({
+            title: "Liquidación aprobada!",
+            description: `Se ha aprobado la liquidación ${data.liquidacion.consecutivo}`,
+            color: "success",
+          });
+        }
+      };
+
+      // Manejadores para eventos de liquidacion
+      const handleLiquidacionRechazada = (data: {
+        liquidacion: Liquidacion,
+        estado: Liquidacion["estado"]
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "liquidacion:estado-rechazada",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+
+        if (data.estado === 'rechazada') {
+          addToast({
+            title: "Liquidación rechazada!",
+            description: `Se ha rechazado la liquidación ${data.liquidacion.consecutivo}, revisa las observaciones para realizar las correcciones`,
+            color: "danger",
+          });
+        }
+      };
+
       // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);
       socketService.on("disconnect", handleDisconnect);
@@ -1112,6 +1193,14 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "servicio:numero-planilla-actualizado",
         handlePlanillaAsignada,
       );
+      socketService.on(
+        "liquidacion:estado-aprobado",
+        handleLiquidacionAprobada,
+      );
+      socketService.on(
+        "liquidacion:estado-rechazada",
+        handleLiquidacionRechazada,
+      );
 
       return () => {
         // Limpiar al desmontar
@@ -1126,6 +1215,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("servicio:eliminado");
         socketService.off("servicio:estado-actualizado");
         socketService.off("servicio:numero-planilla-actualizado");
+        socketService.off("liquidacion:estado-aprobado");
+        socketService.off("liquidacion:estado-rechazada");
       };
     }
   }, [user?.id, selectedServicio, clearSelectedServicio]);
