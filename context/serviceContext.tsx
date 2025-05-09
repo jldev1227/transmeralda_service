@@ -100,6 +100,7 @@ export interface Liquidacion {
 interface ServiceContextType {
   // Datos
   servicios: ServicioConRelaciones[];
+  liquidaciones: Liquidacion[];
   servicio: Servicio | null;
   municipios: Municipio[];
   conductores: Conductor[];
@@ -131,6 +132,7 @@ interface ServiceContextType {
     React.SetStateAction<ServicioConRelaciones[]>
   >;
   selectServicio?: (servicio: ServicioConRelaciones) => void;
+  setLiquidaciones: (liquidaciones: Liquidacion[]) => void;
   clearSelectedServicio: () => void;
   setSelectedServicio: React.Dispatch<
     React.SetStateAction<ServicioConRelaciones | null>
@@ -393,6 +395,12 @@ export interface ApiResponse<T> {
   }>;
 }
 
+interface LiquidacionErrorEvent {
+  error: string;
+  id: string;
+}
+
+
 // Crear el contexto
 const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 
@@ -401,6 +409,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   children,
 }) => {
   const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
+  const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [conductores, setConductores] = useState<Conductor[]>([]);
@@ -422,9 +431,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [servicioPlanilla, setServicioPlanilla] = useState<ServicioTicket>({
     servicio: null,
   });
-  const [serviciosLiquidar, setServiciosLiquidar] = useState<
-    ServicioConRelaciones[]
-  >([]);
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -1130,7 +1136,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       // Manejadores para eventos de liquidacion
       const handleLiquidacionAprobada = (data: {
         liquidacion: Liquidacion,
-        estado: Liquidacion["estado"]
+        estado: Liquidacion["estado"],
+        id: string
       }) => {
         setSocketEventLogs((prev) => [
           ...prev,
@@ -1143,6 +1150,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
 
         if (data.estado === 'aprobado') {
+
+          const liquidacionesActualizado = liquidaciones.map(liquidacion => liquidacion.id === data.id ? {...liquidacion, estado: data.estado} : liquidacion )
+          setLiquidaciones(liquidacionesActualizado)
+
+          console.log(liquidacionesActualizado)
+
           addToast({
             title: "Liquidación aprobada!",
             description: `Se ha aprobado la liquidación ${data.liquidacion.consecutivo}`,
@@ -1154,7 +1167,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       // Manejadores para eventos de liquidacion
       const handleLiquidacionRechazada = (data: {
         liquidacion: Liquidacion,
-        estado: Liquidacion["estado"]
+        estado: Liquidacion["estado"],
+        id: string
       }) => {
         setSocketEventLogs((prev) => [
           ...prev,
@@ -1167,9 +1181,57 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
 
         if (data.estado === 'rechazada') {
+
+          const liquidacionesActualizado = liquidaciones.map(liquidacion => liquidacion.id === data.id ? {...liquidacion, estado: data.estado} : liquidacion )
+          setLiquidaciones(liquidacionesActualizado)
+
+          console.log(liquidaciones)
+
+
           addToast({
             title: "Liquidación rechazada!",
             description: `Se ha rechazado la liquidación ${data.liquidacion.consecutivo}, revisa las observaciones para realizar las correcciones`,
+            color: "danger",
+          });
+        }
+      };
+
+      // Manejadores para eventos de liquidacion
+      const handleLiquidacionRegresaLiquidado = (data: {
+        liquidacion: Liquidacion,
+        estado: Liquidacion["estado"],
+        id: string
+      }) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "liquidacion:estado-regresa-liquidado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+
+        if (data.estado === 'liquidado') {
+          const liquidacionesActualizado = liquidaciones.map(liquidacion => liquidacion.id === data.id ? {...liquidacion, estado: data.estado} : liquidacion )
+          setLiquidaciones(liquidacionesActualizado)
+
+          console.log(liquidaciones)
+
+          addToast({
+            title: 'Liquidación regresada a estado "Liquidado"!',
+            description: `Se ha regresado la liquidación ${data.liquidacion.consecutivo} a estado "Liquidado"`,
+            color: "warning",
+          });
+        }
+      };
+
+      const handleLiquidacionError = (data: LiquidacionErrorEvent) => {
+        // Verificar si el error corresponde a la liquidación actual
+        if (data.id) {
+          addToast({
+            title: "Error en la liquidación",
+            description: data.error,
             color: "danger",
           });
         }
@@ -1201,6 +1263,14 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "liquidacion:estado-rechazada",
         handleLiquidacionRechazada,
       );
+      socketService.on(
+        "liquidacion:estado-regresa-liquidado",
+        handleLiquidacionRegresaLiquidado,
+      );
+      socketService.on(
+        "liquidacion:error",
+        handleLiquidacionError,
+      );
 
       return () => {
         // Limpiar al desmontar
@@ -1217,6 +1287,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("servicio:numero-planilla-actualizado");
         socketService.off("liquidacion:estado-aprobado");
         socketService.off("liquidacion:estado-rechazada");
+        socketService.off("liquidacion:estado-regresa-liquidado");
+        socketService.off("liquidacion:error");
       };
     }
   }, [user?.id, selectedServicio, clearSelectedServicio]);
@@ -1229,6 +1301,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   // Valor del contexto
   const value: ServiceContextType = {
     servicios,
+    liquidaciones,
     servicio,
     servicioTicket,
     servicioPlanilla,
@@ -1247,6 +1320,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     serviciosWithRoutes,
     setServiciosWithRoutes,
     selectServicio,
+    setLiquidaciones,
     clearSelectedServicio,
     setSelectedServicio,
 

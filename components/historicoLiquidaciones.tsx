@@ -35,7 +35,7 @@ import ModalDetalleLiquidacion from "./ui/modalDetalleLiquidacion";
 
 import { apiClient } from "@/config/apiClient";
 import { formatearFecha } from "@/helpers";
-import { Liquidacion } from "@/context/serviceContext";
+import { Liquidacion, useService } from "@/context/serviceContext";
 
 interface LiquidacionesResponse {
   total: number;
@@ -61,7 +61,7 @@ const HistoricoLiquidaciones = () => {
   const isTablet = useMediaQuery({ minWidth: 641, maxWidth: 1024 });
 
   // Estados para la tabla y paginación
-  const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
+  const {liquidaciones, setLiquidaciones} = useService()
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -134,7 +134,7 @@ const HistoricoLiquidaciones = () => {
         `/api/liquidaciones_servicios?${params.toString()}`,
       );
 
-      setAllLiquidaciones(response.data.liquidaciones);
+      setLiquidaciones(response.data.liquidaciones);
       setTotalResults(response.data.total || 0);
 
       // Extraer clientes únicos para el selector
@@ -505,7 +505,7 @@ const HistoricoLiquidaciones = () => {
       case "facturado":
         color = "primary";
         break;
-      case "anulada":
+      case "rechazada":
         color = "danger";
         break;
       default:
