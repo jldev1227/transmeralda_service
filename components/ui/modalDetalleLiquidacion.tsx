@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -10,16 +16,16 @@ import {
   MapPinIcon,
   BuildingIcon,
 } from "lucide-react";
+import { Button } from "@heroui/button";
+import { addToast } from "@heroui/toast";
 
 import CustomTable from "./CustomTable";
+import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
 
 import { apiClient } from "@/config/apiClient";
 import { ServicioConRelaciones } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
-import { Button } from "@heroui/button";
 import { useAuth } from "@/context/AuthContext";
-import { addToast } from "@heroui/toast";
-import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
 
 // Tipado para la liquidación
 interface Liquidacion {
@@ -51,12 +57,15 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
   liquidacionId,
 }) => {
   // Auth context
-  const { user } = useAuth()
+  const { user } = useAuth();
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { confirm, DialogComponent, setLoading: setConfirmLoading } = useConfirmDialogWithTextarea();
-
+  const {
+    confirm,
+    DialogComponent,
+    setLoading: setConfirmLoading,
+  } = useConfirmDialogWithTextarea();
 
   // Cargar datos de la liquidación cuando cambia el ID
   useEffect(() => {
@@ -141,7 +150,8 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
       onClose();
     } catch (err) {
       console.error("Error al aprobar la liquidación:", err);
-      const errorMsg = "Error al aprobar la liquidación. Por favor, intenta nuevamente.";
+      const errorMsg =
+        "Error al aprobar la liquidación. Por favor, intenta nuevamente.";
 
       // Mostrar notificación de error
       addToast({
@@ -151,26 +161,29 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
 
       setLoading(false);
     }
-  }
+  };
 
   const rechazarLiquidacion = async () => {
     if (!liquidacionId) return;
-    
+
     // Mostrar diálogo de confirmación con textarea obligatorio
     const { confirmed, observaciones } = await confirm({
       title: "Rechazar liquidación",
-      message: "¿Estás seguro de que deseas rechazar esta liquidación? Esta acción puede requerir aprobación adicional.",
+      message:
+        "¿Estás seguro de que deseas rechazar esta liquidación? Esta acción puede requerir aprobación adicional.",
       confirmText: "Rechazar",
       cancelText: "Cancelar",
       confirmVariant: "danger",
       textareaRequired: true,
       textareaLabel: "Motivo del rechazo",
-      textareaPlaceholder: "Indique el motivo por el cual rechaza esta liquidación...",
-      textareaHelperText: "Es necesario especificar el motivo del rechazo para continuar.",
+      textareaPlaceholder:
+        "Indique el motivo por el cual rechaza esta liquidación...",
+      textareaHelperText:
+        "Es necesario especificar el motivo del rechazo para continuar.",
     });
-    
+
     if (!confirmed) return;
-    
+
     setLoading(true);
     setConfirmLoading(true);
 
@@ -178,18 +191,18 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
       // Enviamos las observaciones al endpoint
       const response = await apiClient.patch<Liquidacion>(
         `/api/liquidaciones_servicios/${liquidacionId}/rechazar`,
-        { observaciones } // Enviar las observaciones al backend
+        { observaciones }, // Enviar las observaciones al backend
       );
 
       setLiquidacion(response.data);
-      
+
       // Mostrar notificación de éxito
       addToast({
         title: "Acción completada",
         description: "Liquidación rechazada correctamente",
         color: "danger",
       });
-      
+
       onClose();
     } catch (err) {
       console.error("Error al rechazar la liquidación:", err);
@@ -203,17 +216,19 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
     // Mostrar diálogo de confirmación
     const { confirmed, observaciones } = await confirm({
       title: "Regresar a estado Liquidado",
-      message: "¿Estás seguro de que deseas regresar esta liquidación al estado Liquidado?",
+      message:
+        "¿Estás seguro de que deseas regresar esta liquidación al estado Liquidado?",
       confirmText: "Regresar a Liquidado",
       cancelText: "Cancelar",
       confirmVariant: "warning",
       textareaRequired: false,
       textareaLabel: "Observaciones (opcional)",
-      textareaHelperText: "Puedes agregar observaciones adicionales si lo deseas.",
+      textareaHelperText:
+        "Puedes agregar observaciones adicionales si lo deseas.",
     });
-    
+
     if (!confirmed) return;
-    
+
     setLoading(true);
     setConfirmLoading(true);
 
@@ -221,25 +236,24 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
       // Enviamos las observaciones al endpoint si las hay
       const response = await apiClient.patch<Liquidacion>(
         `/api/liquidaciones_servicios/${liquidacionId}/regresa-liquidado`,
-        observaciones ? { observaciones } : undefined
+        observaciones ? { observaciones } : undefined,
       );
 
       setLiquidacion(response.data);
-      
+
       // Mostrar notificación de éxito
       addToast({
         title: "Estado actualizado",
         description: "Liquidación regresada a estado Liquidado correctamente",
         color: "success",
       });
-      
 
       onClose();
     } catch (err) {
       console.error("Error al regresar a estado liquidación:", err);
       setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -250,7 +264,7 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
         classNames={{
           wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
           // Asegurar que el contenido ocupe todo el ancho del modal
-          base: "w-full"
+          base: "w-full",
         }}
         isOpen={isOpen}
         scrollBehavior="inside"
@@ -287,7 +301,7 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
               <ModalBody>
                 {!liquidacion && loading ? (
                   <div className="flex justify-center items-center py-8">
-                    <Spinner size="lg" color="success" />
+                    <Spinner color="success" size="lg" />
                   </div>
                 ) : liquidacion ? (
                   <>
@@ -345,7 +359,10 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                               <span className="block text-sm text-gray-500">
                                 Cliente
                               </span>
-                              <p>{liquidacion.servicios[0].cliente?.Nombre || "N/A"}</p>
+                              <p>
+                                {liquidacion.servicios[0].cliente?.Nombre ||
+                                  "N/A"}
+                              </p>
                               <p className="text-xs text-gray-500">
                                 {liquidacion.servicios[0].cliente?.NIT || "N/A"}
                               </p>
@@ -373,7 +390,8 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                 Observaciones
                               </span>
                               <p className="text-gray-700 bg-white p-2 rounded border text-sm">
-                                {liquidacion.observaciones || "Sin observaciones"}
+                                {liquidacion.observaciones ||
+                                  "Sin observaciones"}
                               </p>
                             </div>
                           )}
@@ -460,9 +478,9 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                   <div className="flex items-center gap-4">
                     {liquidacion.estado === "aprobado" && (
                       <Button
-                        radius="sm"
-                        isLoading={loading}
                         className="bg-warning-600 hover:bg-warning-700 focus:ring-warning-500 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors"
+                        isLoading={loading}
+                        radius="sm"
                         onPress={regresarEstadoLiquidado}
                       >
                         Regresar a estado Liquidado
@@ -471,17 +489,17 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                     {liquidacion.estado === "liquidado" && (
                       <div className="space-x-2">
                         <Button
-                          radius="sm"
                           className="bg-red-600 hover:bg-red-700 focus:ring-red-500 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors"
                           isLoading={loading}
+                          radius="sm"
                           onPress={rechazarLiquidacion}
                         >
                           Rechazar liquidación
                         </Button>
                         <Button
-                          radius="sm"
-                          isLoading={loading}
                           className="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors"
+                          isLoading={loading}
+                          radius="sm"
                           onPress={aprobarLiquidacion}
                         >
                           Aprobar liquidación

@@ -190,7 +190,9 @@ export default function ModalPlanilla() {
               </ModalHeader>
               <ModalBody>
                 <div className="relative">
-                  <h1 className="text-xl font-semibold">Servicio #{servicio.id}</h1>
+                  <h1 className="text-xl font-semibold">
+                    Servicio #{servicio.id}
+                  </h1>
 
                   {/* Ruta */}
                   <RouteAndDetails servicio={servicio} />
@@ -207,16 +209,16 @@ export default function ModalPlanilla() {
                       <Hash className="w-5 h-5 text-gray-400" />
                     </div>
                     <input
+                      autoComplete="off"
                       className="border-1 text-gray-800 pl-10 pr-10 block w-full rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-5 appearance-none outline-emerald-600 touch-manipulation"
                       id="planilla"
+                      inputMode="numeric"
                       placeholder="Ingresa el número de la planilla"
                       type="text"
                       value={planillaValue}
                       onChange={handlePlanillaChange}
                       onFocus={handleFocus}
                       onKeyDown={handleKeyDown}
-                      inputMode="numeric"
-                      autoComplete="off"
                     />
                   </div>
                   {error && (

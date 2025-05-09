@@ -393,20 +393,21 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${isOrigin
-        ? `<div class="text-sm">
+          ${
+            isOrigin
+              ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-        : `<div class="text-sm">
+              : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-      }
+          }
         </div>
       </div>
     `;
@@ -1158,7 +1159,7 @@ const EnhancedMapComponent = ({
             <div>
               <span className="text-sm text-gray-500">Observaciones</span>
               <div className="font-medium">
-                {selectedServicio.observaciones || 'No hay observaciones'}
+                {selectedServicio.observaciones || "No hay observaciones"}
               </div>
             </div>
 

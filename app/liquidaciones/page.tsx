@@ -19,10 +19,6 @@ import {
   FileClockIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import LoadingPage from "@/components/loadingPage";
-
-// Importaciones de dnd-kit
 import {
   DndContext,
   closestCenter,
@@ -37,10 +33,19 @@ import {
   DragStartEvent,
   DragOverEvent,
 } from "@dnd-kit/core";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/context/AuthContext";
+import LoadingPage from "@/components/loadingPage";
+
+// Importaciones de dnd-kit
 
 import { apiClient } from "@/config/apiClient";
-import { Cliente, ServicioConRelaciones, useService } from "@/context/serviceContext";
+import {
+  Cliente,
+  ServicioConRelaciones,
+  useService,
+} from "@/context/serviceContext";
 
 // Tipos e interfaces
 interface ServicioItemProps {
@@ -49,11 +54,11 @@ interface ServicioItemProps {
   onClick: () => void;
   isDragging?: boolean;
   onValorChange?: (valor: number) => void;
-  position?: number;  // Posición del servicio
-  onMoveUp?: () => void;  // Mover hacia arriba
-  onMoveDown?: () => void;  // Mover hacia abajo
-  isFirst?: boolean;  // ¿Es el primer elemento?
-  isLast?: boolean;  // ¿Es el último elemento?
+  position?: number; // Posición del servicio
+  onMoveUp?: () => void; // Mover hacia arriba
+  onMoveDown?: () => void; // Mover hacia abajo
+  isFirst?: boolean; // ¿Es el primer elemento?
+  isLast?: boolean; // ¿Es el último elemento?
 }
 
 // Componente de servicio arrastrable con memoización
@@ -82,20 +87,20 @@ const ServicioItem = React.memo(
 
     const style = transform
       ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        opacity: isDragging ? 0.4 : 1,
-        zIndex: isDragging ? 1 : "auto",
-        userSelect: "none" as const, // Tipado correcto para React
-        WebkitUserSelect: "none" as const,
-        MozUserSelect: "none" as const,
-        msUserSelect: "none" as const
-      }
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+          opacity: isDragging ? 0.4 : 1,
+          zIndex: isDragging ? 1 : "auto",
+          userSelect: "none" as const, // Tipado correcto para React
+          WebkitUserSelect: "none" as const,
+          MozUserSelect: "none" as const,
+          msUserSelect: "none" as const,
+        }
       : {
-        userSelect: "none" as const,
-        WebkitUserSelect: "none" as const,
-        MozUserSelect: "none" as const,
-        msUserSelect: "none" as const
-      };
+          userSelect: "none" as const,
+          WebkitUserSelect: "none" as const,
+          MozUserSelect: "none" as const,
+          msUserSelect: "none" as const,
+        };
 
     return (
       <div
@@ -103,12 +108,13 @@ const ServicioItem = React.memo(
         style={style}
         {...attributes}
         {...listeners}
-        className={`p-3 mb-2 rounded-md bg-white border transition-shadow ${isDragging ? "opacity-40" : "hover:shadow-md"
-          } cursor-grab touch-manipulation relative`}
+        aria-roledescription="draggable item"
+        className={`p-3 mb-2 rounded-md bg-white border transition-shadow ${
+          isDragging ? "opacity-40" : "hover:shadow-md"
+        } cursor-grab touch-manipulation relative`}
+        data-position={position}
         role="button"
         tabIndex={0}
-        aria-roledescription="draggable item"
-        data-position={position}
       >
         {isSelected && position !== undefined && (
           <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
@@ -122,7 +128,7 @@ const ServicioItem = React.memo(
           {isSelected && (
             <div className="flex space-x-1">
               <button
-                className={`p-1 rounded-full hover:bg-gray-100 ${isFirst ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`p-1 rounded-full hover:bg-gray-100 ${isFirst ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isFirst}
                 type="button"
                 onClick={(e) => {
@@ -133,7 +139,7 @@ const ServicioItem = React.memo(
                 <ChevronUpIcon className="h-4 w-4 text-gray-600" />
               </button>
               <button
-                className={`p-1 rounded-full hover:bg-gray-100 ${isLast ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`p-1 rounded-full hover:bg-gray-100 ${isLast ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isLast}
                 type="button"
                 onClick={(e) => {
@@ -240,10 +246,11 @@ const ServiciosContainer = React.memo(
     return (
       <div
         ref={setNodeRef}
-        className={`bg-gray-50 border rounded-md p-2 overflow-y-auto flex-1 min-h-[300px] ${isOver ? "ring-2 ring-blue-400" : ""
-          } ${className} touch-pan-y`}
-        role="region"
         aria-roledescription="droppable container"
+        className={`bg-gray-50 border rounded-md p-2 overflow-y-auto flex-1 min-h-[300px] ${
+          isOver ? "ring-2 ring-blue-400" : ""
+        } ${className} touch-pan-y`}
+        role="region"
       >
         {children}
       </div>
@@ -257,10 +264,6 @@ function ModalLiquidarServicios() {
   const { servicios } = useService();
 
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Obtener el valor de la pestaña desde la URL o usar 'liquidar' por defecto
-  const viewParam = searchParams.get('view');
 
   // Estados para el formulario y los servicios
   const [serviciosRealizados, setServiciosRealizados] = useState<
@@ -428,6 +431,7 @@ function ModalLiquidarServicios() {
         setActiveId(null);
         setDraggedServicio(null);
         setDraggedPosition(null);
+
         return;
       }
 
@@ -437,8 +441,11 @@ function ModalLiquidarServicios() {
       // CASO 1: Moviendo desde serviciosRealizados a serviciosSeleccionados
       if (!activeIdStr.startsWith("seleccionado-")) {
         // Solo procesamos si el destino es el contenedor de seleccionados o un elemento dentro de él
-        if (overIdStr === "serviciosSeleccionados" || overIdStr.startsWith("seleccionado-")) {
-          const servicio = serviciosOrdenados.find(s => s.id === activeIdStr);
+        if (
+          overIdStr === "serviciosSeleccionados" ||
+          overIdStr.startsWith("seleccionado-")
+        ) {
+          const servicio = serviciosOrdenados.find((s) => s.id === activeIdStr);
 
           if (!servicio) return;
 
@@ -457,7 +464,10 @@ function ModalLiquidarServicios() {
               // Si arrastramos sobre un servicio específico (no sobre el contenedor), insertamos en esa posición
               if (overIdStr.startsWith("seleccionado-")) {
                 const targetId = overIdStr.replace("seleccionado-", "");
-                const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
+                const targetIndex = serviciosSeleccionados.findIndex(
+                  (s) => s.id === targetId,
+                );
+
                 if (targetIndex !== -1) {
                   insertPosition = targetIndex;
                 }
@@ -470,9 +480,11 @@ function ModalLiquidarServicios() {
               };
 
               // Insertar el servicio en la posición correcta
-              setServiciosSeleccionados(prev => {
+              setServiciosSeleccionados((prev) => {
                 const newServicios = [...prev];
+
                 newServicios.splice(insertPosition, 0, servicioSeleccionado);
+
                 return newServicios;
               });
             } else {
@@ -493,33 +505,40 @@ function ModalLiquidarServicios() {
         // Reordenando dentro del contenedor de seleccionados
         if (overIdStr.startsWith("seleccionado-") && draggedPosition !== null) {
           const targetId = overIdStr.replace("seleccionado-", "");
-          const targetIndex = serviciosSeleccionados.findIndex(s => s.id === targetId);
+          const targetIndex = serviciosSeleccionados.findIndex(
+            (s) => s.id === targetId,
+          );
 
           // Solo procesamos si el índice es válido y diferente de la posición original
           if (targetIndex !== -1 && targetIndex !== draggedPosition) {
-            setServiciosSeleccionados(prevServicios => {
+            setServiciosSeleccionados((prevServicios) => {
               const newServicios = [...prevServicios];
               const [movedItem] = newServicios.splice(draggedPosition, 1);
 
               // Si estamos arrastrando hacia un índice mayor que el original,
               // ajustamos el índice para tener en cuenta el elemento removido
-              const adjustedTargetIndex = targetIndex > draggedPosition
-                ? targetIndex - 1
-                : targetIndex;
+              const adjustedTargetIndex =
+                targetIndex > draggedPosition ? targetIndex - 1 : targetIndex;
 
               newServicios.splice(adjustedTargetIndex, 0, movedItem);
+
               return newServicios;
             });
           }
         }
         // Quitar servicio si se arrastra al contenedor de realizados o cualquier otro elemento
-        else if (overIdStr === "serviciosRealizados" || !overIdStr.startsWith("seleccionado-")) {
-          setServiciosSeleccionados(prev => {
-            const newServicios = prev.filter(s => s.id !== servicioId);
+        else if (
+          overIdStr === "serviciosRealizados" ||
+          !overIdStr.startsWith("seleccionado-")
+        ) {
+          setServiciosSeleccionados((prev) => {
+            const newServicios = prev.filter((s) => s.id !== servicioId);
+
             // Si después de eliminar este servicio no quedan más, resetear el cliente
             if (newServicios.length === 0) {
               setCliente(null);
             }
+
             return newServicios;
           });
         }
@@ -530,7 +549,14 @@ function ModalLiquidarServicios() {
       setDraggedServicio(null);
       setDraggedPosition(null);
     },
-    [serviciosOrdenados, serviciosSeleccionadosIds, draggedPosition, cliente, serviciosSeleccionados.length, addToast],
+    [
+      serviciosOrdenados,
+      serviciosSeleccionadosIds,
+      draggedPosition,
+      cliente,
+      serviciosSeleccionados.length,
+      addToast,
+    ],
   );
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
@@ -566,10 +592,12 @@ function ModalLiquidarServicios() {
   const quitarServicio = useCallback((id: string) => {
     setServiciosSeleccionados((prev) => {
       const newServicios = prev.filter((s) => s.id !== id);
+
       // Si después de eliminar este servicio no quedan más, resetear el cliente
       if (newServicios.length === 0) {
         setCliente(null);
       }
+
       return newServicios;
     });
   }, []);
@@ -589,6 +617,7 @@ function ModalLiquidarServicios() {
             description: `Debe agregar servicios realizados al cliente ${cliente.Nombre}`,
             color: "danger",
           });
+
           return;
         }
 
@@ -618,22 +647,32 @@ function ModalLiquidarServicios() {
   // Mover un servicio seleccionado hacia arriba en la lista
   const moverServicioArriba = useCallback((index: number) => {
     if (index <= 0) return; // No hacer nada si es el primer elemento
-    setServiciosSeleccionados(prev => {
+    setServiciosSeleccionados((prev) => {
       const nuevaLista = [...prev];
+
       // Intercambiar posiciones
-      [nuevaLista[index], nuevaLista[index - 1]] = [nuevaLista[index - 1], nuevaLista[index]];
+      [nuevaLista[index], nuevaLista[index - 1]] = [
+        nuevaLista[index - 1],
+        nuevaLista[index],
+      ];
+
       return nuevaLista;
     });
   }, []);
 
   // Mover un servicio seleccionado hacia abajo en la lista
   const moverServicioAbajo = useCallback((index: number) => {
-    setServiciosSeleccionados(prev => {
+    setServiciosSeleccionados((prev) => {
       if (index >= prev.length - 1) return prev; // No hacer nada si es el último elemento
 
       const nuevaLista = [...prev];
+
       // Intercambiar posiciones
-      [nuevaLista[index], nuevaLista[index + 1]] = [nuevaLista[index + 1], nuevaLista[index]];
+      [nuevaLista[index], nuevaLista[index + 1]] = [
+        nuevaLista[index + 1],
+        nuevaLista[index],
+      ];
+
       return nuevaLista;
     });
   }, []);
@@ -662,7 +701,7 @@ function ModalLiquidarServicios() {
 
     // Pequeño retraso para asegurar que la limpieza se complete antes redirigir
     setTimeout(() => {
-      router.push('/');
+      router.push("/");
     }, 50);
   }, [router]);
 
@@ -674,7 +713,7 @@ function ModalLiquidarServicios() {
     );
   }, [serviciosSeleccionados]);
 
-  console.log(valorTotal)
+  console.log(valorTotal);
 
   function validarConsecutivo(consecutivo: string): boolean {
     const regex = /^[A-Z]{2,4}-\d{4}$/;
@@ -733,13 +772,8 @@ function ModalLiquidarServicios() {
         })),
       };
 
-      console.log("Enviando datos:", datosLiquidacion);
-
       // Enviar petición al backend
-      const response = await apiClient.post(
-        "/api/liquidaciones_servicios",
-        datosLiquidacion,
-      );
+      await apiClient.post("/api/liquidaciones_servicios", datosLiquidacion);
 
       // Mostrar mensaje de éxito
       addToast({
@@ -797,17 +831,18 @@ function ModalLiquidarServicios() {
       <div className="flex flex-col gap-1 border-b pb-4">
         <div className="flex justify-between">
           <h2 className="text-xl font-bold">Liquidación de Servicios</h2>
-          <Button as={Link} href="/historico" color="primary">
-            <FileClockIcon className="w-6 h-6"/>
+          <Button as={Link} color="primary" href="/historico">
+            <FileClockIcon className="w-6 h-6" />
             Historico
           </Button>
         </div>
         <p className="text-sm text-gray-500">
-          Arrastre los servicios realizados al panel de servicios
-          seleccionados para incluirlos en la liquidación
+          Arrastre los servicios realizados al panel de servicios seleccionados
+          para incluirlos en la liquidación
         </p>
         <p className="text-xs text-blue-600 md:hidden">
-          <strong>Nota para dispositivos móviles:</strong> Mantenga pulsado brevemente un servicio para comenzar a arrastrarlo
+          <strong>Nota para dispositivos móviles:</strong> Mantenga pulsado
+          brevemente un servicio para comenzar a arrastrarlo
         </p>
       </div>
       <div className="my-4">
@@ -833,7 +868,7 @@ function ModalLiquidarServicios() {
                     onPress={() => requestSort("fecha_realizacion")}
                   >
                     {sortConfig.key === "fecha_realizacion" &&
-                      sortConfig.direction === "asc" ? (
+                    sortConfig.direction === "asc" ? (
                       <SortAscIcon className="h-4 w-4 mr-1" />
                     ) : (
                       <SortDescIcon className="h-4 w-4 mr-1" />
@@ -847,7 +882,7 @@ function ModalLiquidarServicios() {
                     onPress={() => requestSort("numero_planilla")}
                   >
                     {sortConfig.key === "numero_planilla" &&
-                      sortConfig.direction === "asc" ? (
+                    sortConfig.direction === "asc" ? (
                       <SortAscIcon className="h-4 w-4 mr-1" />
                     ) : (
                       <SortDescIcon className="h-4 w-4 mr-1" />
@@ -939,7 +974,8 @@ function ModalLiquidarServicios() {
                   </h3>
                   <div>
                     <p className="text-xs text-gray-500">
-                      Arrastra los servicios para reordenarlos según el orden deseado
+                      Arrastra los servicios para reordenarlos según el orden
+                      deseado
                     </p>
                   </div>
                 </div>
@@ -952,26 +988,23 @@ function ModalLiquidarServicios() {
                     serviciosSeleccionados.map((servicio, index) => (
                       <ServicioItem
                         key={`seleccionado-${servicio.id}`}
-                        isDragging={
-                          activeId === `seleccionado-${servicio.id}`
-                        }
+                        isDragging={activeId === `seleccionado-${servicio.id}`}
+                        isFirst={index === 0}
+                        isLast={index === serviciosSeleccionados.length - 1}
                         isSelected={true}
+                        position={index}
                         servicio={servicio}
                         onClick={() => quitarServicio(servicio.id || "")}
+                        onMoveDown={() => moverServicioAbajo(index)}
+                        onMoveUp={() => moverServicioArriba(index)}
                         onValorChange={(valor) =>
                           actualizarValorServicio(servicio.id || "", valor)
                         }
-                        position={index}
-                        onMoveUp={() => moverServicioArriba(index)}
-                        onMoveDown={() => moverServicioAbajo(index)}
-                        isFirst={index === 0}
-                        isLast={index === serviciosSeleccionados.length - 1}
                       />
                     ))
                   ) : (
                     <div className="text-center p-4 text-gray-500">
-                      Arrastre servicios aquí para incluirlos en la
-                      liquidación
+                      Arrastre servicios aquí para incluirlos en la liquidación
                     </div>
                   )}
                 </ServiciosContainer>
@@ -998,20 +1031,26 @@ function ModalLiquidarServicios() {
           </div>
 
           {/* Overlay para el elemento que se está arrastrando - optimizado para móviles */}
-          <DragOverlay dropAnimation={{
-            duration: 300,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-          }}>
+          <DragOverlay
+            dropAnimation={{
+              duration: 300,
+              easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+            }}
+          >
             {activeItem ? (
-              <div className="p-3 rounded-md bg-white border shadow-xl scale-105 z-40 transform-gpu relative" style={{
-                touchAction: 'none',
-                pointerEvents: 'none',
-              }}>
-                {activeId?.startsWith('seleccionado-') && draggedPosition !== null && (
-                  <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                    {draggedPosition + 1}
-                  </div>
-                )}
+              <div
+                className="p-3 rounded-md bg-white border shadow-xl scale-105 z-40 transform-gpu relative"
+                style={{
+                  touchAction: "none",
+                  pointerEvents: "none",
+                }}
+              >
+                {activeId?.startsWith("seleccionado-") &&
+                  draggedPosition !== null && (
+                    <div className="absolute -left-2 -top-2 bg-emerald-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                      {draggedPosition + 1}
+                    </div>
+                  )}
                 <div className="flex justify-between">
                   <div className="font-medium">
                     {activeItem.origen_especifico} →{" "}
@@ -1076,8 +1115,8 @@ export default function LiquidacionesPage() {
   // Este componente se encarga de verificar los permisos y mostrar el contenido adecuado
   return (
     <PermissionHandler
-      requiredPermissions={['liquidador', 'facturador']}
       errorMessage="Necesitas ser liquidador para acceder a esta sección"
+      requiredPermissions={["liquidador", "facturador"]}
     >
       <ModalLiquidarServicios />
     </PermissionHandler>
@@ -1088,7 +1127,7 @@ export default function LiquidacionesPage() {
 function PermissionHandler({
   children,
   requiredPermissions,
-  errorMessage
+  errorMessage,
 }: {
   children: React.ReactNode;
   requiredPermissions: string[];
@@ -1108,11 +1147,13 @@ function PermissionHandler({
   }
 
   // Verificar permisos
-  const hasPermission = user.role === 'admin' || requiredPermissions.some(
-    permission =>
-      user.role === permission ||
-      (user.permisos && user.permisos[permission] === true)
-  );
+  const hasPermission =
+    user.role === "admin" ||
+    requiredPermissions.some(
+      (permission) =>
+        user.role === permission ||
+        (user.permisos && user.permisos[permission] === true),
+    );
 
   // Si no tiene permisos, mostrar mensaje de error personalizado
   if (!hasPermission) {
@@ -1125,13 +1166,11 @@ function PermissionHandler({
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Acceso Restringido
           </h2>
-          <p className="text-gray-600 mb-6">
-            {errorMessage}
-          </p>
+          <p className="text-gray-600 mb-6">{errorMessage}</p>
           <div className="flex flex-col space-y-3">
             <Link
-              href="/"
               className="flex items-center justify-center w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 transition-colors"
+              href="/"
             >
               <HomeIcon className="h-4 w-4 mr-2" />
               Volver al Inicio

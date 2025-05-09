@@ -1,12 +1,23 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
 import { Alert } from "@heroui/alert";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react"; // al inicio del archivo
+import {
+  AlertTriangle,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  BuildingIcon,
+  CalendarIcon,
+  RefreshCw,
+} from "lucide-react";
+import SelectReact from "react-select";
+import { Button } from "@heroui/button";
+import { useMediaQuery } from "react-responsive";
 
 import EnhancedMapComponent from "@/components/enhancedMapComponent";
 import {
@@ -21,11 +32,6 @@ import ModalTicket from "@/components/ui/modalTicket";
 import ModalPlanilla from "@/components/ui/modalPlanilla";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loadingPage";
-import { AlertTriangle, ArrowDownIcon, ArrowUpIcon, BuildingIcon, CalendarIcon, RefreshCw } from "lucide-react";
-import SelectReact from "react-select";
-import { SelectInstance } from "react-select";
-import { Button } from "@heroui/button";
-import { useMediaQuery } from "react-responsive";
 
 interface MapboxRoute {
   distance: number;
@@ -44,13 +50,6 @@ interface Filters {
   propositoServicio: string;
   empresa: string;
 }
-
-
-interface EmpresaOption {
-  value: string;
-  label: string;
-  // Otros campos que pueda tener
-};
 
 const serviceTypeTextMap: Record<string, string> = {
   herramienta: "Cargado con herramienta",
@@ -71,8 +70,13 @@ const AdvancedDashboard = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // State
-  const { servicios, socketConnected, selectedServicio, setSelectedServicio, empresas } =
-    useService();
+  const {
+    servicios,
+    socketConnected,
+    selectedServicio,
+    setSelectedServicio,
+    empresas,
+  } = useService();
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
@@ -93,19 +97,21 @@ const AdvancedDashboard = () => {
 
   const [sortOptions, setSortOptions] = useState<{
     field: string;
-    direction: 'asc' | 'desc';
+    direction: "asc" | "desc";
   }>({
-    field: 'fecha_solicitud',
-    direction: 'desc',
+    field: "fecha_solicitud",
+    direction: "desc",
   });
 
-  const [dateFilterType, setDateFilterType] = useState<'solicitud' | 'realizacion'>('solicitud');
+  const [dateFilterType, setDateFilterType] = useState<
+    "solicitud" | "realizacion"
+  >("solicitud");
   const [dateRange, setDateRange] = useState<{
     from: string;
     to: string;
   }>({
-    from: '',
-    to: '',
+    from: "",
+    to: "",
   });
 
   // Wialon API call function
@@ -192,7 +198,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                    servicio.vehiculo.placa.toLowerCase(),
+                      servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -349,9 +355,7 @@ const AdvancedDashboard = () => {
       return false;
     if (
       filters.empresa &&
-      !servicio.cliente_id
-        .toLowerCase()
-        .includes(filters.empresa.toLowerCase())
+      !servicio.cliente_id.toLowerCase().includes(filters.empresa.toLowerCase())
     )
       return false;
     if (
@@ -363,17 +367,20 @@ const AdvancedDashboard = () => {
     // Filtrar por rango de fechas
     if (dateRange.from || dateRange.to) {
       // Determinar qué campo de fecha usar según el tipo seleccionado
-      const dateField = dateFilterType === 'solicitud'
-        ? servicio.fecha_solicitud
-        : servicio.fecha_realizacion;
+      const dateField =
+        dateFilterType === "solicitud"
+          ? servicio.fecha_solicitud
+          : servicio.fecha_realizacion;
 
       // Si no hay fecha de realización y ese es el filtro seleccionado, excluir
-      if (dateFilterType === 'realizacion' && !dateField) {
+      if (dateFilterType === "realizacion" && !dateField) {
         return false;
       }
 
       // Convertir la fecha del servicio a formato YYYY-MM-DD para comparación
-      const serviceDate = dateField ? new Date(dateField).toISOString().split('T')[0] : '';
+      const serviceDate = dateField
+        ? new Date(dateField).toISOString().split("T")[0]
+        : "";
 
       // Si no hay fecha válida, excluir
       if (!serviceDate) return false;
@@ -400,12 +407,12 @@ const AdvancedDashboard = () => {
   function sortServicios(
     servicios: ServicioConRelaciones[],
     field: string,
-    direction: 'asc' | 'desc'
+    direction: "asc" | "desc",
   ): ServicioConRelaciones[] {
     return [...servicios].sort((a, b) => {
       // Función para acceder de forma segura a propiedades anidadas
       function getProperty(obj: any, path: string): any {
-        return path.split('.').reduce((o, p) => (o ? o[p] : undefined), obj);
+        return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
       }
 
       const valueA = getProperty(a, field);
@@ -417,8 +424,8 @@ const AdvancedDashboard = () => {
       if (valueB === undefined) return -1;
 
       // Ordenamiento por tipo
-      if (typeof valueA === 'string' && typeof valueB === 'string') {
-        return direction === 'asc'
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return direction === "asc"
           ? valueA.localeCompare(valueB)
           : valueB.localeCompare(valueA);
       }
@@ -427,13 +434,15 @@ const AdvancedDashboard = () => {
       if (
         valueA instanceof Date ||
         valueB instanceof Date ||
-        (typeof valueA === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valueA)) ||
-        (typeof valueB === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valueB))
+        (typeof valueA === "string" && /^\d{4}-\d{2}-\d{2}/.test(valueA)) ||
+        (typeof valueB === "string" && /^\d{4}-\d{2}-\d{2}/.test(valueB))
       ) {
-        const dateA = valueA instanceof Date ? valueA : new Date(valueA as string);
-        const dateB = valueB instanceof Date ? valueB : new Date(valueB as string);
+        const dateA =
+          valueA instanceof Date ? valueA : new Date(valueA as string);
+        const dateB =
+          valueB instanceof Date ? valueB : new Date(valueB as string);
 
-        return direction === 'asc'
+        return direction === "asc"
           ? dateA.getTime() - dateB.getTime()
           : dateB.getTime() - dateA.getTime();
       }
@@ -443,11 +452,11 @@ const AdvancedDashboard = () => {
       const numB = Number(valueB);
 
       if (!isNaN(numA) && !isNaN(numB)) {
-        return direction === 'asc' ? numA - numB : numB - numA;
+        return direction === "asc" ? numA - numB : numB - numA;
       }
 
       // Fallback para otros tipos
-      return direction === 'asc'
+      return direction === "asc"
         ? String(valueA).localeCompare(String(valueB))
         : String(valueB).localeCompare(String(valueA));
     });
@@ -455,21 +464,22 @@ const AdvancedDashboard = () => {
   const sortedServices = sortServicios(
     filteredServicios,
     sortOptions.field,
-    sortOptions.direction
+    sortOptions.direction,
   );
 
   const handleClosePanel = useCallback(() => {
     if (isPanelOpen) {
-      const panel = document.querySelector('.animate-bottomToTop');
+      const panel = document.querySelector(".animate-bottomToTop");
+
       if (panel) {
-        panel.classList.remove('animate-bottomToTop');
-        panel.classList.add('animate-topToBottom');
+        panel.classList.remove("animate-bottomToTop");
+        panel.classList.add("animate-topToBottom");
         // Espera la duración de la animación antes de cerrar el panel
         setTimeout(() => {
           setIsPanelOpen(false);
           // Limpia la clase de animación para futuras aperturas
-          panel.classList.remove('animate-topToBottom');
-          panel.classList.add('animate-bottomToTop');
+          panel.classList.remove("animate-topToBottom");
+          panel.classList.add("animate-bottomToTop");
         }, 400); // Ajusta este valor si cambias la duración de la animación en CSS
       } else {
         setIsPanelOpen(false);
@@ -486,7 +496,7 @@ const AdvancedDashboard = () => {
   }, [isMobile]);
 
   useEffect(() => {
-    console.log(isPanelOpen)
+    console.log(isPanelOpen);
   }, [isPanelOpen]);
 
   return (
@@ -495,8 +505,8 @@ const AdvancedDashboard = () => {
       {isPanelOpen && (
         <div
           aria-modal="true"
-          role="dialog"
           className="absolute md:relative z-50 w-full md:w-auto animate-bottomToTop"
+          role="dialog"
         >
           <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
             <div className="w-full space-y-2">
@@ -504,10 +514,10 @@ const AdvancedDashboard = () => {
                 <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
                 {isPanelOpen && isMobile && (
                   <Button
-                    onPress={handleClosePanel}
-                    size="sm"
-                    color="danger"
                     isIconOnly
+                    color="danger"
+                    size="sm"
+                    onPress={handleClosePanel}
                   >
                     <X className="w-6 h-6" />
                   </Button>
@@ -534,21 +544,22 @@ const AdvancedDashboard = () => {
           </div>
 
           {/* Panel content with scrolling */}
-          <div
-            className="bg-white h-[calc(100vh-56px)] relative flex flex-col overflow-y-auto"
-          >
+          <div className="bg-white h-[calc(100vh-56px)] relative flex flex-col overflow-y-auto">
             {/* Filters */}
             <div className="p-4 md:p-4 border-b">
               <div className="mb-3">
                 <h3 className="font-semibold mb-2">Filtros</h3>
                 <form
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"
                   autoComplete="off"
-                  onSubmit={e => e.preventDefault()}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"
+                  onSubmit={(e) => e.preventDefault()}
                 >
                   {/* Estado */}
                   <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="estado">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="estado"
+                    >
                       Estado
                     </label>
                     <select
@@ -564,14 +575,19 @@ const AdvancedDashboard = () => {
                       <option value="planificado">Planificado</option>
                       <option value="en_curso">En curso</option>
                       <option value="realizado">Realizado</option>
-                      <option value="planilla_asignada">Planilla asignada</option>
+                      <option value="planilla_asignada">
+                        Planilla asignada
+                      </option>
                       <option value="cancelado">Cancelado</option>
                     </select>
                   </div>
 
                   {/* Tipo de Servicio */}
                   <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="propositoServicio">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="propositoServicio"
+                    >
                       Tipo de Servicio
                     </label>
                     <select
@@ -594,7 +610,10 @@ const AdvancedDashboard = () => {
 
                   {/* Origen */}
                   <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="origen">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="origen"
+                    >
                       Origen
                     </label>
                     <input
@@ -611,7 +630,10 @@ const AdvancedDashboard = () => {
 
                   {/* Destino */}
                   <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="destino">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor="destino"
+                    >
                       Destino
                     </label>
                     <input
@@ -631,7 +653,6 @@ const AdvancedDashboard = () => {
                     <label
                       className="block text-sm font-medium mb-1 truncate max-w-full"
                       htmlFor="empresa"
-                      title="Empresa"
                     >
                       Empresa
                     </label>
@@ -646,10 +667,14 @@ const AdvancedDashboard = () => {
                         className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
                         classNamePrefix="react-select"
                         inputId="empresa"
+                        menuPortalTarget={
+                          typeof window !== "undefined"
+                            ? document.body
+                            : undefined
+                        }
                         name="empresa"
                         options={empresaOptions}
                         placeholder="Seleccione una empresa"
-                        menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
                         styles={{
                           container: (base) => ({
                             ...base,
@@ -691,9 +716,7 @@ const AdvancedDashboard = () => {
                           }),
                           option: (base, state) => ({
                             ...base,
-                            color: state.isSelected
-                              ? "#059669"
-                              : "#1f2937",
+                            color: state.isSelected ? "#059669" : "#1f2937",
                             backgroundColor: state.isFocused
                               ? "#f0fdf4"
                               : "white",
@@ -720,7 +743,10 @@ const AdvancedDashboard = () => {
                           }),
                         }}
                         onChange={(option) =>
-                          setFilters({ ...filters, empresa: option ? option.value : "" })
+                          setFilters({
+                            ...filters,
+                            empresa: option ? option.value : "",
+                          })
                         }
                       />
                     </div>
@@ -728,42 +754,51 @@ const AdvancedDashboard = () => {
 
                   {/* Rango de Fechas */}
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium mb-1">
+                    <p className="block text-sm font-medium mb-1">
                       Rango de Fechas
-                    </label>
+                    </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="flex items-center gap-2">
                         <input
-                          type="radio"
+                          checked={dateFilterType === "solicitud"}
+                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                           id="fechaSolicitudRadio"
                           name="tipoFecha"
+                          type="radio"
                           value="solicitud"
-                          checked={dateFilterType === 'solicitud'}
-                          onChange={() => setDateFilterType('solicitud')}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                          onChange={() => setDateFilterType("solicitud")}
                         />
-                        <label htmlFor="fechaSolicitudRadio" className="text-sm text-gray-700">
+                        <label
+                          className="text-sm text-gray-700"
+                          htmlFor="fechaSolicitudRadio"
+                        >
                           Fecha de Solicitud
                         </label>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
-                          type="radio"
+                          checked={dateFilterType === "realizacion"}
+                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                           id="fechaRealizacionRadio"
                           name="tipoFecha"
+                          type="radio"
                           value="realizacion"
-                          checked={dateFilterType === 'realizacion'}
-                          onChange={() => setDateFilterType('realizacion')}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                          onChange={() => setDateFilterType("realizacion")}
                         />
-                        <label htmlFor="fechaRealizacionRadio" className="text-sm text-gray-700">
+                        <label
+                          className="text-sm text-gray-700"
+                          htmlFor="fechaRealizacionRadio"
+                        >
                           Fecha de Realización
                         </label>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                       <div>
-                        <label className="block text-xs font-medium mb-1" htmlFor="fechaDesde">
+                        <label
+                          className="block text-xs font-medium mb-1"
+                          htmlFor="fechaDesde"
+                        >
                           Desde
                         </label>
                         <div className="relative">
@@ -771,16 +806,24 @@ const AdvancedDashboard = () => {
                             <CalendarIcon className="h-5 w-5 text-gray-400" />
                           </div>
                           <input
-                            type="date"
-                            id="fechaDesde"
                             className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                            value={dateRange.from || ''}
-                            onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                            id="fechaDesde"
+                            type="date"
+                            value={dateRange.from || ""}
+                            onChange={(e) =>
+                              setDateRange({
+                                ...dateRange,
+                                from: e.target.value,
+                              })
+                            }
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium mb-1" htmlFor="fechaHasta">
+                        <label
+                          className="block text-xs font-medium mb-1"
+                          htmlFor="fechaHasta"
+                        >
                           Hasta
                         </label>
                         <div className="relative">
@@ -788,12 +831,14 @@ const AdvancedDashboard = () => {
                             <CalendarIcon className="h-5 w-5 text-gray-400" />
                           </div>
                           <input
-                            type="date"
-                            id="fechaHasta"
                             className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                            value={dateRange.to || ''}
-                            onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                            id="fechaHasta"
                             min={dateRange.from || undefined}
+                            type="date"
+                            value={dateRange.to || ""}
+                            onChange={(e) =>
+                              setDateRange({ ...dateRange, to: e.target.value })
+                            }
                           />
                         </div>
                       </div>
@@ -801,50 +846,53 @@ const AdvancedDashboard = () => {
                     {/* Botones de acción rápida para fechas */}
                     <div className="flex flex-wrap gap-2 mt-2">
                       <button
-                        type="button"
                         className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
+                        type="button"
                         onClick={() => {
-                          const today = new Date().toISOString().split('T')[0];
+                          const today = new Date().toISOString().split("T")[0];
+
                           setDateRange({ from: today, to: today });
                         }}
                       >
                         Hoy
                       </button>
                       <button
-                        type="button"
                         className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
+                        type="button"
                         onClick={() => {
                           const today = new Date();
                           const lastWeek = new Date();
+
                           lastWeek.setDate(today.getDate() - 7);
                           setDateRange({
-                            from: lastWeek.toISOString().split('T')[0],
-                            to: today.toISOString().split('T')[0]
+                            from: lastWeek.toISOString().split("T")[0],
+                            to: today.toISOString().split("T")[0],
                           });
                         }}
                       >
                         Última semana
                       </button>
                       <button
-                        type="button"
                         className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
+                        type="button"
                         onClick={() => {
                           const today = new Date();
                           const lastMonth = new Date();
+
                           lastMonth.setMonth(today.getMonth() - 1);
                           setDateRange({
-                            from: lastMonth.toISOString().split('T')[0],
-                            to: today.toISOString().split('T')[0]
+                            from: lastMonth.toISOString().split("T")[0],
+                            to: today.toISOString().split("T")[0],
                           });
                         }}
                       >
                         Último mes
                       </button>
                       <button
-                        type="button"
                         className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
+                        type="button"
                         onClick={() => {
-                          setDateRange({ from: '', to: '' });
+                          setDateRange({ from: "", to: "" });
                         }}
                       >
                         Limpiar fechas
@@ -854,23 +902,30 @@ const AdvancedDashboard = () => {
 
                   {/* Ordenación */}
                   <div className="sm:col-span-2 flex flex-col gap-2 mt-2">
-                    <label className="text-sm font-medium whitespace-nowrap" htmlFor="sortBy">
+                    <label
+                      className="text-sm font-medium whitespace-nowrap"
+                      htmlFor="sortBy"
+                    >
                       Ordenar por:
                     </label>
                     <div className="flex w-full justify-between items-center gap-2">
                       <select
-                        id="sortBy"
                         className="text-sm border w-full rounded-md p-1.5 bg-white"
+                        id="sortBy"
                         value={sortOptions.field}
                         onChange={(e) =>
                           setSortOptions({
                             ...sortOptions,
-                            field: e.target.value
+                            field: e.target.value,
                           })
                         }
                       >
-                        <option value="fecha_solicitud">Fecha de Solicitud</option>
-                        <option value="fecha_realizacion">Fecha de Realización</option>
+                        <option value="fecha_solicitud">
+                          Fecha de Solicitud
+                        </option>
+                        <option value="fecha_realizacion">
+                          Fecha de Realización
+                        </option>
                         <option value="estado">Estado</option>
                         <option value="origen_especifico">Origen</option>
                         <option value="destino_especifico">Destino</option>
@@ -878,16 +933,21 @@ const AdvancedDashboard = () => {
                       </select>
                       <button
                         className="p-1.5 rounded-md border hover:bg-gray-50 transition-colors"
+                        title={
+                          sortOptions.direction === "asc"
+                            ? "Ascendente"
+                            : "Descendente"
+                        }
+                        type="button"
                         onClick={() =>
                           setSortOptions({
                             ...sortOptions,
-                            direction: sortOptions.direction === 'asc' ? 'desc' : 'asc'
+                            direction:
+                              sortOptions.direction === "asc" ? "desc" : "asc",
                           })
                         }
-                        title={sortOptions.direction === 'asc' ? 'Ascendente' : 'Descendente'}
-                        type="button"
                       >
-                        {sortOptions.direction === 'asc' ? (
+                        {sortOptions.direction === "asc" ? (
                           <ArrowUpIcon className="w-5 h-5 text-gray-600" />
                         ) : (
                           <ArrowDownIcon className="w-5 h-5 text-gray-600" />
@@ -910,9 +970,9 @@ const AdvancedDashboard = () => {
                   <ServiciosListCards
                     filteredServicios={sortedServices}
                     formatearFecha={formatearFecha}
+                    handleClosePanel={handleClosePanel}
                     handleSelectServicio={handleSelectServicio}
                     selectedServicio={selectedServicio}
-                    handleClosePanel={handleClosePanel}
                   />
                 </div>
               )}
@@ -921,13 +981,13 @@ const AdvancedDashboard = () => {
         </div>
       )}
 
-
       {/* Main map panel - takes full width/height when sidebar is closed */}
       <div className="h-full w-full transition-all duration-300">
         <EnhancedMapComponent
-          isPanelOpen={isPanelOpen}
           getServiceTypeText={getServiceTypeText}
+          handleClosePanel={handleClosePanel}
           handleSelectServicio={handleSelectServicio}
+          isPanelOpen={isPanelOpen}
           mapboxToken={MAPBOX_ACCESS_TOKEN}
           selectedServicio={servicioWithRoutes}
           servicios={servicios}
@@ -936,7 +996,6 @@ const AdvancedDashboard = () => {
           vehicleTracking={vehicleTracking}
           wialonToken={WIALON_API_TOKEN}
           onWialonRequest={callWialonApi}
-          handleClosePanel={handleClosePanel}
         />
         <ModalFormServicio />
         <ModalTicket />
@@ -971,7 +1030,7 @@ const AdvancedDashboard = () => {
 function PermissionHandler({
   children,
   requiredPermissions,
-  errorMessage
+  errorMessage,
 }: {
   children: React.ReactNode;
   requiredPermissions: string[];
@@ -988,16 +1047,19 @@ function PermissionHandler({
   // Si no está autenticado, redirigir al login (esto debería ser manejado por el middleware)
   if (!isAuthenticated || !user) {
     // En un entorno de cliente, redirigiría automáticamente
-    router.push('/login');
+    router.push("/login");
+
     return <LoadingPage>Redirigiendo al login</LoadingPage>;
   }
 
   // Verificar permisos
-  const hasPermission = user.role === 'admin' || requiredPermissions.some(
-    permission =>
-      user.role === permission ||
-      (user.permisos && user.permisos[permission] === true)
-  );
+  const hasPermission =
+    user.role === "admin" ||
+    requiredPermissions.some(
+      (permission) =>
+        user.role === permission ||
+        (user.permisos && user.permisos[permission] === true),
+    );
 
   // Si no tiene permisos, mostrar mensaje de error personalizado
   if (!hasPermission) {
@@ -1010,13 +1072,11 @@ function PermissionHandler({
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Acceso Restringido
           </h2>
-          <p className="text-gray-600 mb-6">
-            {errorMessage}
-          </p>
+          <p className="text-gray-600 mb-6">{errorMessage}</p>
           <div className="flex flex-col space-y-3">
             <button
-              onClick={() => window.location.reload()}
               className="flex items-center justify-center w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 transition-colors"
+              onClick={() => window.location.reload()}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Intentar Nuevamente
@@ -1035,8 +1095,8 @@ function PermissionHandler({
 const DashboardPage = () => {
   return (
     <PermissionHandler
-      requiredPermissions={['gestor_servicio', 'gestor_planillas', 'admin']}
       errorMessage="Necesitas ser gestor de servicios, gestor de planillas o administrador para acceder a esta sección"
+      requiredPermissions={["gestor_servicio", "gestor_planillas", "admin"]}
     >
       <AdvancedDashboard />
     </PermissionHandler>
