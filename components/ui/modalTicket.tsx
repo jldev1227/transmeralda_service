@@ -87,7 +87,7 @@ export default function ModalTicket() {
                           alt="Foto conductor asignado"
                           className="h-full w-full"
                           height={250}
-                          src={"/assets/camilo velasco.jpeg"}
+                          src={servicio.conductor.foto_url ?? '/assets/not_user.avif'}
                           width={200}
                         />
                       </div>

@@ -23,6 +23,7 @@ export interface Conductor {
   numero_identificacion: string;
   salario_base: number;
   email: string;
+  foto_url: string
 }
 
 export interface Empresa {

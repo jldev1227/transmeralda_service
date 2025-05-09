@@ -1152,14 +1152,7 @@ const EnhancedMapComponent = ({
               </div>
             </div>
 
-            <div>
-              <span className="text-sm text-gray-500">Valor</span>
-              <div className="font-medium">
-                ${selectedServicio.valor.toLocaleString("es-CO")}
-              </div>
-            </div>
-
-            <div>
+                <div>
               <span className="text-sm text-gray-500">Observaciones</span>
               <div className="font-medium">
                 {selectedServicio.observaciones}
