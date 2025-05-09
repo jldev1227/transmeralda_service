@@ -1051,7 +1051,7 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute top-2.5 right-14 bg-white p-4 rounded-lg shadow-lg w-86">
+        <div className="animate-fade-up absolute bottom-0  z-20 w-full md:bottom-auto md:w-auto md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg w-86">
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
             <button

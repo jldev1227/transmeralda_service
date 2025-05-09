@@ -13,6 +13,7 @@ interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
   selectedServicio: ServicioConRelaciones | null | undefined;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
+  handleClosePanel: () => void;
   formatearFecha: (fechaISOString: Date | string | undefined) => string;
 }
 
@@ -21,6 +22,7 @@ const ServiciosListCards = ({
   selectedServicio,
   handleSelectServicio,
   formatearFecha,
+  handleClosePanel
 }: ServiciosListCardsProps) => {
   // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
@@ -300,7 +302,10 @@ const ServiciosListCards = ({
             `}
               role="button"
               tabIndex={0}
-              onClick={() => handleSelectServicio(servicio)}
+              onClick={() => {
+                handleClosePanel()
+                handleSelectServicio(servicio)
+              }}
               onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 handleSelectServicio(servicio);

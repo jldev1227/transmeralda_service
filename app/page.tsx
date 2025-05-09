@@ -79,7 +79,7 @@ const AdvancedDashboard = () => {
     useState<VehicleTracking | null>(null);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
   const [trackingError, setTrackingError] = useState<string>("");
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
     estado: "",
@@ -107,8 +107,6 @@ const AdvancedDashboard = () => {
     from: '',
     to: '',
   });
-
-  const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
 
   // Wialon API call function
   const callWialonApi = useCallback(
@@ -460,10 +458,26 @@ const AdvancedDashboard = () => {
     sortOptions.direction
   );
 
-  const handleClosePanel = () => {
-    console.log("cerrando modal")
-    setIsPanelOpen(!isPanelOpen)
-  }  
+  const handleClosePanel = useCallback(() => {
+    if (isPanelOpen) {
+      const panel = document.querySelector('.animate-bottomToTop');
+      if (panel) {
+        panel.classList.remove('animate-bottomToTop');
+        panel.classList.add('animate-topToBottom');
+        // Espera la duración de la animación antes de cerrar el panel
+        setTimeout(() => {
+          setIsPanelOpen(false);
+          // Limpia la clase de animación para futuras aperturas
+          panel.classList.remove('animate-topToBottom');
+          panel.classList.add('animate-bottomToTop');
+        }, 400); // Ajusta este valor si cambias la duración de la animación en CSS
+      } else {
+        setIsPanelOpen(false);
+      }
+    } else {
+      setIsPanelOpen(true);
+    }
+  }, [isPanelOpen]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -471,42 +485,31 @@ const AdvancedDashboard = () => {
     }
   }, [isMobile]);
 
+  useEffect(() => {
+    console.log(isPanelOpen)
+  }, [isPanelOpen]);
+
   return (
     <div className="flex h-screen relative overflow-hidden">
       {/* Sidebar/floating panel */}
-        {isPanelOpen && (
-          <div
-            aria-modal="true"
-            role="dialog"
-            className="absolute md:relative z-50 w-full md:w-auto animate-bottomToTop"
-          >
+      {isPanelOpen && (
+        <div
+          aria-modal="true"
+          role="dialog"
+          className="absolute md:relative z-50 w-full md:w-auto animate-bottomToTop"
+        >
           <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
             <div className="w-full space-y-2">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
                 {isPanelOpen && isMobile && (
                   <Button
-                  onPress={() => {
-                    // Add animation class before closing
-                    const panel = document.querySelector('.animate-bottomToTop');
-                    if (panel) {
-                    panel.classList.remove('animate-bottomToTop');
-                    panel.classList.add('animate-topToBottom');
-                    setTimeout(() => {
-                      setIsPanelOpen(false);
-                      // Reset animation class for next open
-                      panel.classList.remove('animate-topToBottom');
-                      panel.classList.add('animate-bottomToTop');
-                    }, 500); // Match animation duration
-                    } else {
-                    setIsPanelOpen(false);
-                    }
-                  }}
-                  size="sm"
-                  color="danger"
-                  isIconOnly
+                    onPress={handleClosePanel}
+                    size="sm"
+                    color="danger"
+                    isIconOnly
                   >
-                  <X className="w-6 h-6" />
+                    <X className="w-6 h-6" />
                   </Button>
                 )}
               </div>
@@ -909,6 +912,7 @@ const AdvancedDashboard = () => {
                     formatearFecha={formatearFecha}
                     handleSelectServicio={handleSelectServicio}
                     selectedServicio={selectedServicio}
+                    handleClosePanel={handleClosePanel}
                   />
                 </div>
               )}
