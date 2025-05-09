@@ -11,7 +11,14 @@ export interface User {
   id: string;
   nombre: string;
   correo: string;
-  role: "admin" | "gestor_flota" | "gestor_nomina" | "gestor_servicio" | "gestor_planillas" | "liquidador" | "usuario";
+  role:
+    | "admin"
+    | "gestor_flota"
+    | "gestor_nomina"
+    | "gestor_servicio"
+    | "gestor_planillas"
+    | "liquidador"
+    | "usuario";
   telefono: string;
   permisos: {
     flota: boolean;
@@ -74,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await apiClient.get("/api/usuarios/perfil");
 
       if (response.data && response.data.success) {
-        console.log(response.data)
+        console.log(response.data);
         setUser(response.data.data);
         setError(null);
       } else {

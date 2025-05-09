@@ -107,7 +107,7 @@ interface EmpresaOption {
   value: string;
   label: string;
   // Otros campos que pueda tener
-};
+}
 
 export default function ModalFormServicio() {
   const {
@@ -666,8 +666,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                  servicio.fecha_solicitud,
-                                ).toLocaleString()
+                                    servicio.fecha_solicitud,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -678,8 +678,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                  servicio.fecha_realizacion,
-                                ).toLocaleString()
+                                    servicio.fecha_realizacion,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -787,18 +787,15 @@ export default function ModalFormServicio() {
                                 ref={selectRef}
                                 isClearable
                                 isSearchable
-                                blurInputOnSelect={true}
                                 required
+                                blurInputOnSelect={true}
                                 className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                 classNamePrefix="react-select"
                                 inputId="client"
+                                menuShouldScrollIntoView={false}
                                 name="client"
                                 options={empresaOptions}
                                 placeholder="Seleccione una empresa"
-                                menuShouldScrollIntoView={false}
-                                menuShouldBlockScroll={true}
-                                // Limita la cantidad de opciones visibles en el menú
-                                maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                 styles={{
                                   control: (base, state) => ({
                                     ...base,
@@ -819,7 +816,7 @@ export default function ModalFormServicio() {
                                   menu: (base) => ({
                                     ...base,
                                     zIndex: 9999,
-                                    marginLeft: -35
+                                    marginLeft: -35,
                                   }),
                                   option: (base, state) => ({
                                     ...base,
@@ -850,7 +847,7 @@ export default function ModalFormServicio() {
                                     "&:hover": { color: "#ef4444" },
                                     padding: "0px 8px",
                                   }),
-                                }}
+                                }} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                 value={
                                   empresaOptions.find(
                                     (opt) => opt.value === clienteSelected,
@@ -859,6 +856,9 @@ export default function ModalFormServicio() {
                                 onChange={(option) =>
                                   setCliente(option ? option.value : "")
                                 }
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220}
                               />
                             </div>
                           </div>
@@ -897,13 +897,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaSolicitud.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -941,13 +941,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaRealizacion.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -979,13 +979,10 @@ export default function ModalFormServicio() {
                                   className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
                                   inputId="origin"
+                                  menuShouldScrollIntoView={false}
                                   name="origin"
                                   options={municipioOptions}
                                   placeholder="Seleccione un origen"
-                                  menuShouldScrollIntoView={false}
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
@@ -1006,7 +1003,7 @@ export default function ModalFormServicio() {
                                     menu: (base) => ({
                                       ...base,
                                       zIndex: 9999,
-                                      marginLeft: -35
+                                      marginLeft: -35,
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1037,7 +1034,7 @@ export default function ModalFormServicio() {
                                       "&:hover": { color: "#ef4444" },
                                       padding: "0px 8px",
                                     }),
-                                  }}
+                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   value={
                                     municipioOptions.find(
                                       (opt) => opt.value === selectedOriginMun,
@@ -1048,6 +1045,9 @@ export default function ModalFormServicio() {
                                       option ? option.value : "",
                                     )
                                   }
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220}
                                 />
                               </div>
                             </div>
@@ -1069,13 +1069,10 @@ export default function ModalFormServicio() {
                                   className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
                                   inputId="destination"
+                                  menuShouldScrollIntoView={false}
                                   name="destination"
                                   options={municipioOptions}
                                   placeholder="Seleccione un destino"
-                                  menuShouldScrollIntoView={false}
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
@@ -1096,7 +1093,7 @@ export default function ModalFormServicio() {
                                     menu: (base) => ({
                                       ...base,
                                       zIndex: 9999,
-                                      marginLeft: -35
+                                      marginLeft: -35,
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1127,7 +1124,7 @@ export default function ModalFormServicio() {
                                       "&:hover": { color: "#ef4444" },
                                       padding: "0px 8px",
                                     }),
-                                  }}
+                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   value={
                                     municipioOptions.find(
                                       (opt) => opt.value === selectedDestMun,
@@ -1138,6 +1135,9 @@ export default function ModalFormServicio() {
                                       option ? option.value : "",
                                     )
                                   }
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220}
                                 />
                               </div>
                             </div>
@@ -1258,7 +1258,7 @@ export default function ModalFormServicio() {
                                     menu: (base) => ({
                                       ...base,
                                       zIndex: 9999,
-                                      marginLeft: -35
+                                      marginLeft: -35,
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1348,7 +1348,7 @@ export default function ModalFormServicio() {
                                     menu: (base) => ({
                                       ...base,
                                       zIndex: 9999,
-                                      marginLeft: -35
+                                      marginLeft: -35,
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1500,36 +1500,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                // onClick={async () => {
-                                //   if (
-                                //     servicio.id &&
-                                //     window.confirm(
-                                //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                //     )
-                                //   ) {
-                                //     try {
-                                //       await actualizarEstadoServicio(
-                                //         servicio.id,
-                                //         "cancelado",
-                                //       );
-                                //       addToast({
-                                //         title: "Éxito",
-                                //         description:
-                                //           "Servicio cancelado correctamente",
-                                //         color: "success",
-                                //       });
-                                //       handleModalForm(); // Cerrar modal
-                                //       resetFormStates();
-                                //     } catch (error) {
-                                //       addToast({
-                                //         title: "Error",
-                                //         description:
-                                //           "No se pudo cancelar el servicio",
-                                //         color: "danger",
-                                //       });
-                                //     }
-                                //   }
-                                // }}
+                                  // onClick={async () => {
+                                  //   if (
+                                  //     servicio.id &&
+                                  //     window.confirm(
+                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                  //     )
+                                  //   ) {
+                                  //     try {
+                                  //       await actualizarEstadoServicio(
+                                  //         servicio.id,
+                                  //         "cancelado",
+                                  //       );
+                                  //       addToast({
+                                  //         title: "Éxito",
+                                  //         description:
+                                  //           "Servicio cancelado correctamente",
+                                  //         color: "success",
+                                  //       });
+                                  //       handleModalForm(); // Cerrar modal
+                                  //       resetFormStates();
+                                  //     } catch (error) {
+                                  //       addToast({
+                                  //         title: "Error",
+                                  //         description:
+                                  //           "No se pudo cancelar el servicio",
+                                  //         color: "danger",
+                                  //       });
+                                  //     }
+                                  //   }
+                                  // }}
                                 >
                                   Cancelar Servicio
                                 </button>

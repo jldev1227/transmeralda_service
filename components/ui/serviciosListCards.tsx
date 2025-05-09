@@ -22,12 +22,14 @@ const ServiciosListCards = ({
   selectedServicio,
   handleSelectServicio,
   formatearFecha,
-  handleClosePanel
+  handleClosePanel,
 }: ServiciosListCardsProps) => {
   // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
   // Variable de estado para almacenar el ID del servicio del cual mostrar el historial
-  const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(null);
+  const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(
+    null,
+  );
 
   const {
     handleModalForm,
@@ -258,7 +260,9 @@ const ServiciosListCards = ({
   }, [socketEventLogs]);
 
   // Importar el componente modal de historial
-  const ModalHistorialServicio = React.lazy(() => import('./modalHistorialServicio'));
+  const ModalHistorialServicio = React.lazy(
+    () => import("./modalHistorialServicio"),
+  );
 
   return (
     <div className="space-y-3 h-[calc(100vh-375px)] overflow-y-auto px-3 pt-3">
@@ -267,8 +271,8 @@ const ServiciosListCards = ({
         {modalHistorialOpen && (
           <ModalHistorialServicio
             isOpen={modalHistorialOpen}
-            onClose={() => setModalHistorialOpen(false)}
             servicioId={servicioHistorialId}
+            onClose={() => setModalHistorialOpen(false)}
           />
         )}
       </React.Suspense>
@@ -285,12 +289,12 @@ const ServiciosListCards = ({
         const showAnimation = isNew || isUpdated;
 
         return (
-            <div
+          <div
             key={servicio.id}
             className="px-1 relative group"
             id={`servicio-${servicio.id}`}
             style={{ width: "auto" }}
-            >
+          >
             <div
               className={`
               select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative
@@ -303,88 +307,88 @@ const ServiciosListCards = ({
               role="button"
               tabIndex={0}
               onClick={() => {
-                handleClosePanel()
-                handleSelectServicio(servicio)
+                handleClosePanel();
+                handleSelectServicio(servicio);
               }}
               onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                handleSelectServicio(servicio);
-              }
+                if (e.key === "Enter" || e.key === " ") {
+                  handleSelectServicio(servicio);
+                }
               }}
             >
               {/* Contenedor para los botones flotantes */}
               <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
-              {/* Botones con posición fija y manejo simplificado */}
-              <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                {/* Botón para ver historial - siempre visible */}
-                <button
-                className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                onClick={(e) => handleViewHistorial(e, servicio)}
-                >
-                <History size={16} />
-                </button>
-                
-                {/* Botón de editar */}
-                {shouldShowEditButton(servicio.estado) && (
-                <button
-                  className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                  onClick={(e) => handleEdit(e, servicio)}
-                >
-                  <Edit size={16} />
-                </button>
-                )}
-                
-                {/* Botón de ticket */}
-                {shouldGetTicket(servicio.estado) && (
-                <button
-                  className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                  onClick={(e) => handleViewTicket(e, servicio)}
-                >
-                  <Ticket size={16} />
-                </button>
-                )}
-                
-                {/* Botón de planilla */}
-                {showPlanillaNumber(servicio.estado) && (
-                <button
-                  className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                  onClick={(e) => handleViewLiquidacion(e, servicio)}
-                >
-                  <Hash size={16} />
-                </button>
-                )}
-              </div>
+                {/* Botones con posición fija y manejo simplificado */}
+                <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Botón para ver historial - siempre visible */}
+                  <button
+                    className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                    onClick={(e) => handleViewHistorial(e, servicio)}
+                  >
+                    <History size={16} />
+                  </button>
+
+                  {/* Botón de editar */}
+                  {shouldShowEditButton(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleEdit(e, servicio)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
+
+                  {/* Botón de ticket */}
+                  {shouldGetTicket(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleViewTicket(e, servicio)}
+                    >
+                      <Ticket size={16} />
+                    </button>
+                  )}
+
+                  {/* Botón de planilla */}
+                  {showPlanillaNumber(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleViewLiquidacion(e, servicio)}
+                    >
+                      <Hash size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-between items-start mb-2">
-              <div className="overflow-hidden">
-                <div className="font-semibold truncate">
-                {servicio.origen_especifico}
+                <div className="overflow-hidden">
+                  <div className="font-semibold truncate">
+                    {servicio.origen_especifico}
+                  </div>
+                  <div className="text-sm text-gray-600 truncate">
+                    → {servicio.destino_especifico}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 truncate">
-                → {servicio.destino_especifico}
-                </div>
-              </div>
-              <span
-                className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-1 flex-shrink-0"
-                style={{
-                backgroundColor: `${getStatusColor(servicio.estado)}20`,
-                color: getStatusColor(servicio.estado),
-                }}
-              >
-                {getStatusText(servicio.estado)}
-              </span>
+                <span
+                  className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-1 flex-shrink-0"
+                  style={{
+                    backgroundColor: `${getStatusColor(servicio.estado)}20`,
+                    color: getStatusColor(servicio.estado),
+                  }}
+                >
+                  {getStatusText(servicio.estado)}
+                </span>
               </div>
               <div className="text-xs sm:text-sm text-gray-500">
-              <div className="truncate">
-                Solicitado: {formatearFecha(servicio.fecha_solicitud)}
-              </div>
-              <div className="truncate">
-                Realización: {formatearFecha(servicio.fecha_realizacion)}
-              </div>
+                <div className="truncate">
+                  Solicitado: {formatearFecha(servicio.fecha_solicitud)}
+                </div>
+                <div className="truncate">
+                  Realización: {formatearFecha(servicio.fecha_realizacion)}
+                </div>
               </div>
             </div>
-            </div>
+          </div>
         );
       })}
     </div>

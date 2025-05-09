@@ -24,7 +24,7 @@ interface HistoricoServicio {
   campo_modificado: string;
   valor_anterior: string | null;
   valor_nuevo: string | null;
-  tipo_operacion: 'creacion' | 'actualizacion' | 'eliminacion';
+  tipo_operacion: "creacion" | "actualizacion" | "eliminacion";
   fecha_modificacion: string;
   ip_usuario?: string;
   navegador_usuario?: string;
@@ -64,18 +64,21 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
 
       try {
         // Obtener información del servicio
-        const servicioResponse = await apiClient.get<{success: boolean, data: ServicioConRelaciones}>(
-          `/api/servicios/${servicioId}`
-        );
-        
+        const servicioResponse = await apiClient.get<{
+          success: boolean;
+          data: ServicioConRelaciones;
+        }>(`/api/servicios/${servicioId}`);
+
         if (servicioResponse.data.success) {
           setServicio(servicioResponse.data.data);
         }
 
         // Obtener historial del servicio
-        const historicoResponse = await apiClient.get<{success: boolean, data: HistoricoServicio[], total: number}>(
-          `/api/servicios-historico/servicio/${servicioId}`
-        );
+        const historicoResponse = await apiClient.get<{
+          success: boolean;
+          data: HistoricoServicio[];
+          total: number;
+        }>(`/api/servicios-historico/servicio/${servicioId}`);
 
         if (historicoResponse.data.success) {
           setHistorico(historicoResponse.data.data);
@@ -85,7 +88,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
       } catch (err) {
         console.error("Error al cargar el historial:", err);
         setError(
-          "Error al cargar el historial del servicio. Por favor, intenta nuevamente."
+          "Error al cargar el historial del servicio. Por favor, intenta nuevamente.",
         );
       } finally {
         setLoading(false);
@@ -136,22 +139,22 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
   // Función para obtener un valor legible del campo modificado
   const getCampoLegible = (campo: string): string => {
     const camposLegibles: Record<string, string> = {
-      "creacion_servicio": "Creación de servicio",
-      "eliminacion_servicio": "Eliminación de servicio",
-      "estado": "Estado",
-      "origen_id": "Origen",
-      "destino_id": "Destino",
-      "origen_especifico": "Origen específico",
-      "destino_especifico": "Destino específico",
-      "conductor_id": "Conductor",
-      "vehiculo_id": "Vehículo",
-      "cliente_id": "Cliente",
-      "proposito_servicio": "Propósito del servicio",
-      "fecha_solicitud": "Fecha de solicitud",
-      "fecha_realizacion": "Fecha de realización",
-      "valor": "Valor",
-      "numero_planilla": "Número de planilla",
-      "observaciones": "Observaciones"
+      creacion_servicio: "Creación de servicio",
+      eliminacion_servicio: "Eliminación de servicio",
+      estado: "Estado",
+      origen_id: "Origen",
+      destino_id: "Destino",
+      origen_especifico: "Origen específico",
+      destino_especifico: "Destino específico",
+      conductor_id: "Conductor",
+      vehiculo_id: "Vehículo",
+      cliente_id: "Cliente",
+      proposito_servicio: "Propósito del servicio",
+      fecha_solicitud: "Fecha de solicitud",
+      fecha_realizacion: "Fecha de realización",
+      valor: "Valor",
+      numero_planilla: "Número de planilla",
+      observaciones: "Observaciones",
     };
 
     return camposLegibles[campo] || campo;
@@ -166,7 +169,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
         // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
         wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
         // Asegurar que el contenido ocupe todo el ancho del modal
-        base: "w-full"
+        base: "w-full",
       }}
       isOpen={isOpen}
       scrollBehavior="inside"
@@ -180,11 +183,10 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
               {servicio ? (
                 <div className="flex justify-between items-center w-full">
                   <div>
-                    <h2 className="text-xl font-bold">
-                      Historial de Servicio
-                    </h2>
+                    <h2 className="text-xl font-bold">Historial de Servicio</h2>
                     <p className="text-sm text-gray-500">
-                      {servicio.origen_especifico} → {servicio.destino_especifico}
+                      {servicio.origen_especifico} →{" "}
+                      {servicio.destino_especifico}
                     </p>
                   </div>
                   <Chip color="primary" size="sm" variant="flat">
@@ -224,7 +226,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                   servicio.fecha_solicitud,
                                   false,
                                   false,
-                                  false
+                                  false,
                                 )}
                               </span>
                             </div>
@@ -238,7 +240,8 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                   Conductor
                                 </span>
                                 <span className="font-medium">
-                                  {servicio.conductor.nombre} {servicio.conductor.apellido}
+                                  {servicio.conductor.nombre}{" "}
+                                  {servicio.conductor.apellido}
                                 </span>
                               </div>
                             </div>
@@ -250,17 +253,25 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                               <span className="block text-sm text-gray-500">
                                 Estado Actual
                               </span>
-                              <Chip 
+                              <Chip
                                 color={
-                                  servicio.estado === "realizado" ? "success" :
-                                  servicio.estado === "cancelado" ? "danger" :
-                                  servicio.estado === "en_curso" ? "primary" :
-                                  servicio.estado === "planificado" ? "warning" :
-                                  servicio.estado === "planilla_asignada" ? "secondary" : "default"
-                                } 
+                                  servicio.estado === "realizado"
+                                    ? "success"
+                                    : servicio.estado === "cancelado"
+                                      ? "danger"
+                                      : servicio.estado === "en_curso"
+                                        ? "primary"
+                                        : servicio.estado === "planificado"
+                                          ? "warning"
+                                          : servicio.estado ===
+                                              "planilla_asignada"
+                                            ? "secondary"
+                                            : "default"
+                                }
                                 size="sm"
                               >
-                                {servicio.estado.charAt(0).toUpperCase() + servicio.estado.slice(1).replace("_", " ")}
+                                {servicio.estado.charAt(0).toUpperCase() +
+                                  servicio.estado.slice(1).replace("_", " ")}
                               </Chip>
                             </div>
                           </div>
@@ -285,7 +296,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                 historico[0]?.fecha_modificacion,
                                 true,
                                 false,
-                                false
+                                false,
                               )}
                             </span>
                           </div>
@@ -296,13 +307,17 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                             Tipos de Cambios
                           </span>
                           <div className="flex flex-wrap gap-2">
-                            {Array.from(new Set(historico.map(h => h.tipo_operacion))).map((tipo, index) => (
-                              <Chip 
+                            {Array.from(
+                              new Set(historico.map((h) => h.tipo_operacion)),
+                            ).map((tipo, index) => (
+                              <Chip
                                 key={index}
                                 color={
-                                  tipo === "creacion" ? "success" :
-                                  tipo === "actualizacion" ? "warning" :
-                                  "danger"
+                                  tipo === "creacion"
+                                    ? "success"
+                                    : tipo === "actualizacion"
+                                      ? "warning"
+                                      : "danger"
                                 }
                                 size="sm"
                                 variant="flat"
@@ -332,7 +347,12 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                           renderCell: (item: HistoricoServicio) => (
                             <div>
                               <div className="font-semibold">
-                                {formatearFecha(item.fecha_modificacion, true, false, false)}
+                                {formatearFecha(
+                                  item.fecha_modificacion,
+                                  true,
+                                  false,
+                                  false,
+                                )}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {renderTipoOperacionChip(item.tipo_operacion)}
@@ -345,22 +365,26 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                           label: "CAMBIO",
                           renderCell: (item: HistoricoServicio) => (
                             <div>
-                              <p className="font-medium">{getCampoLegible(item.campo_modificado)}</p>
-                              {item.tipo_operacion === 'actualizacion' && (
+                              <p className="font-medium">
+                                {getCampoLegible(item.campo_modificado)}
+                              </p>
+                              {item.tipo_operacion === "actualizacion" && (
                                 <div className="text-sm">
                                   <span className="text-red-500 line-through mr-2">
-                                    {item.valor_anterior ? 
-                                      (item.valor_anterior.length > 30 ? 
-                                        item.valor_anterior.substring(0, 30) + "..." : 
-                                        item.valor_anterior) : 
-                                      "Sin valor"}
+                                    {item.valor_anterior
+                                      ? item.valor_anterior.length > 30
+                                        ? item.valor_anterior.substring(0, 30) +
+                                          "..."
+                                        : item.valor_anterior
+                                      : "Sin valor"}
                                   </span>
                                   <span className="text-green-500">
-                                    {item.valor_nuevo ? 
-                                      (item.valor_nuevo.length > 30 ? 
-                                        item.valor_nuevo.substring(0, 30) + "..." : 
-                                        item.valor_nuevo) : 
-                                      "Sin valor"}
+                                    {item.valor_nuevo
+                                      ? item.valor_nuevo.length > 30
+                                        ? item.valor_nuevo.substring(0, 30) +
+                                          "..."
+                                        : item.valor_nuevo
+                                      : "Sin valor"}
                                   </span>
                                 </div>
                               )}
@@ -372,7 +396,9 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                           label: "USUARIO",
                           renderCell: (item: HistoricoServicio) => (
                             <div>
-                              <p>{item.usuario.nombre} {item.usuario.apellido}</p>
+                              <p>
+                                {item.usuario.nombre} {item.usuario.apellido}
+                              </p>
                               <p className="text-xs text-gray-500">
                                 {item.usuario.role}
                               </p>
@@ -389,11 +415,13 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                   IP: {item.ip_usuario}
                                 </p>
                               )}
-                              {item.navegador_usuario && item.navegador_usuario.length > 0 && (
-                                <p className="text-xs text-gray-500 truncate max-w-[150px]">
-                                  Navegador: {item.navegador_usuario.substring(0, 20)}...
-                                </p>
-                              )}
+                              {item.navegador_usuario &&
+                                item.navegador_usuario.length > 0 && (
+                                  <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                                    Navegador:{" "}
+                                    {item.navegador_usuario.substring(0, 20)}...
+                                  </p>
+                                )}
                             </div>
                           ),
                         },

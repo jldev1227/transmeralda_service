@@ -11,7 +11,10 @@ type AuthGuardProps = {
   requiredPermissions?: string[];
 };
 
-export function AuthGuard({ children, requiredPermissions = [] }: AuthGuardProps) {
+export function AuthGuard({
+  children,
+  requiredPermissions = [],
+}: AuthGuardProps) {
   const { user, loading, isAuthenticated, error } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,29 +23,39 @@ export function AuthGuard({ children, requiredPermissions = [] }: AuthGuardProps
     // Si no está cargando y no está autenticado, redirigir al login
     if (!loading && !isAuthenticated) {
       router.push(`http://auth.midominio.local:3001`);
+
       return;
     }
 
     // Si está autenticado y hay permisos requeridos, verificar permisos
     if (isAuthenticated && user && requiredPermissions.length > 0) {
       // Comprobar si el usuario tiene alguno de los permisos requeridos
-      const hasPermission = user.role === 'admin' || requiredPermissions.some(
-        permission => 
-          // Si el rol del usuario coincide con el permiso requerido
-          user.role === permission || 
-          // Si tiene el permiso específico en el objeto permisos
-          (user.permisos && user.permisos[permission] === true)
-      );
+      const hasPermission =
+        user.role === "admin" ||
+        requiredPermissions.some(
+          (permission) =>
+            // Si el rol del usuario coincide con el permiso requerido
+            user.role === permission ||
+            // Si tiene el permiso específico en el objeto permisos
+            (user.permisos && user.permisos[permission] === true),
+        );
 
       console.log("En AuthGuard - Usuario:", user.role);
       console.log("En AuthGuard - Permisos requeridos:", requiredPermissions);
-      console.log("En AuthGuard - Tiene permisos:", hasPermission, user.permisos);
+      console.log(
+        "En AuthGuard - Tiene permisos:",
+        hasPermission,
+        user.permisos,
+      );
 
       // Si no tiene los permisos necesarios, lanzar un error que será
       // capturado por el error boundary más cercano
       if (!hasPermission) {
-        const error = new Error('No tienes los permisos necesarios para acceder a esta página');
-        error.name = 'PermissionError';
+        const error = new Error(
+          "No tienes los permisos necesarios para acceder a esta página",
+        );
+
+        error.name = "PermissionError";
         throw error;
       }
     }

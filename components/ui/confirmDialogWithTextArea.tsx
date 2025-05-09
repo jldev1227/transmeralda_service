@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 import { useDisclosure } from "@heroui/use-disclosure";
@@ -49,9 +55,10 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     // Validar si el textarea es requerido
     if (textareaRequired && !observaciones.trim()) {
       setError("Este campo es requerido");
+
       return;
     }
-    
+
     onConfirm(observaciones);
     // No cerramos automáticamente por si hay que mostrar un loading state
   };
@@ -94,9 +101,9 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     <Modal
       backdrop="blur"
       isOpen={isOpen}
-      onClose={handleCloseModal}
-      size="3xl"
       placement="center"
+      size="3xl"
+      onClose={handleCloseModal}
     >
       <ModalContent>
         {() => (
@@ -114,40 +121,40 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
                   message
                 )}
               </div>
-              
-                <label htmlFor="observaciones">{textareaLabel}</label>
-                <Textarea
-                  id="observaciones"
-                  value={observaciones}
-                  onChange={(e) => {
-                    setObservaciones(e.target.value);
-                    if (error && e.target.value.trim()) {
-                      setError(null);
-                    }
-                  }}
-                  placeholder={textareaPlaceholder}
-                  rows={4}
-                  className="w-full"
-                  isDisabled={isLoading}
-                  isRequired={textareaRequired}
-                />
+
+              <label htmlFor="observaciones">{textareaLabel}</label>
+              <Textarea
+                className="w-full"
+                id="observaciones"
+                isDisabled={isLoading}
+                isRequired={textareaRequired}
+                placeholder={textareaPlaceholder}
+                rows={4}
+                value={observaciones}
+                onChange={(e) => {
+                  setObservaciones(e.target.value);
+                  if (error && e.target.value.trim()) {
+                    setError(null);
+                  }
+                }}
+              />
             </ModalBody>
             <ModalFooter>
               <div className="flex justify-end gap-3 mt-4">
                 <Button
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  isDisabled={isLoading}
                   radius="sm"
                   variant="flat"
                   onPress={handleCancel}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                  isDisabled={isLoading}
                 >
                   {cancelText}
                 </Button>
                 <Button
-                  radius="sm"
-                  onPress={handleConfirm}
                   className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${getButtonClass()}`}
                   isLoading={isLoading}
+                  radius="sm"
+                  onPress={handleConfirm}
                 >
                   {confirmText}
                 </Button>
@@ -168,7 +175,9 @@ export default ConfirmDialogWithTextarea;
  */
 export const useConfirmDialogWithTextarea = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [config, setConfig] = useState<Omit<ConfirmDialogWithTextareaProps, "isOpen" | "onClose">>({
+  const [config, setConfig] = useState<
+    Omit<ConfirmDialogWithTextareaProps, "isOpen" | "onClose">
+  >({
     title: "Confirmar acción",
     message: "¿Estás seguro de que quieres realizar esta acción?",
     confirmText: "Confirmar",
@@ -182,31 +191,37 @@ export const useConfirmDialogWithTextarea = () => {
     textareaHelperText: "Por favor, indique el motivo.",
   });
 
-  const confirm = (options: Partial<Omit<ConfirmDialogWithTextareaProps, "isOpen" | "onClose">>) => {
+  const confirm = (
+    options: Partial<
+      Omit<ConfirmDialogWithTextareaProps, "isOpen" | "onClose">
+    >,
+  ) => {
     setConfig({ ...config, ...options });
     onOpen();
-    
+
     // Devuelve una promesa que se resolverá cuando el usuario confirme o cancele
-    return new Promise<{confirmed: boolean, observaciones: string}>((resolve) => {
-      setConfig({
-        ...config,
-        ...options,
-        onConfirm: (observaciones: string) => {
-          if (options.onConfirm) {
-            options.onConfirm(observaciones);
-          }
-          resolve({confirmed: true, observaciones});
-          onClose();
-        },
-        onCancel: () => {
-          if (options.onCancel) {
-            options.onCancel();
-          }
-          resolve({confirmed: false, observaciones: ""});
-          onClose();
-        },
-      });
-    });
+    return new Promise<{ confirmed: boolean; observaciones: string }>(
+      (resolve) => {
+        setConfig({
+          ...config,
+          ...options,
+          onConfirm: (observaciones: string) => {
+            if (options.onConfirm) {
+              options.onConfirm(observaciones);
+            }
+            resolve({ confirmed: true, observaciones });
+            onClose();
+          },
+          onCancel: () => {
+            if (options.onCancel) {
+              options.onCancel();
+            }
+            resolve({ confirmed: false, observaciones: "" });
+            onClose();
+          },
+        });
+      },
+    );
   };
 
   const setLoading = (isLoading: boolean) => {

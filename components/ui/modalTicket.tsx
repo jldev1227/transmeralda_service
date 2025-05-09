@@ -1,16 +1,16 @@
 import React from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
 import Image from "next/image";
+import { useMediaQuery } from "react-responsive";
 
 import RouteAndDetails from "./routeAndDetails";
 
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
-import { useMediaQuery } from "react-responsive";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
-    const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;
@@ -54,7 +54,7 @@ export default function ModalTicket() {
           // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
         }}
         isOpen={modalTicket}
-        scrollBehavior='inside'
+        scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
           handleModalTicket();
@@ -86,7 +86,10 @@ export default function ModalTicket() {
                           alt="Foto conductor  asignado"
                           className="h-full w-full"
                           height={250}
-                          src={servicio.conductor.foto_url ?? '/assets/not_user.avif'}
+                          src={
+                            servicio.conductor.foto_url ??
+                            "/assets/not_user.avif"
+                          }
                           width={200}
                         />
                       </div>
@@ -110,8 +113,10 @@ export default function ModalTicket() {
                             Vehículo
                           </h3>
                           <p className="text-gray-700">
-                            {servicio.vehiculo?.placa} {servicio.vehiculo?.marca}{" "}
-                            {servicio.vehiculo?.linea} {servicio.vehiculo?.modelo}
+                            {servicio.vehiculo?.placa}{" "}
+                            {servicio.vehiculo?.marca}{" "}
+                            {servicio.vehiculo?.linea}{" "}
+                            {servicio.vehiculo?.modelo}
                           </p>
                         </div>
                       </div>

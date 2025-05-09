@@ -1,15 +1,22 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { AlertTriangle, ArrowLeftIcon, HomeIcon, RefreshCw } from 'lucide-react';
+import React, { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowLeftIcon,
+  HomeIcon,
+  RefreshCw,
+} from "lucide-react";
 
 export default function ErrorPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const errorMessage = searchParams.get('message') || 'No tienes los permisos necesarios para acceder a esta página';
-  const statusCode = searchParams.get('statusCode') || '403';
+  const errorMessage =
+    searchParams.get("message") ||
+    "No tienes los permisos necesarios para acceder a esta página";
+  const statusCode = searchParams.get("statusCode") || "403";
 
   // Registrar el error en la consola
   useEffect(() => {
@@ -28,9 +35,7 @@ export default function ErrorPage() {
               <p className="text-md font-medium text-red-700">
                 Error {statusCode}
               </p>
-              <p className="text-sm text-red-700 mt-1">
-                {errorMessage}
-              </p>
+              <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
             </div>
           </div>
         </div>
@@ -38,26 +43,27 @@ export default function ErrorPage() {
           Error de Acceso
         </h2>
         <p className="text-gray-600 mb-6">
-          No tienes los permisos necesarios para acceder a esta página. Por favor, contacta al administrador si crees que deberías tener acceso.
+          No tienes los permisos necesarios para acceder a esta página. Por
+          favor, contacta al administrador si crees que deberías tener acceso.
         </p>
         <div className="flex flex-col space-y-3">
-          <Link 
-            href="/"
+          <Link
             className="flex items-center justify-center w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 transition-colors"
+            href="/"
           >
             <HomeIcon className="h-4 w-4 mr-2" />
             Ir al Inicio
           </Link>
           <button
-            onClick={() => window.location.reload()}
             className="flex items-center justify-center w-full py-2 px-4 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300 transition-colors"
+            onClick={() => window.location.reload()}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Intentar Nuevamente
           </button>
           <button
-            onClick={() => router.back()}
             className="flex items-center justify-center w-full py-2 px-4 bg-gray-100 text-gray-800 font-medium rounded hover:bg-gray-200 transition-colors"
+            onClick={() => router.back()}
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Volver Atrás

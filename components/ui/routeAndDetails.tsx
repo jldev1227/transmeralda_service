@@ -1,7 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { useMediaQuery } from "react-responsive";
+
 import { ServicioConRelaciones } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
-import { useMediaQuery } from "react-responsive";
 
 export default function RouteAndDetails({
   servicio,
@@ -18,21 +19,25 @@ export default function RouteAndDetails({
           <p className="font-semibold text-base md:text-lg break-words">
             {servicio.origen?.nombre_municipio || "No definido"}
           </p>
-          <p className="text-xs md:text-sm text-gray-700 break-words">{servicio.origen_especifico}</p>
+          <p className="text-xs md:text-sm text-gray-700 break-words">
+            {servicio.origen_especifico}
+          </p>
         </div>
-        {!isMobile &&
+        {!isMobile && (
           <div className="w-full md:w-1/5 flex justify-center my-2 md:my-0">
             <div className="relative flex items-center justify-center h-full">
               <ArrowRight />
             </div>
           </div>
-        }
+        )}
         <div className="w-full md:w-2/5 text-left md:text-right">
           <p className="text-xs md:text-sm text-gray-500">Destino</p>
           <p className="font-semibold text-base md:text-lg break-words">
             {servicio.destino?.nombre_municipio || "No definido"}
           </p>
-          <p className="text-xs md:text-sm text-gray-700 break-words">{servicio.destino_especifico}</p>
+          <p className="text-xs md:text-sm text-gray-700 break-words">
+            {servicio.destino_especifico}
+          </p>
         </div>
       </div>
 
@@ -65,11 +70,15 @@ export default function RouteAndDetails({
             {servicio.cliente?.Nombre || "Cliente no especificado"}
           </p>
           {servicio.cliente?.NIT && (
-            <p className="text-xs text-gray-500 break-words">NIT: {servicio.cliente.NIT}</p>
+            <p className="text-xs text-gray-500 break-words">
+              NIT: {servicio.cliente.NIT}
+            </p>
           )}
         </div>
         <div className="flex-1 mt-0 md:mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs md:text-sm text-gray-500 font-medium">Observaciones:</p>
+          <p className="text-xs md:text-sm text-gray-500 font-medium">
+            Observaciones:
+          </p>
           <p className="text-xs md:text-sm text-gray-700 break-words">
             {!servicio.observaciones
               ? "No hay observaciones"
