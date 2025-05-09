@@ -573,6 +573,8 @@ export default function ModalFormServicio() {
         classNames={{
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+          wrapper: "max-h-[45rem] m-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
+          // Asegurar que el contenido ocupe todo el ancho del modal
         }}
         isOpen={modalForm}
         scrollBehavior="inside"
@@ -787,9 +789,7 @@ export default function ModalFormServicio() {
                                 ref={selectRef}
                                 isClearable
                                 isSearchable
-                                closeMenuOnScroll={true}
                                 blurInputOnSelect={true}
-                                closeMenuOnSelect={true}
                                 required
                                 className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                 classNamePrefix="react-select"
@@ -797,22 +797,15 @@ export default function ModalFormServicio() {
                                 name="client"
                                 options={empresaOptions}
                                 placeholder="Seleccione una empresa"
-                                // Agrega estas dos propiedades clave:
-                                menuPortalTarget={document.body}  // Renderiza el menú en el body del documento
-                                menuPosition="fixed"              // Usa posición fija para que ignore los límites del padre
+                                menuShouldScrollIntoView={false}
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                 styles={{
-                                  // Añade estilos para el portal del menú
-                                  menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 9999,  // Asegura que esté por encima de otros elementos
-                                  }),
                                   control: (base, state) => ({
                                     ...base,
                                     border: "none",
-                                    boxShadow: state.isFocused
-                                      ? "0 0 0 1px #059669"
-                                      : undefined,
-                                    "&:hover": { borderColor: "#059669" },
+                                    boxShadow: undefined,
                                     backgroundColor: "white",
                                   }),
                                   placeholder: (base) => ({
@@ -827,8 +820,8 @@ export default function ModalFormServicio() {
                                   }),
                                   menu: (base) => ({
                                     ...base,
-                                    zIndex: 50,
-                                    width: "96%", // Usado tu requerimiento anterior
+                                    zIndex: 9999,
+                                    marginLeft: -35
                                   }),
                                   option: (base, state) => ({
                                     ...base,
@@ -991,14 +984,15 @@ export default function ModalFormServicio() {
                                   name="origin"
                                   options={municipioOptions}
                                   placeholder="Seleccione un origen"
+                                  menuShouldScrollIntoView={false}
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
                                       border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
+                                      boxShadow: undefined,
                                       backgroundColor: "white",
                                     }),
                                     placeholder: (base) => ({
@@ -1013,7 +1007,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1037,6 +1032,12 @@ export default function ModalFormServicio() {
                                       ...base,
                                       color: "#1f2937",
                                       fontSize: "0.875rem",
+                                    }),
+                                    clearIndicator: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      "&:hover": { color: "#ef4444" },
+                                      padding: "0px 8px",
                                     }),
                                   }}
                                   value={
@@ -1059,7 +1060,7 @@ export default function ModalFormServicio() {
                               >
                                 Destino del Trayecto
                               </label>
-                              <div className="relative  shadow-sm rounded-md">
+                              <div className="relative shadow-sm rounded-md">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                   <LocationMarkerIcon />
                                 </div>
@@ -1073,14 +1074,15 @@ export default function ModalFormServicio() {
                                   name="destination"
                                   options={municipioOptions}
                                   placeholder="Seleccione un destino"
+                                  menuShouldScrollIntoView={false}
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
                                       border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
+                                      boxShadow: undefined,
                                       backgroundColor: "white",
                                     }),
                                     placeholder: (base) => ({
@@ -1095,7 +1097,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1119,6 +1122,12 @@ export default function ModalFormServicio() {
                                       ...base,
                                       color: "#1f2937",
                                       fontSize: "0.875rem",
+                                    }),
+                                    clearIndicator: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      "&:hover": { color: "#ef4444" },
+                                      padding: "0px 8px",
                                     }),
                                   }}
                                   value={
@@ -1203,15 +1212,102 @@ export default function ModalFormServicio() {
                       {/* Step 3: Planning (Optional) */}
                       {currentStep === 3 && (
                         <div className="space-y-6 animate-fadeIn">
-                          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
-                            Detalles Planificación (Opcional)
-                          </h3>
+                          {/* Location */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Conductor - Changed to SelectReact */}
                             <div className="relative">
                               <label
                                 className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="driver"
+                                htmlFor="origin"
+                              >
+                                Vehículo Asignado|
+                              </label>
+                              <div className="relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <TruckIcon />
+                                </div>
+                                <SelectReact
+                                  isClearable
+                                  isSearchable
+                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={vehiculos.map((vehiculo) => ({
+                                    value: vehiculo.id,
+                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                  }))}
+                                  placeholder="Seleccione un vehiculo"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                      marginLeft: -35
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    vehiculos
+                                      .map((vehiculo) => ({
+                                        value: vehiculo.id,
+                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                      }))
+                                      .find(
+                                        (opt) => opt.value === vehicleSelected,
+                                      ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setVehicleSelected(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="destination"
                               >
                                 Conductor Asignado
                               </label>
@@ -1253,7 +1349,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1298,128 +1395,37 @@ export default function ModalFormServicio() {
                                 />
                               </div>
                             </div>
-                            {/* Vehicle - Changed to SelectReact */}
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="vehicle"
-                              >
-                                Vehículo Asignado
-                              </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <TruckIcon />
-                                </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="driver"
-                                  name="driver"
-                                  options={vehiculos.map((vehiculo) => ({
-                                    value: vehiculo.id,
-                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                  }))}
-                                  placeholder="Seleccione un vehiculo"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 50,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                  }}
-                                  value={
-                                    vehiculos
-                                      .map((vehiculo) => ({
-                                        value: vehiculo.id,
-                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                      }))
-                                      .find(
-                                        (opt) => opt.value === vehicleSelected,
-                                      ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setVehicleSelected(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            {/* Observaciones */}
-                            <div className="relative md:col-span-2">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="departureTime"
-                              >
-                                Observaciones
-                              </label>
-                              <div className="relative bg-white">
-                                <Textarea
-                                  classNames={{
-                                    inputWrapper: [
-                                      "!bg-transparent",
-                                      "data-[hover=true]:!bg-transparent",
-                                      "group-data-[focus=true]:!bg-transparent",
-                                      "border-1",
-                                      "focus-within:border-emerald-600",
-                                      "focus-within:border", // Corregido desde "focus-within:border-1"
-                                      "transition-colors",
-                                      "duration-300",
-                                      "ease-in-out",
-                                      "rounded-md",
-                                    ],
-                                  }}
-                                  placeholder="Escribe las observaciones del servicio"
-                                  value={observaciones}
-                                  onChange={(e) =>
-                                    setObservaciones(e.target.value)
-                                  }
-                                />
-                              </div>
+                          </div>
+                          {/* Observaciones */}
+                          <div className="relative md:col-span-2">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="departureTime"
+                            >
+                              Observaciones
+                            </label>
+                            <div className="relative bg-white">
+                              <Textarea
+                                classNames={{
+                                  inputWrapper: [
+                                    "!bg-transparent",
+                                    "data-[hover=true]:!bg-transparent",
+                                    "group-data-[focus=true]:!bg-transparent",
+                                    "border-1",
+                                    "focus-within:border-emerald-600",
+                                    "focus-within:border", // Corregido desde "focus-within:border-1"
+                                    "transition-colors",
+                                    "duration-300",
+                                    "ease-in-out",
+                                    "rounded-md",
+                                  ],
+                                }}
+                                placeholder="Escribe las observaciones del servicio"
+                                value={observaciones}
+                                onChange={(e) =>
+                                  setObservaciones(e.target.value)
+                                }
+                              />
                             </div>
                           </div>
                         </div>

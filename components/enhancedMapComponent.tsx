@@ -1158,7 +1158,7 @@ const EnhancedMapComponent = ({
             <div>
               <span className="text-sm text-gray-500">Observaciones</span>
               <div className="font-medium">
-                {selectedServicio.observaciones}
+                {selectedServicio.observaciones || 'No hay observaciones'}
               </div>
             </div>
 

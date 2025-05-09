@@ -637,12 +637,8 @@ const AdvancedDashboard = () => {
                         <BuildingIcon className="w-5 h-5 text-gray-400" />
                       </div>
                       <SelectReact
-                        ref={selectRef}
                         isClearable
                         isSearchable
-                        closeMenuOnScroll={true}
-                        blurInputOnSelect={true}
-                        closeMenuOnSelect={true}
                         required
                         className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
                         classNamePrefix="react-select"
@@ -651,7 +647,6 @@ const AdvancedDashboard = () => {
                         options={empresaOptions}
                         placeholder="Seleccione una empresa"
                         menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
-                        menuPosition="fixed"
                         styles={{
                           container: (base) => ({
                             ...base,
@@ -720,20 +715,6 @@ const AdvancedDashboard = () => {
                             "&:hover": { color: "#ef4444" },
                             padding: "0px 8px",
                           }),
-                        }}
-                        formatOptionLabel={(option, { context }) => {
-                          const label =
-                            typeof option.label === "string"
-                              ? option.label
-                              : String(option.label);
-                          if (context === "value" && label.length > 30) {
-                            return label.slice(0, 30) + "...";
-                          }
-                          return label;
-                        }}
-                        onFocus={() => {
-                          const parent = selectRef.current?.controlRef?.parentElement;
-                          if (parent) parent.classList.add("ring-1", "ring-emerald-500", "border-emerald-500");
                         }}
                         onChange={(option) =>
                           setFilters({ ...filters, empresa: option ? option.value : "" })
