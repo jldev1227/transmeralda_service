@@ -850,7 +850,7 @@ const AdvancedDashboard = () => {
                   </div>
 
                   {/* Ordenación */}
-                  <div className="sm:col-span-2 flex flex-col sm:flex-row gap-2 mt-2">
+                  <div className="sm:col-span-2 flex flex-col gap-2 mt-2">
                     <label className="text-sm font-medium whitespace-nowrap" htmlFor="sortBy">
                       Ordenar por:
                     </label>

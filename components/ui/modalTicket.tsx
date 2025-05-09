@@ -6,9 +6,11 @@ import RouteAndDetails from "./routeAndDetails";
 
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
+import { useMediaQuery } from "react-responsive";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
+    const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;
@@ -50,21 +52,18 @@ export default function ModalTicket() {
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
           // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
-          wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
-          // Asegurar que el contenido ocupe todo el ancho del modal
-          base: "w-full"
         }}
         isOpen={modalTicket}
-        scrollBehavior="inside"
+        scrollBehavior='inside'
         size={"5xl"}
         onClose={() => {
           handleModalTicket();
         }}
       >
-        <ModalContent className="w-full max-w-full p-6 bg-transparent shadow-none">
+        <ModalContent>
           {() => (
             <>
-              <ModalBody className="p-0">
+              <ModalBody className="!p-0">
                 <div className="bg-white rounded-lg overflow-hidden shadow-xl">
                   {/* Encabezado del ticket */}
                   <div className={`p-4 text-white bg-emerald-600`}>
@@ -81,43 +80,45 @@ export default function ModalTicket() {
                   {/* Cuerpo del ticket */}
                   <div className="flex flex-col md:flex-row">
                     {/* Sección izquierda - espacio para foto del conductor */}
-                    <div className="w-full md:w-1/5 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
-                      <div className="border-2 border-gray-300 rounded-lg h-56 w-full flex items-center justify-center">
+                    <div className="flex flex-row items-end gap-4 md:flex-col w-full md:w-1/4 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
+                      <div className="border-2 border-gray-300 rounded-lg w-30 md:w-full">
                         <Image
-                          alt="Foto conductor asignado"
+                          alt="Foto conductor  asignado"
                           className="h-full w-full"
                           height={250}
                           src={servicio.conductor.foto_url ?? '/assets/not_user.avif'}
                           width={200}
                         />
                       </div>
-                      <div className="mt-4">
-                        <h3 className={`font-bold text-emerald-600`}>
-                          Conductor
-                        </h3>
-                        <p className="text-gray-700">
-                          {servicio.conductor?.nombre}{" "}
-                          {servicio.conductor?.apellido}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {servicio.conductor?.tipo_identificacion}:{" "}
-                          {servicio.conductor?.numero_identificacion ||
-                            "No disponible"}
-                        </p>
-                      </div>
-                      <div className="mt-4">
-                        <h3 className={`font-bold text-emerald-600`}>
-                          Vehículo
-                        </h3>
-                        <p className="text-gray-700">
-                          {servicio.vehiculo?.placa} {servicio.vehiculo?.marca}{" "}
-                          {servicio.vehiculo?.linea} {servicio.vehiculo?.modelo}
-                        </p>
+                      <div>
+                        <div className="mt-4">
+                          <h3 className={`font-bold text-emerald-600`}>
+                            Conductor
+                          </h3>
+                          <p className="text-gray-700">
+                            {servicio.conductor?.nombre}{" "}
+                            {servicio.conductor?.apellido}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {servicio.conductor?.tipo_identificacion}:{" "}
+                            {servicio.conductor?.numero_identificacion ||
+                              "No disponible"}
+                          </p>
+                        </div>
+                        <div className="mt-4">
+                          <h3 className={`font-bold text-emerald-600`}>
+                            Vehículo
+                          </h3>
+                          <p className="text-gray-700">
+                            {servicio.vehiculo?.placa} {servicio.vehiculo?.marca}{" "}
+                            {servicio.vehiculo?.linea} {servicio.vehiculo?.modelo}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     {/* Sección derecha - detalles del viaje */}
-                    <div className="w-full md:w-4/5 p-6">
+                    <div className="w-full md:w-3/4 p-6">
                       {/* Número de ticket */}
                       <div className="flex justify-between items-center mb-6">
                         <h1 className={`text-xl font-bold text-emerald-600`}>

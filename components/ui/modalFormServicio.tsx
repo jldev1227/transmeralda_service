@@ -573,8 +573,6 @@ export default function ModalFormServicio() {
         classNames={{
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
-          wrapper: "max-h-[45rem] m-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
-          // Asegurar que el contenido ocupe todo el ancho del modal
         }}
         isOpen={modalForm}
         scrollBehavior="inside"
