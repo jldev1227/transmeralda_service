@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useEffect, useState } from "react";
 import SelectReact from "react-select";
+import { SelectInstance } from "react-select";
 // Ajusta esta importación según la biblioteca que uses
 import { Textarea } from "@heroui/input";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
-import { Building2 } from "lucide-react";
+import { BuildingIcon } from "lucide-react";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
@@ -50,6 +51,7 @@ export const LocationMarkerIcon = () => (
     />
   </svg>
 );
+
 const TruckIcon = () => (
   <svg
     className="w-5 h-5 text-gray-400"
@@ -101,6 +103,12 @@ const CheckCircleIcon = () => (
   </svg>
 );
 
+interface EmpresaOption {
+  value: string;
+  label: string;
+  // Otros campos que pueda tener
+};
+
 export default function ModalFormServicio() {
   const {
     municipios,
@@ -120,6 +128,8 @@ export default function ModalFormServicio() {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { servicio, isEditing } = servicioEditar;
+
+  const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
 
   // Función para limpiar todos los estados del formulario
   const resetFormStates = () => {
@@ -568,10 +578,24 @@ export default function ModalFormServicio() {
         scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
+          // En NextUI/uso-modal.d.ts, isOpen es false cuando se cierra el modal
+          // No es necesario verificar !isOpen ya que siempre será false durante onClose
+
           // Primero limpiar el servicio seleccionado para eliminar cualquier ruta/marcador en el mapa
           if (selectedServicio) {
             clearSelectedServicio();
           }
+
+          if (selectRef.current) {
+            try {
+              // Intenta usar los métodos directamente
+              selectRef.current.clearValue?.();
+              selectRef.current.blur?.();
+            } catch (error) {
+              console.error("Error al limpiar el select:", error);
+            }
+          }
+
           // Luego cerrar el modal
           handleModalForm();
           resetFormStates();
@@ -642,8 +666,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                    servicio.fecha_solicitud,
-                                  ).toLocaleString()
+                                  servicio.fecha_solicitud,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -654,8 +678,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                    servicio.fecha_realizacion,
-                                  ).toLocaleString()
+                                  servicio.fecha_realizacion,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -757,11 +781,13 @@ export default function ModalFormServicio() {
                             </label>
                             <div className="relative shadow-sm rounded-md">
                               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Building2 className="w-5 h-5 text-gray-400" />
+                                <BuildingIcon className="w-5 h-5 text-gray-400" />
                               </div>
                               <SelectReact
+                                ref={selectRef}
                                 isClearable
                                 isSearchable
+                                blurInputOnSelect={true}
                                 required
                                 className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                 classNamePrefix="react-select"
@@ -769,14 +795,15 @@ export default function ModalFormServicio() {
                                 name="client"
                                 options={empresaOptions}
                                 placeholder="Seleccione una empresa"
+                                menuShouldScrollIntoView={false}
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                 styles={{
                                   control: (base, state) => ({
                                     ...base,
                                     border: "none",
-                                    boxShadow: state.isFocused
-                                      ? "0 0 0 1px #059669"
-                                      : undefined,
-                                    "&:hover": { borderColor: "#059669" },
+                                    boxShadow: undefined,
                                     backgroundColor: "white",
                                   }),
                                   placeholder: (base) => ({
@@ -791,7 +818,8 @@ export default function ModalFormServicio() {
                                   }),
                                   menu: (base) => ({
                                     ...base,
-                                    zIndex: 50,
+                                    zIndex: 9999,
+                                    marginLeft: -35
                                   }),
                                   option: (base, state) => ({
                                     ...base,
@@ -869,13 +897,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaSolicitud.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -913,13 +941,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaRealizacion.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -954,14 +982,15 @@ export default function ModalFormServicio() {
                                   name="origin"
                                   options={municipioOptions}
                                   placeholder="Seleccione un origen"
+                                  menuShouldScrollIntoView={false}
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
                                       border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
+                                      boxShadow: undefined,
                                       backgroundColor: "white",
                                     }),
                                     placeholder: (base) => ({
@@ -976,7 +1005,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1000,6 +1030,12 @@ export default function ModalFormServicio() {
                                       ...base,
                                       color: "#1f2937",
                                       fontSize: "0.875rem",
+                                    }),
+                                    clearIndicator: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      "&:hover": { color: "#ef4444" },
+                                      padding: "0px 8px",
                                     }),
                                   }}
                                   value={
@@ -1022,7 +1058,7 @@ export default function ModalFormServicio() {
                               >
                                 Destino del Trayecto
                               </label>
-                              <div className="relative  shadow-sm rounded-md">
+                              <div className="relative shadow-sm rounded-md">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                   <LocationMarkerIcon />
                                 </div>
@@ -1036,14 +1072,15 @@ export default function ModalFormServicio() {
                                   name="destination"
                                   options={municipioOptions}
                                   placeholder="Seleccione un destino"
+                                  menuShouldScrollIntoView={false}
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220} // Aproximadamente 5-6 opciones dependiendo del tamaño
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
                                       border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
+                                      boxShadow: undefined,
                                       backgroundColor: "white",
                                     }),
                                     placeholder: (base) => ({
@@ -1058,7 +1095,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1082,6 +1120,12 @@ export default function ModalFormServicio() {
                                       ...base,
                                       color: "#1f2937",
                                       fontSize: "0.875rem",
+                                    }),
+                                    clearIndicator: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      "&:hover": { color: "#ef4444" },
+                                      padding: "0px 8px",
                                     }),
                                   }}
                                   value={
@@ -1166,15 +1210,102 @@ export default function ModalFormServicio() {
                       {/* Step 3: Planning (Optional) */}
                       {currentStep === 3 && (
                         <div className="space-y-6 animate-fadeIn">
-                          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-6">
-                            Detalles Planificación (Opcional)
-                          </h3>
+                          {/* Location */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Conductor - Changed to SelectReact */}
                             <div className="relative">
                               <label
                                 className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="driver"
+                                htmlFor="origin"
+                              >
+                                Vehículo Asignado|
+                              </label>
+                              <div className="relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <TruckIcon />
+                                </div>
+                                <SelectReact
+                                  isClearable
+                                  isSearchable
+                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={vehiculos.map((vehiculo) => ({
+                                    value: vehiculo.id,
+                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                  }))}
+                                  placeholder="Seleccione un vehiculo"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                      marginLeft: -35
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                  }}
+                                  value={
+                                    vehiculos
+                                      .map((vehiculo) => ({
+                                        value: vehiculo.id,
+                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                      }))
+                                      .find(
+                                        (opt) => opt.value === vehicleSelected,
+                                      ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setVehicleSelected(
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="destination"
                               >
                                 Conductor Asignado
                               </label>
@@ -1216,7 +1347,8 @@ export default function ModalFormServicio() {
                                     }),
                                     menu: (base) => ({
                                       ...base,
-                                      zIndex: 50,
+                                      zIndex: 9999,
+                                      marginLeft: -35
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -1261,128 +1393,37 @@ export default function ModalFormServicio() {
                                 />
                               </div>
                             </div>
-                            {/* Vehicle - Changed to SelectReact */}
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="vehicle"
-                              >
-                                Vehículo Asignado
-                              </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <TruckIcon />
-                                </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="driver"
-                                  name="driver"
-                                  options={vehiculos.map((vehiculo) => ({
-                                    value: vehiculo.id,
-                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                  }))}
-                                  placeholder="Seleccione un vehiculo"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 50,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                  }}
-                                  value={
-                                    vehiculos
-                                      .map((vehiculo) => ({
-                                        value: vehiculo.id,
-                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                      }))
-                                      .find(
-                                        (opt) => opt.value === vehicleSelected,
-                                      ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setVehicleSelected(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            {/* Observaciones */}
-                            <div className="relative md:col-span-2">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="departureTime"
-                              >
-                                Observaciones
-                              </label>
-                              <div className="relative bg-white">
-                                <Textarea
-                                  classNames={{
-                                    inputWrapper: [
-                                      "!bg-transparent",
-                                      "data-[hover=true]:!bg-transparent",
-                                      "group-data-[focus=true]:!bg-transparent",
-                                      "border-1",
-                                      "focus-within:border-emerald-600",
-                                      "focus-within:border", // Corregido desde "focus-within:border-1"
-                                      "transition-colors",
-                                      "duration-300",
-                                      "ease-in-out",
-                                      "rounded-md",
-                                    ],
-                                  }}
-                                  placeholder="Escribe las observaciones del servicio"
-                                  value={observaciones}
-                                  onChange={(e) =>
-                                    setObservaciones(e.target.value)
-                                  }
-                                />
-                              </div>
+                          </div>
+                          {/* Observaciones */}
+                          <div className="relative md:col-span-2">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="departureTime"
+                            >
+                              Observaciones
+                            </label>
+                            <div className="relative bg-white">
+                              <Textarea
+                                classNames={{
+                                  inputWrapper: [
+                                    "!bg-transparent",
+                                    "data-[hover=true]:!bg-transparent",
+                                    "group-data-[focus=true]:!bg-transparent",
+                                    "border-1",
+                                    "focus-within:border-emerald-600",
+                                    "focus-within:border", // Corregido desde "focus-within:border-1"
+                                    "transition-colors",
+                                    "duration-300",
+                                    "ease-in-out",
+                                    "rounded-md",
+                                  ],
+                                }}
+                                placeholder="Escribe las observaciones del servicio"
+                                value={observaciones}
+                                onChange={(e) =>
+                                  setObservaciones(e.target.value)
+                                }
+                              />
                             </div>
                           </div>
                         </div>
@@ -1459,36 +1500,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                  // onClick={async () => {
-                                  //   if (
-                                  //     servicio.id &&
-                                  //     window.confirm(
-                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                  //     )
-                                  //   ) {
-                                  //     try {
-                                  //       await actualizarEstadoServicio(
-                                  //         servicio.id,
-                                  //         "cancelado",
-                                  //       );
-                                  //       addToast({
-                                  //         title: "Éxito",
-                                  //         description:
-                                  //           "Servicio cancelado correctamente",
-                                  //         color: "success",
-                                  //       });
-                                  //       handleModalForm(); // Cerrar modal
-                                  //       resetFormStates();
-                                  //     } catch (error) {
-                                  //       addToast({
-                                  //         title: "Error",
-                                  //         description:
-                                  //           "No se pudo cancelar el servicio",
-                                  //         color: "danger",
-                                  //       });
-                                  //     }
-                                  //   }
-                                  // }}
+                                // onClick={async () => {
+                                //   if (
+                                //     servicio.id &&
+                                //     window.confirm(
+                                //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                //     )
+                                //   ) {
+                                //     try {
+                                //       await actualizarEstadoServicio(
+                                //         servicio.id,
+                                //         "cancelado",
+                                //       );
+                                //       addToast({
+                                //         title: "Éxito",
+                                //         description:
+                                //           "Servicio cancelado correctamente",
+                                //         color: "success",
+                                //       });
+                                //       handleModalForm(); // Cerrar modal
+                                //       resetFormStates();
+                                //     } catch (error) {
+                                //       addToast({
+                                //         title: "Error",
+                                //         description:
+                                //           "No se pudo cancelar el servicio",
+                                //         color: "danger",
+                                //       });
+                                //     }
+                                //   }
+                                // }}
                                 >
                                   Cancelar Servicio
                                 </button>

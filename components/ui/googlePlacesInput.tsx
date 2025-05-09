@@ -91,7 +91,7 @@ export const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
       </div>
 
       {showPredictions && predictions.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-auto">
+        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md max-h-32 overflow-auto">
           {predictions.map((prediction) => (
             <div
               key={prediction.place_id}

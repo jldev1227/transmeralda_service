@@ -23,6 +23,10 @@ interface CustomTableProps {
   isLoading?: boolean;
   className?: string;
   onRowClick?: (item: any) => void;
+  selectable?: boolean;
+  selectedItems?: any[];
+  onSelectionChange?: (item: any) => void;
+  getItemId?: (item: any) => string;
 }
 
 const CustomTable: React.FC<CustomTableProps> = ({
@@ -35,6 +39,10 @@ const CustomTable: React.FC<CustomTableProps> = ({
   isLoading = false,
   className = "",
   onRowClick,
+  selectable = false,
+  selectedItems = [],
+  onSelectionChange,
+  getItemId = (item) => item.id,
 }) => {
   // Manejar cambio de ordenamiento
   const handleSort = (column: string) => {
@@ -59,12 +67,16 @@ const CustomTable: React.FC<CustomTableProps> = ({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            {selectable && (
+              <th className="w-10 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <span className="sr-only">Seleccionar</span>
+              </th>
+            )}
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                  column.allowsSorting ? "cursor-pointer hover:bg-gray-100" : ""
-                }`}
+                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.allowsSorting ? "cursor-pointer hover:bg-gray-100" : ""
+                  }`}
                 scope="col"
                 onClick={() => column.allowsSorting && handleSort(column.key)}
               >
@@ -86,42 +98,64 @@ const CustomTable: React.FC<CustomTableProps> = ({
           {isLoading ? (
             <tr>
               <td
-                className="px-6 py-4 whitespace-nowrap"
-                colSpan={columns.length}
+          className="px-6 py-4 whitespace-nowrap"
+          colSpan={columns.length + (selectable ? 1 : 0)}
               >
-                {loadingContent || (
-                  <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
-                  </div>
-                )}
+          {loadingContent || (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+            </div>
+          )}
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
               <td
-                className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500"
-                colSpan={columns.length}
+          className="px-6 py-4 whitespace-nowrap text-center"
+          colSpan={columns.length + (selectable ? 1 : 0)}
               >
-                {emptyContent}
+          {emptyContent}
               </td>
             </tr>
           ) : (
             data.map((item, rowIndex) => (
               <tr
-                key={rowIndex}
-                className="hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => onRowClick && onRowClick(item)}
+          key={rowIndex}
+          className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectable && selectedItems.some(selected => getItemId(selected) === getItemId(item))
+              ? "bg-gray-100"
+              : ""
+            }`}
+          onClick={() => onRowClick && onRowClick(item)}
               >
-                {columns.map((column) => (
-                  <td
-                    key={`${rowIndex}-${column.key}`}
-                    className="px-6 py-4 whitespace-nowrap"
-                  >
-                    {column.renderCell
-                      ? column.renderCell(item)
-                      : item[column.key]}
-                  </td>
-                ))}
+          {selectable && (
+            <td
+              className="w-10 px-6 py-4 whitespace-nowrap"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectionChange && onSelectionChange(item);
+              }}
+            >
+              <div className="flex items-center justify-center">
+                <input
+            type="checkbox"
+            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+            checked={selectedItems.some(selected => getItemId(selected) === getItemId(item))}
+            onChange={() => { }} // Evitar warning de input sin onChange
+            disabled={!onSelectionChange}
+                />
+              </div>
+            </td>
+          )}
+          {columns.map((column) => (
+            <td
+              key={`${rowIndex}-${column.key}`}
+              className="px-6 py-4 whitespace-nowrap"
+            >
+              {column.renderCell
+                ? column.renderCell(item)
+                : item[column.key]}
+            </td>
+          ))}
               </tr>
             ))
           )}

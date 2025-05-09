@@ -12,7 +12,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, PlusIcon } from "lucide-react";
+import { ClipboardList, PlusIcon, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import LoadingComponent from "./ui/LoadingComponent";
@@ -30,6 +30,8 @@ interface EnhancedMapComponentProps {
   selectedServicio: ServicioConRelaciones | null;
   vehicleTracking: VehicleTracking | null;
   trackingError: string;
+  isPanelOpen: boolean;
+  handleClosePanel: () => void;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
   getServiceTypeText: (text: string) => string;
   mapboxToken: string;
@@ -89,6 +91,8 @@ const EnhancedMapComponent = ({
   selectedServicio,
   vehicleTracking,
   trackingError,
+  isPanelOpen,
+  handleClosePanel,
   handleSelectServicio,
   getServiceTypeText,
   mapboxToken,
@@ -389,21 +393,20 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${
-            isOrigin
-              ? `<div class="text-sm">
+          ${isOrigin
+        ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-              : `<div class="text-sm">
+        : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-          }
+      }
         </div>
       </div>
     `;
@@ -1048,7 +1051,7 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute top-2.5 right-14 bg-white p-4 rounded-lg shadow-lg w-86">
+        <div className="animate-fade-up absolute bottom-0  z-20 w-full md:bottom-auto md:w-auto md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg w-86">
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
             <button
@@ -1153,16 +1156,9 @@ const EnhancedMapComponent = ({
             </div>
 
             <div>
-              <span className="text-sm text-gray-500">Valor</span>
-              <div className="font-medium">
-                ${selectedServicio.valor.toLocaleString("es-CO")}
-              </div>
-            </div>
-
-            <div>
               <span className="text-sm text-gray-500">Observaciones</span>
               <div className="font-medium">
-                {selectedServicio.observaciones}
+                {selectedServicio.observaciones || 'No hay observaciones'}
               </div>
             </div>
 
@@ -1206,11 +1202,26 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div className="absolute top-3.5 left-4  bg-white bg-opacity-90 p-2 rounded-md shadow">
+      <div className="absolute top-3.5 left-4 z-10 bg-white bg-opacity-90 p-2 rounded-md shadow">
         <span className="text-sm font-medium">
-          Vehiculos con servicios en_curso (Wialon): {activeVehiclesData.length}
+          Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
         </span>
       </div>
+
+      {!isPanelOpen && (
+        <div className="absolute bottom-10 left-4 animate-fadeIn">
+          <Tooltip content="Abrir panel de servicios" radius="sm">
+            <Button
+              isIconOnly
+              className="text-sm font-medium bg-white h-12 w-12"
+              radius="sm"
+              onPress={handleClosePanel}
+            >
+              <Truck color="#00bc7d" />
+            </Button>
+          </Tooltip>
+        </div>
+      )}
 
       <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
         <Tooltip content="Liquidador de servicios" radius="sm">

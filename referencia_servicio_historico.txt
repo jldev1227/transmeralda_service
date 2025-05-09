@@ -1,0 +1,142 @@
+# Referencia de Implementación: Sistema de Historial de Servicios (ServicioHistorico)
+
+## 1. Propósito
+
+El módulo ServicioHistorico implementa un sistema de auditoría que registra todas las modificaciones realizadas a los servicios. Esto incluye:
+- Creación de servicios nuevos
+- Actualizaciones de servicios existentes
+- Eliminación de servicios
+
+Este sistema permite rastrear quién hizo cada cambio, cuándo lo hizo y qué datos específicos fueron modificados.
+
+## 2. Estructura del Modelo de Datos
+
+### Modelo ServicioHistorico
+```
+{
+  id: UUID (primary key),
+  servicio_id: UUID (referencia al servicio),
+  usuario_id: UUID (referencia al usuario que hizo el cambio),
+  campo_modificado: String (campo que fue modificado),
+  valor_anterior: Text (valor antes del cambio, puede ser null en creaciones),
+  valor_nuevo: Text (valor después del cambio, puede ser null en eliminaciones),
+  tipo_operacion: Enum ['creacion', 'actualizacion', 'eliminacion'],
+  fecha_modificacion: DateTime (cuándo ocurrió el cambio),
+  ip_usuario: String (opcional),
+  navegador_usuario: String (opcional),
+  detalles: JSONB (información adicional)
+}
+```
+
+## 3. Endpoints API
+
+### 1. Consultar Historial de un Servicio
+```
+GET /api/servicios-historico/servicio/:id
+```
+- Devuelve todos los cambios históricos del servicio especificado
+- Ordenados del más reciente al más antiguo
+- Incluye detalles del usuario que realizó cada cambio
+
+### 2. Consultar un Registro Histórico Específico
+```
+GET /api/servicios-historico/:id
+```
+- Devuelve un registro histórico específico por su ID
+- Incluye detalles del servicio y usuario
+
+### 3. Consultar Todos los Registros Históricos
+```
+GET /api/servicios-historico
+```
+- Admite filtros opcionales:
+  - `servicio_id`: Filtrar por servicio
+  - `usuario_id`: Filtrar por usuario que hizo los cambios
+  - `tipo_operacion`: Filtrar por tipo (creacion/actualizacion/eliminacion)
+  - `campo_modificado`: Filtrar por campo específico
+  - `desde` y `hasta`: Rango de fechas
+  - `limit` y `page`: Para paginación (default limit=50, page=1)
+
+## 4. Interpretación de los Datos
+
+### Tipos de Operación
+- `creacion`: Cuando se crea un nuevo servicio
+- `actualizacion`: Cuando se modifica algún campo
+- `eliminacion`: Cuando se elimina un servicio
+
+### Campo Modificado
+- Para creación: `creacion_servicio`
+- Para eliminación: `eliminacion_servicio`
+- Para actualizaciones: nombre del campo específico (ej. `estado`, `origen_id`, etc.)
+
+### Valores Anteriores y Nuevos
+- En creaciones: `valor_anterior` es null, `valor_nuevo` contiene todo el servicio
+- En eliminaciones: `valor_anterior` contiene todo el servicio, `valor_nuevo` es null
+- En actualizaciones: ambos campos contienen el valor respectivo del campo modificado
+
+## 5. Implementación Técnica
+
+### Hooks de Sequelize
+La implementación utiliza hooks de Sequelize en el modelo Servicio:
+- `afterCreate`: Registra la creación
+- `afterUpdate`: Registra las actualizaciones campo por campo
+- `afterDestroy`: Registra la eliminación
+
+### Requerimientos para el Frontend
+Para implementar correctamente la visualización del historial:
+
+1. Mostrar cambios en orden cronológico inverso (más reciente primero)
+2. Agrupar cambios por fecha o por operación
+3. Colorear adecuadamente adiciones (verde), eliminaciones (rojo) y modificaciones (amarillo)
+4. Para modificaciones de campos complejos, considerar mostrar un diff visual
+5. Mostrar el nombre del usuario que realizó cada cambio
+6. Implementar filtros para facilitar la búsqueda de cambios específicos
+
+## 6. Ejemplo de Respuesta API
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "servicio_id": "7b8ec40e-89d1-4908-b448-980c56c5a651",
+      "usuario_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "campo_modificado": "estado",
+      "valor_anterior": "planificado",
+      "valor_nuevo": "en_curso",
+      "tipo_operacion": "actualizacion",
+      "fecha_modificacion": "2025-05-10T15:30:45.123Z",
+      "ip_usuario": "192.168.1.100",
+      "navegador_usuario": "Mozilla/5.0...",
+      "usuario": {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "nombre": "Juan",
+        "apellido": "Pérez",
+        "email": "juan@ejemplo.com",
+        "role": "admin"
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "servicio_id": "7b8ec40e-89d1-4908-b448-980c56c5a651",
+      "usuario_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "campo_modificado": "creacion_servicio",
+      "valor_anterior": null,
+      "valor_nuevo": "{\"id\":\"7b8ec40e-89d1-4908-b448-980c56c5a651\",\"origen_id\":\"...\"}",
+      "tipo_operacion": "creacion",
+      "fecha_modificacion": "2025-05-10T14:20:30.456Z",
+      "ip_usuario": "192.168.1.100",
+      "navegador_usuario": "Mozilla/5.0...",
+      "usuario": {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "nombre": "Juan",
+        "apellido": "Pérez",
+        "email": "juan@ejemplo.com",
+        "role": "admin"
+      }
+    }
+  ],
+  "total": 2
+}
+```
