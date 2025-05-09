@@ -18,11 +18,21 @@ const config = {
         bounce: "bounce .5s infinite",
         pulse: "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         spin: "spin 1s linear infinite",
+        bottomToTop: "bottomToTop .5s ease-in-out forwards",
+        topToBottom: "topToBottom .5s ease-in-out forwards",
       },
       keyframes: {
         fadeIn: {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
+        },
+        bottomToTop: {
+          "0%": { transform: "translateY(100%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        topToBottom: {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(100%)" },
         },
       },
       fontSize: {
