@@ -8,7 +8,7 @@ import { Textarea } from "@heroui/input";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
-import { Building2 } from "lucide-react";
+import { BuildingIcon } from "lucide-react";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
@@ -103,7 +103,7 @@ const CheckCircleIcon = () => (
   </svg>
 );
 
-type EmpresaOption = {
+interface EmpresaOption {
   value: string;
   label: string;
   // Otros campos que pueda tener
@@ -781,7 +781,7 @@ export default function ModalFormServicio() {
                             </label>
                             <div className="relative shadow-sm rounded-md">
                               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Building2 className="w-5 h-5 text-gray-400" />
+                                <BuildingIcon className="w-5 h-5 text-gray-400" />
                               </div>
                               <SelectReact
                                 ref={selectRef}

@@ -259,7 +259,7 @@ const ServiciosListCards = ({
   const ModalHistorialServicio = React.lazy(() => import('./modalHistorialServicio'));
 
   return (
-    <div className="space-y-3 h-[calc(100vh-375px)] overflow-y-auto pr-3 pt-3">
+    <div className="space-y-3 h-[calc(100vh-375px)] overflow-y-auto px-3 pt-3">
       {/* Modal de Historial de Servicio */}
       <React.Suspense>
         {modalHistorialOpen && (
@@ -287,7 +287,7 @@ const ServiciosListCards = ({
             key={servicio.id}
             className="px-1 relative group"
             id={`servicio-${servicio.id}`}
-            style={{ width: "auto", minWidth: "280px", maxWidth: "350px" }}
+            style={{ width: "auto", minWidth: "30rem", maxWidth: "30rem" }}
           >
             <div
               className={`
