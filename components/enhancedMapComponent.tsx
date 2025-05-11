@@ -28,6 +28,7 @@ import { getStatusText } from "@/utils/indext";
 interface EnhancedMapComponentProps {
   servicios: ServicioConRelaciones[];
   selectedServicio: ServicioConRelaciones | null;
+  setSelectedServicio: Dispatch<SetStateAction<ServicioConRelaciones | null>>;
   vehicleTracking: VehicleTracking | null;
   trackingError: string;
   isPanelOpen: boolean;
@@ -98,6 +99,7 @@ const EnhancedMapComponent = ({
   mapboxToken,
   onWialonRequest,
   wialonToken,
+  setSelectedServicio,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
   const { handleModalForm } = useService();
@@ -950,6 +952,7 @@ const EnhancedMapComponent = ({
   const clearServicio = () => {
     // Clear selected servicio reference completely
     setServicioWithRoutes(null);
+    setSelectedServicio(null);
     prevSelectedServicioRef.current = null;
 
     setDetallesVisible(false);
@@ -1052,7 +1055,7 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute bottom-0  z-20 w-full md:bottom-auto md:w-auto md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg w-86">
+        <div className="animate-fade-up absolute bottom-0 z-30 w-full md:bottom-auto md:w-80 md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg">
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
             <button
@@ -1203,7 +1206,7 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div className="absolute top-3.5 left-4 z-10 bg-white bg-opacity-90 p-2 rounded-md shadow">
+      <div className="absolute top-2.5 left-4 z-10 bg-white bg-opacity-90 p-2 rounded-md shadow">
         <span className="text-sm font-medium">
           Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
         </span>
@@ -1250,7 +1253,7 @@ const EnhancedMapComponent = ({
       {selectedServicio?.estado === "en_curso" &&
         trackingError &&
         !vehicleTracking && (
-          <div className="absolute bottom-2 left-2 right-2 z-[1000] bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
+          <div className="absolute bottom-2 left-2 max-w-max right-2 z-20 bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
             <span className="font-medium">Información:</span> {trackingError}
           </div>
         )}

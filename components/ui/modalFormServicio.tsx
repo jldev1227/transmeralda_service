@@ -12,6 +12,7 @@ import { BuildingIcon } from "lucide-react";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
+import { useMediaQuery } from "react-responsive";
 
 const UserIcon = () => (
   <svg
@@ -130,6 +131,7 @@ export default function ModalFormServicio() {
   const { servicio, isEditing } = servicioEditar;
 
   const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Función para limpiar todos los estados del formulario
   const resetFormStates = () => {
@@ -455,14 +457,35 @@ export default function ModalFormServicio() {
 
     try {
       // Asegurarse de limpiar el servicio seleccionado primero
-      // para asegurar que el mapa se limpie completamente
       if (selectedServicio !== null) {
         clearSelectedServicio();
       }
 
+      // Validar que la fecha de realización no sea anterior a la actual si no hay conductor y vehículo asignados
+      const now = new Date();
+      const fechaReal = fechaRealizacion?.toDate?.() ?? null;
+      if (
+        fechaReal &&
+        fechaReal < now &&
+        (!conductorSelected || !vehicleSelected)
+      ) {
+        setLoading(false);
+        addToast({
+          title: "Fecha inválida",
+          description:
+            "No se puede registrar un servicio con fecha de realización anterior a la actual sin conductor y vehículo asignados.",
+          color: "danger",
+        });
+        return;
+      }
+
       // Determinar el estado automáticamente basado en la presencia de conductor y vehículo
       const estadoServicio: EstadoServicio =
-        conductorSelected && vehicleSelected ? "planificado" : "solicitado";
+        conductorSelected && vehicleSelected
+          ? fechaReal && fechaReal < now
+            ? "en_curso"
+            : "planificado"
+          : "solicitado";
 
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
       const servicioData = {
@@ -486,19 +509,15 @@ export default function ModalFormServicio() {
       };
 
       if (isEditing && servicio?.id) {
-        // Si estamos editando, actualizamos el servicio existente
         await actualizarServicio(servicio.id, servicioData);
       } else {
-        // Si estamos creando uno nuevo, registramos el servicio
         await registrarServicio(servicioData);
       }
 
-      // Cerrar el modal después de la operación exitosa
       handleModalForm();
       resetFormStates();
     } catch (error) {
       setLoading(false);
-      // Manejar errores
       console.error(
         isEditing
           ? "Error al actualizar el servicio:"
@@ -614,21 +633,37 @@ export default function ModalFormServicio() {
               <ModalBody className="space-y-4">
                 {/* Step Progress Bar - solo mostrar si no estamos en modo solo lectura */}
                 {!isReadOnly && (
-                  <div className="flex items-center justify-between">
-                    <StepIndicator stepNumber={1} title="Información Básica" />
-                    <div
-                      className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? "bg-emerald-600" : "bg-gray-200"}`}
-                    />
-                    <StepIndicator stepNumber={2} title="Detalles Viaje" />
-                    <div
-                      className={`flex-1 h-0.5 mx-4 ${currentStep > 2 ? "bg-emerald-600" : "bg-gray-200"}`}
-                    />
-                    <StepIndicator stepNumber={3} title="Planificación" />
-                    <div
-                      className={`flex-1 h-0.5 mx-4 ${currentStep > 3 ? "bg-emerald-600" : "bg-gray-200"}`}
-                    />
-                    <StepIndicator stepNumber={4} title="Estado" />
-                  </div>
+                  isMobile ? (
+                    <div className="flex items-center justify-center mb-4">
+                      <StepIndicator
+                        stepNumber={currentStep}
+                        title={
+                          [
+                            "Información Básica",
+                            "Detalles Viaje",
+                            "Planificación",
+                            "Estado",
+                          ][currentStep - 1]
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <StepIndicator stepNumber={1} title="Información Básica" />
+                      <div
+                        className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? "bg-emerald-600" : "bg-gray-200"}`}
+                      />
+                      <StepIndicator stepNumber={2} title="Detalles Viaje" />
+                      <div
+                        className={`flex-1 h-0.5 mx-4 ${currentStep > 2 ? "bg-emerald-600" : "bg-gray-200"}`}
+                      />
+                      <StepIndicator stepNumber={3} title="Planificación" />
+                      <div
+                        className={`flex-1 h-0.5 mx-4 ${currentStep > 3 ? "bg-emerald-600" : "bg-gray-200"}`}
+                      />
+                      <StepIndicator stepNumber={4} title="Estado" />
+                    </div>
+                  )
                 )}
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
@@ -1441,13 +1476,27 @@ export default function ModalFormServicio() {
                             </label>
                             <div className="relative">
                               <p className="text-md font-medium mb-4">
-                                {conductorSelected && vehicleSelected
-                                  ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
-                                  : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados."}
+                              {(() => {
+                                const now = new Date();
+                                const fechaReal = fechaRealizacion?.toDate?.() ?? null;
+                                if (
+                                fechaReal &&
+                                fechaReal < now
+                                ) {
+                                if (conductorSelected && vehicleSelected) {
+                                  return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
+                                } else {
+                                  return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
+                                }
+                                }
+                                return conductorSelected && vehicleSelected
+                                ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
+                                : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
+                              })()}
                               </p>
                               <p className="text-xs text-gray-500">
-                                El estado se determina automáticamente según las
-                                asignaciones realizadas.
+                              El estado se determina automáticamente según las
+                              asignaciones realizadas.
                               </p>
                             </div>
                           </div>

@@ -468,7 +468,7 @@ const AdvancedDashboard = () => {
   );
 
   const handleClosePanel = useCallback(() => {
-    if (isPanelOpen) {
+    if (isPanelOpen && isMobile) {
       const panel = document.querySelector(".animate-bottomToTop");
 
       if (panel) {
@@ -487,7 +487,7 @@ const AdvancedDashboard = () => {
     } else {
       setIsPanelOpen(true);
     }
-  }, [isPanelOpen]);
+  }, [isPanelOpen, isMobile]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -495,17 +495,13 @@ const AdvancedDashboard = () => {
     }
   }, [isMobile]);
 
-  useEffect(() => {
-    console.log(isPanelOpen);
-  }, [isPanelOpen]);
-
   return (
     <div className="flex h-screen relative overflow-hidden">
       {/* Sidebar/floating panel */}
       {isPanelOpen && (
         <div
           aria-modal="true"
-          className="absolute md:relative z-50 w-full md:w-auto animate-bottomToTop"
+          className="absolute md:relative z-50 w-full md:max-w-[30rem] animate-bottomToTop"
           role="dialog"
         >
           <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
@@ -990,6 +986,7 @@ const AdvancedDashboard = () => {
           isPanelOpen={isPanelOpen}
           mapboxToken={MAPBOX_ACCESS_TOKEN}
           selectedServicio={servicioWithRoutes}
+          setSelectedServicio={setSelectedServicio}
           servicios={servicios}
           setServicioWithRoutes={setServicioWithRoutes}
           trackingError={trackingError}

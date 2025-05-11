@@ -265,7 +265,7 @@ const ServiciosListCards = ({
   );
 
   return (
-    <div className="space-y-3 h-[calc(100vh-375px)] overflow-y-auto px-3 pt-3">
+    <div className="space-y-3 px-3 py-3">
       {/* Modal de Historial de Servicio */}
       <React.Suspense>
         {modalHistorialOpen && (
