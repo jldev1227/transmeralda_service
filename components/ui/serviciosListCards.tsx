@@ -1,5 +1,5 @@
 import React from "react";
-import { Hash, Edit, Ticket, History } from "lucide-react";
+import { Hash, Edit, Ticket, History, StampIcon } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 
 import {
@@ -26,8 +26,12 @@ const ServiciosListCards = ({
 }: ServiciosListCardsProps) => {
   // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
+  const [modalFinalizarOpen, setModalFinalizarServicio] = useState(false);
   // Variable de estado para almacenar el ID del servicio del cual mostrar el historial
   const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(
+    null,
+  );
+  const [servicioFinalizarId, setServicioFinalizarId] = useState<string | null>(
     null,
   );
 
@@ -115,6 +119,20 @@ const ServiciosListCards = ({
     }
   };
 
+  // Función para manejar la apertura del modal de historial
+  const handleFinalizar = (
+    e: MouseEvent<HTMLButtonElement>,
+    servicio: ServicioConRelaciones,
+  ) => {
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
+
+    // No mostrar botón de edición si el servicio está completado o cancelado
+    if (servicio.id && servicio.estado === "en_curso") {
+      setServicioFinalizarId(servicio.id);
+      setModalFinalizarServicio(true);
+    }
+  };
+
   // Determinar si se debe mostrar el botón de edición
   const shouldShowEditButton = (estado: EstadoServicio) => {
     return (
@@ -132,6 +150,11 @@ const ServiciosListCards = ({
   // Determinar si se debe mostrar el botón de proceder a liquidar
   const showPlanillaNumber = (estado: EstadoServicio) => {
     return estado === "realizado" || estado === "planilla_asignada";
+  };
+
+  // Determinar si se debe mostrar el botón de proceder a finalizar servicio
+  const showFinalizar = (estado: EstadoServicio) => {
+    return estado === "en_curso";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -264,6 +287,11 @@ const ServiciosListCards = ({
     () => import("./modalHistorialServicio"),
   );
 
+  // Importar el componente modal de historial
+  const ModalFinalizarServicio = React.lazy(
+    () => import("./modalFinalizar"),
+  );
+
   return (
     <div className="space-y-3 px-3 py-3">
       {/* Modal de Historial de Servicio */}
@@ -273,6 +301,17 @@ const ServiciosListCards = ({
             isOpen={modalHistorialOpen}
             servicioId={servicioHistorialId}
             onClose={() => setModalHistorialOpen(false)}
+          />
+        )}
+      </React.Suspense>
+
+      {/* Modal de finalización de Servicio */}
+      <React.Suspense>
+        {modalFinalizarOpen && (
+          <ModalFinalizarServicio
+            isOpen={modalFinalizarOpen}
+            servicioId={servicioFinalizarId}
+            onClose={() => setModalFinalizarServicio(false)}
           />
         )}
       </React.Suspense>
@@ -316,7 +355,23 @@ const ServiciosListCards = ({
                 }
               }}
             >
-              {/* Contenedor para los botones flotantes */}
+              {/* Contenedor para los botones flotantes left */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+                {/* Botones con posición fija y manejo simplificado */}
+                <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Botón de finalizar */}
+                  {showFinalizar(servicio.estado) && (
+                    <button
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleFinalizar(e, servicio)}
+                    >
+                      <StampIcon size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Contenedor para los botones flotantes right */}
               <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
                 {/* Botones con posición fija y manejo simplificado */}
                 <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

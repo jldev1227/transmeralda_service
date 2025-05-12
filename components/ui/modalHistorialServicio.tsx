@@ -166,17 +166,13 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
       classNames={{
         backdrop:
           "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
-        // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
-        wrapper: "max-w-[96rem] w-[calc(100%-3rem)] mx-auto", // 96rem es mayor que 5xl (64rem) pero no es "full"
-        // Asegurar que el contenido ocupe todo el ancho del modal
-        base: "w-full",
       }}
       isOpen={isOpen}
       scrollBehavior="inside"
       size="5xl" // Mantenemos el valor estándar, pero lo sobreescribimos con classNames
       onClose={onClose}
     >
-      <ModalContent className="w-full max-w-full">
+      <ModalContent>
         {() => (
           <>
             <ModalHeader>
@@ -256,19 +252,20 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                               <Chip
                                 color={
                                   servicio.estado === "realizado"
-                                    ? "success"
+                                    ? "primary"
                                     : servicio.estado === "cancelado"
                                       ? "danger"
                                       : servicio.estado === "en_curso"
-                                        ? "primary"
+                                        ? "success"
                                         : servicio.estado === "planificado"
                                           ? "warning"
                                           : servicio.estado ===
-                                              "planilla_asignada"
+                                            "planilla_asignada"
                                             ? "secondary"
                                             : "default"
                                 }
                                 size="sm"
+                                variant="flat"
                               >
                                 {servicio.estado.charAt(0).toUpperCase() +
                                   servicio.estado.slice(1).replace("_", " ")}
@@ -374,7 +371,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                     {item.valor_anterior
                                       ? item.valor_anterior.length > 30
                                         ? item.valor_anterior.substring(0, 30) +
-                                          "..."
+                                        "..."
                                         : item.valor_anterior
                                       : "Sin valor"}
                                   </span>
@@ -382,7 +379,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                     {item.valor_nuevo
                                       ? item.valor_nuevo.length > 30
                                         ? item.valor_nuevo.substring(0, 30) +
-                                          "..."
+                                        "..."
                                         : item.valor_nuevo
                                       : "Sin valor"}
                                   </span>
