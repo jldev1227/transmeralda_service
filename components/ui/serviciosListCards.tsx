@@ -1,15 +1,22 @@
 import React from "react";
-import { Hash, Edit, Ticket, History, StampIcon, Trash2Icon } from "lucide-react";
+import {
+  Hash,
+  Edit,
+  Ticket,
+  History,
+  StampIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
+
+import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
 
 import {
   EstadoServicio,
-  Liquidacion,
   ServicioConRelaciones,
   useService,
 } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
-import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
 import { apiClient } from "@/config/apiClient";
 
 interface ServiciosListCardsProps {
@@ -45,7 +52,6 @@ const ServiciosListCards = ({
     clearSelectedServicio,
     socketEventLogs,
   } = useService();
-
 
   const {
     confirm,
@@ -169,7 +175,11 @@ const ServiciosListCards = ({
 
   // Determinar si se debe mostrar el botón para eliminar servicio
   const showDelete = (estado: EstadoServicio) => {
-    return estado === "solicitado" || estado === "planificado" || estado === "en_curso";
+    return (
+      estado === "solicitado" ||
+      estado === "planificado" ||
+      estado === "en_curso"
+    );
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -303,9 +313,7 @@ const ServiciosListCards = ({
   );
 
   // Importar el componente modal de historial
-  const ModalFinalizarServicio = React.lazy(
-    () => import("./modalFinalizar"),
-  );
+  const ModalFinalizarServicio = React.lazy(() => import("./modalFinalizar"));
 
   const eliminarServicio = async (id: string | undefined) => {
     if (!id) return;
@@ -327,14 +335,14 @@ const ServiciosListCards = ({
 
     try {
       const response = await apiClient.delete<ServicioConRelaciones>(
-        `/api/servicios/${id}`
+        `/api/servicios/${id}`,
       );
 
-      console.log(response)
+      console.log(response);
     } catch (err) {
       console.error("Error al eliminar el servicio:", err);
     }
-  }
+  };
 
   return (
     <div className="space-y-3 px-3 py-3">
@@ -388,7 +396,7 @@ const ServiciosListCards = ({
               ${isNew ? "animate-pulse" : ""}
               ${isUpdated ? "animate-fadeIn" : ""}
               ${selectedServicio?.id === servicio.id ? getColorCard(servicio.estado) : ""}
-              w-auto md:w-[30rem] max-w-full
+              w-auto lg:w-[30rem] max-w-full
             `}
               role="button"
               tabIndex={0}

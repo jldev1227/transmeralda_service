@@ -1015,8 +1015,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          console.log(serviciosWithRoutes)
-          console.log(data)
+          console.log(serviciosWithRoutes);
+          console.log(data);
           setServiciosWithRoutes((prevServicios) =>
             prevServicios.filter((s) => s.id !== data.id),
           );
@@ -1149,13 +1149,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-        console.log(data)
+        console.log(data);
 
         if (data.estado === "aprobado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
-            liquidacion.id === data.id
-              ? data.liquidacion
-              : liquidacion,
+            liquidacion.id === data.id ? data.liquidacion : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);
@@ -1185,9 +1183,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         if (data.estado === "rechazada") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
-            liquidacion.id === data.id
-              ? data.liquidacion
-              : liquidacion,
+            liquidacion.id === data.id ? data.liquidacion : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);
@@ -1215,13 +1211,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-        console.log(data)
+        console.log(data);
 
         if (data.estado === "liquidado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
-            liquidacion.id === data.id
-              ? data.liquidacion
-              : liquidacion,
+            liquidacion.id === data.id ? data.liquidacion : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);

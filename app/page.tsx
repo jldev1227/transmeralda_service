@@ -67,7 +67,7 @@ const AdvancedDashboard = () => {
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
   const [token] = useState(WIALON_API_TOKEN);
 
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   // State
   const {
@@ -83,7 +83,7 @@ const AdvancedDashboard = () => {
     useState<VehicleTracking | null>(null);
   const [isLoadingWialon, setIsLoadingWialon] = useState(false);
   const [trackingError, setTrackingError] = useState<string>("");
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   const [filters, setFilters] = useState<Filters>({
     estado: "",
@@ -501,7 +501,7 @@ const AdvancedDashboard = () => {
       {isPanelOpen && (
         <div
           aria-modal="true"
-          className="absolute md:relative z-50 w-full md:max-w-[30rem] animate-bottomToTop"
+          className="absolute lg:relative z-50 w-full lg:max-w-[30rem] animate-bottomToTop"
           role="dialog"
         >
           <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
@@ -986,8 +986,8 @@ const AdvancedDashboard = () => {
           isPanelOpen={isPanelOpen}
           mapboxToken={MAPBOX_ACCESS_TOKEN}
           selectedServicio={servicioWithRoutes}
-          setSelectedServicio={setSelectedServicio}
           servicios={servicios}
+          setSelectedServicio={setSelectedServicio}
           setServicioWithRoutes={setServicioWithRoutes}
           trackingError={trackingError}
           vehicleTracking={vehicleTracking}
@@ -1008,7 +1008,7 @@ const AdvancedDashboard = () => {
           transform: scale(1.1);
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 980px) {
           /* Mobile drag handle appearance */
           .panel-drag-handle {
             width: 40px;

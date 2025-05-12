@@ -9,7 +9,7 @@ export default function RouteAndDetails({
 }: {
   servicio: ServicioConRelaciones;
 }) {
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   return (
     <div className="px-2 md:px-0">

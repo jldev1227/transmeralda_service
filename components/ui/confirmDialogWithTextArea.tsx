@@ -97,7 +97,7 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     }
   };
 
-  console.log(textareaRequired)
+  console.log(textareaRequired);
 
   return (
     <Modal
@@ -128,11 +128,11 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
                   <label htmlFor="observaciones">{textareaLabel}</label>
                   <Textarea
                     className="w-full"
-                    radius="sm"
                     id="observaciones"
                     isDisabled={isLoading}
                     isRequired={textareaRequired}
                     placeholder={textareaPlaceholder}
+                    radius="sm"
                     rows={4}
                     value={observaciones}
                     onChange={(e) => {
