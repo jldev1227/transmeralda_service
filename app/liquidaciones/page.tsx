@@ -829,7 +829,7 @@ function ModalLiquidarServicios() {
       <div className="flex flex-col gap-1 border-b pb-4">
         <div className="flex gap-3 flex-col sm:flex-row w-full items-start md:items-center justify-between mb-3">
           <h2 className="text-xl font-bold">Liquidación de Servicios</h2>
-          <Button className="w-full sm:w-auto" as={Link} color="primary" href="/historico">
+          <Button radius="sm" className="w-full sm:w-auto" as={Link} color="primary" href="/historico">
             <FileClockIcon className="w-6 h-6" />
             Historico
           </Button>

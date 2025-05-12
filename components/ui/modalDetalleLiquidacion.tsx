@@ -212,6 +212,8 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
 
   const regresarEstadoLiquidado = async () => {
     if (!liquidacionId) return;
+    setLoading(true);
+    setConfirmLoading(true);
 
     // Mostrar diálogo de confirmación
     const { confirmed, observaciones } = await confirm({
@@ -229,8 +231,6 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
 
     if (!confirmed) return;
 
-    setLoading(true);
-    setConfirmLoading(true);
 
     try {
       // Enviamos las observaciones al endpoint si las hay
@@ -241,16 +241,10 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
 
       setLiquidacion(response.data);
 
-      // Mostrar notificación de éxito
-      addToast({
-        title: "Estado actualizado",
-        description: "Liquidación regresada a estado Liquidado correctamente",
-        color: "success",
-      });
-
       onClose();
     } catch (err) {
       console.error("Error al regresar a estado liquidación:", err);
+    } finally {
       setLoading(false);
     }
   };

@@ -8,6 +8,8 @@ import {
   useService,
 } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
+import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
+import { apiClient } from "@/config/apiClient";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
@@ -42,6 +44,13 @@ const ServiciosListCards = ({
     clearSelectedServicio,
     socketEventLogs,
   } = useService();
+
+
+  const {
+    confirm,
+    DialogComponent,
+    setLoading: setConfirmLoading,
+  } = useConfirmDialogWithTextarea();
 
   // Estado para animaciones de servicios
   const [rowAnimations, setRowAnimations] = useState<RowAnimationState>({});
@@ -297,9 +306,37 @@ const ServiciosListCards = ({
     () => import("./modalFinalizar"),
   );
 
+  const eliminarServicio = async (id: string | undefined) => {
+    if (!id) return;
+
+    // Mostrar diálogo de confirmación con textarea obligatorio
+    const { confirmed } = await confirm({
+      title: "Eliminar Servicio",
+      message:
+        "¿Estás seguro de que deseas eliminar este servcicio? Esta acción puede requerir aprobación adicional.",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      confirmVariant: "danger",
+      textareaRequired: false,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+
+    try {
+ 
+    } catch (err) {
+      console.error("Error al rechazar la liquidación:", err);
+    }
+  }
+
   return (
     <div className="space-y-3 px-3 py-3">
       {/* Modal de Historial de Servicio */}
+
+      {DialogComponent}
+
       <React.Suspense>
         {modalHistorialOpen && (
           <ModalHistorialServicio
@@ -376,7 +413,7 @@ const ServiciosListCards = ({
                   {showDelete(servicio.estado) && (
                     <button
                       className="bg-red-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => handleFinalizar(e, servicio)}
+                      onClick={() => eliminarServicio(servicio.id)}
                     >
                       <Trash2Icon size={16} />
                     </button>

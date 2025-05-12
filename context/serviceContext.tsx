@@ -1147,10 +1147,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
+        console.log(data)
+
         if (data.estado === "aprobado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 
@@ -1182,7 +1184,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         if (data.estado === "rechazada") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 
@@ -1211,10 +1213,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
+        console.log(data)
+
         if (data.estado === "liquidado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 

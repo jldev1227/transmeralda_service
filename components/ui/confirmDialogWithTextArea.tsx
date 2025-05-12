@@ -43,7 +43,7 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
   isLoading = false,
   textareaLabel = "Observaciones",
   textareaPlaceholder = "Ingrese sus observaciones aquí...",
-  textareaRequired = true,
+  textareaRequired = false,
   textareaHelperText = "Por favor, indique el motivo del rechazo.",
 }) => {
   // Estado para el contenido del textarea
@@ -97,6 +97,8 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     }
   };
 
+  console.log(textareaRequired)
+
   return (
     <Modal
       backdrop="blur"
@@ -121,22 +123,27 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
                 )}
               </div>
 
-              <label htmlFor="observaciones">{textareaLabel}</label>
-              <Textarea
-                className="w-full"
-                id="observaciones"
-                isDisabled={isLoading}
-                isRequired={textareaRequired}
-                placeholder={textareaPlaceholder}
-                rows={4}
-                value={observaciones}
-                onChange={(e) => {
-                  setObservaciones(e.target.value);
-                  if (error && e.target.value.trim()) {
-                    setError(null);
-                  }
-                }}
-              />
+              {textareaRequired && (
+                <div className="space-y-2">
+                  <label htmlFor="observaciones">{textareaLabel}</label>
+                  <Textarea
+                    className="w-full"
+                    radius="sm"
+                    id="observaciones"
+                    isDisabled={isLoading}
+                    isRequired={textareaRequired}
+                    placeholder={textareaPlaceholder}
+                    rows={4}
+                    value={observaciones}
+                    onChange={(e) => {
+                      setObservaciones(e.target.value);
+                      if (error && e.target.value.trim()) {
+                        setError(null);
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </ModalBody>
             <ModalFooter>
               <div className="flex justify-end gap-3 mt-4">
@@ -186,7 +193,7 @@ export const useConfirmDialogWithTextarea = () => {
     isLoading: false,
     textareaLabel: "Observaciones",
     textareaPlaceholder: "Ingrese sus observaciones aquí...",
-    textareaRequired: true,
+    textareaRequired: false,
     textareaHelperText: "Por favor, indique el motivo.",
   });
 
