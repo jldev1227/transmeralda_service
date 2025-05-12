@@ -10,12 +10,13 @@ import {
   FlagIcon,
 } from "lucide-react";
 
-import CustomTable from "./CustomTable";
-
 import { apiClient } from "@/config/apiClient";
 import { ServicioConRelaciones } from "@/context/serviceContext";
-import { formatearFecha } from "@/helpers";
+import { convertirFechaParaDB, formatearFecha } from "@/helpers";
 import { Button } from "@heroui/button";
+import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
+import { DateInput } from "@heroui/date-input";
+
 
 interface ModalFinalizarServicioProps {
   isOpen: boolean;
@@ -31,6 +32,13 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
   const [servicio, setServicio] = useState<ServicioConRelaciones | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+    // State for date to do request
+  const [fechaFinalizacion, setFechaFinalizacion] = useState<ZonedDateTime>(
+    parseZonedDateTime(
+      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+    ),
+  );
 
   // Cargar datos del historial cuando cambia el ID
   useEffect(() => {
@@ -77,7 +85,8 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
         success: boolean;
         data: ServicioConRelaciones;
       }>(`/api/servicios/${servicioId}/estado`, {
-        estado: "realizado"
+        estado: "realizado",
+        fecha_finalizacion: convertirFechaParaDB(fechaFinalizacion)
       });
       if (response.data.success) {
         setServicio(response.data.data);
@@ -236,6 +245,51 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               </div>
                             </div>
                           </div>
+
+                          <div className="relative">
+                              <label
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                                htmlFor="serviceDate"
+                              >
+                                Fecha y hora de realización
+                              </label>
+                              <div className="relative space-y-2">
+                                <DateInput
+                                  hideTimeZone
+                                  classNames={{
+                                    inputWrapper: [
+                                      "!bg-transparent",
+                                      "data-[hover=true]:!bg-transparent",
+                                      "border-1",
+                                      "py-7",
+                                      "group-data-[focus=true]:!bg-transparent",
+                                      "rounded-md",
+                                    ],
+                                  }}
+                                  defaultValue={parseZonedDateTime(
+                                    `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                  )}
+                                  granularity="minute"
+                                  value={fechaFinalizacion}
+                                  onChange={(value) => {
+                                    if (value) setFechaFinalizacion(value);
+                                  }}
+                                />
+                                <p className="text-default-500 text-sm">
+                                  Fecha:{" "}
+                                  {fechaFinalizacion
+                                    ? new Intl.DateTimeFormat("es-CO", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaFinalizacion.toDate())
+                                    : "--"}
+                                </p>
+                              </div>
+                            </div>
 
                           <div className="flex">
                             <Button onPress={finalizarServicio} variant="flat" fullWidth color="primary">Finalizar servicio</Button>

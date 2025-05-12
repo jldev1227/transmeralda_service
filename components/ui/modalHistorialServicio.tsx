@@ -152,6 +152,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
       proposito_servicio: "Propósito del servicio",
       fecha_solicitud: "Fecha de solicitud",
       fecha_realizacion: "Fecha de realización",
+      fecha_finalizacion: "Fecha de finalización",
       valor: "Valor",
       numero_planilla: "Número de planilla",
       observaciones: "Observaciones",

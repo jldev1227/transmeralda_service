@@ -13,6 +13,7 @@ import { BuildingIcon } from "lucide-react";
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 import { useMediaQuery } from "react-responsive";
+import { convertirFechaParaDB } from "@/helpers";
 
 const UserIcon = () => (
   <svg
@@ -341,19 +342,6 @@ export default function ModalFormServicio() {
     if (coords) {
       setDestCoords(coords);
     }
-  };
-
-  // Función para convertir un objeto ZonedDateTime a formato para la base de datos
-  const convertirFechaParaDB = (
-    zonedDateTime: ZonedDateTime | null,
-  ): string | null => {
-    if (!zonedDateTime) return null;
-
-    // Convertir a objeto Date de JavaScript
-    const jsDate = zonedDateTime.toDate();
-
-    // Convertir el Date a string en formato ISO (o el formato que necesite tu BD)
-    return jsDate.toISOString();
   };
 
   const nextStep = () => {
