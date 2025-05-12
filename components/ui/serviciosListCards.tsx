@@ -4,6 +4,7 @@ import { MouseEvent, useEffect, useState } from "react";
 
 import {
   EstadoServicio,
+  Liquidacion,
   ServicioConRelaciones,
   useService,
 } from "@/context/serviceContext";
@@ -325,9 +326,13 @@ const ServiciosListCards = ({
     setConfirmLoading(true);
 
     try {
- 
+      const response = await apiClient.delete<ServicioConRelaciones>(
+        `/api/servicios/${id}`
+      );
+
+      console.log(response)
     } catch (err) {
-      console.error("Error al rechazar la liquidación:", err);
+      console.error("Error al eliminar el servicio:", err);
     }
   }
 

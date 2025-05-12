@@ -991,7 +991,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       };
 
       const handleServicioEliminado = (data: {
-        servicioId: string;
+        id: string;
         conductorId?: string;
       }) => {
         setSocketEventLogs((prev) => [
@@ -1005,18 +1005,20 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         // Eliminar de la lista principal de servicios
         setServicios((prevServicios) =>
-          prevServicios.filter((s) => s.id !== data.servicioId),
+          prevServicios.filter((s) => s.id !== data.id),
         );
 
         // Si es el servicio seleccionado actualmente, limpiarlo
-        if (selectedServicio?.id === data.servicioId) {
+        if (selectedServicio?.id === data.id) {
           clearSelectedServicio();
         }
 
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
+          console.log(serviciosWithRoutes)
+          console.log(data)
           setServiciosWithRoutes((prevServicios) =>
-            prevServicios.filter((s) => s.id !== data.servicioId),
+            prevServicios.filter((s) => s.id !== data.id),
           );
         }
 
