@@ -40,13 +40,6 @@ export function AuthGuard({
             (user.permisos && user.permisos[permission] === true),
         );
 
-      console.log("En AuthGuard - Usuario:", user.role);
-      console.log("En AuthGuard - Permisos requeridos:", requiredPermissions);
-      console.log(
-        "En AuthGuard - Tiene permisos:",
-        hasPermission,
-        user.permisos,
-      );
 
       // Si no tiene los permisos necesarios, lanzar un error que será
       // capturado por el error boundary más cercano

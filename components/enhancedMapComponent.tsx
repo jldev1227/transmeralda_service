@@ -132,7 +132,6 @@ const EnhancedMapComponent = ({
 
   const color = useMemo(() => {
     if (!selectedServicio) return statusColors.default;
-    console.log(selectedServicio);
 
     return (
       statusColors[selectedServicio.estado as keyof typeof statusColors] ||

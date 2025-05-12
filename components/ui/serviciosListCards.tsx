@@ -1,13 +1,16 @@
 import React from "react";
-import { Hash, Edit, Ticket, History, StampIcon } from "lucide-react";
+import { Hash, Edit, Ticket, History, StampIcon, Trash2Icon } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 
 import {
   EstadoServicio,
+  Liquidacion,
   ServicioConRelaciones,
   useService,
 } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
+import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
+import { apiClient } from "@/config/apiClient";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
@@ -42,6 +45,13 @@ const ServiciosListCards = ({
     clearSelectedServicio,
     socketEventLogs,
   } = useService();
+
+
+  const {
+    confirm,
+    DialogComponent,
+    setLoading: setConfirmLoading,
+  } = useConfirmDialogWithTextarea();
 
   // Estado para animaciones de servicios
   const [rowAnimations, setRowAnimations] = useState<RowAnimationState>({});
@@ -155,6 +165,11 @@ const ServiciosListCards = ({
   // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
     return estado === "en_curso";
+  };
+
+  // Determinar si se debe mostrar el botón para eliminar servicio
+  const showDelete = (estado: EstadoServicio) => {
+    return estado === "solicitado" || estado === "planificado" || estado === "en_curso";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -292,9 +307,41 @@ const ServiciosListCards = ({
     () => import("./modalFinalizar"),
   );
 
+  const eliminarServicio = async (id: string | undefined) => {
+    if (!id) return;
+
+    // Mostrar diálogo de confirmación con textarea obligatorio
+    const { confirmed } = await confirm({
+      title: "Eliminar Servicio",
+      message:
+        "¿Estás seguro de que deseas eliminar este servcicio? Esta acción puede requerir aprobación adicional.",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      confirmVariant: "danger",
+      textareaRequired: false,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+
+    try {
+      const response = await apiClient.delete<ServicioConRelaciones>(
+        `/api/servicios/${id}`
+      );
+
+      console.log(response)
+    } catch (err) {
+      console.error("Error al eliminar el servicio:", err);
+    }
+  }
+
   return (
     <div className="space-y-3 px-3 py-3">
       {/* Modal de Historial de Servicio */}
+
+      {DialogComponent}
+
       <React.Suspense>
         {modalHistorialOpen && (
           <ModalHistorialServicio
@@ -366,6 +413,14 @@ const ServiciosListCards = ({
                       onClick={(e) => handleFinalizar(e, servicio)}
                     >
                       <StampIcon size={16} />
+                    </button>
+                  )}
+                  {showDelete(servicio.estado) && (
+                    <button
+                      className="bg-red-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={() => eliminarServicio(servicio.id)}
+                    >
+                      <Trash2Icon size={16} />
                     </button>
                   )}
                 </div>

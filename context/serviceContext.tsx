@@ -991,7 +991,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       };
 
       const handleServicioEliminado = (data: {
-        servicioId: string;
+        id: string;
         conductorId?: string;
       }) => {
         setSocketEventLogs((prev) => [
@@ -1005,18 +1005,20 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         // Eliminar de la lista principal de servicios
         setServicios((prevServicios) =>
-          prevServicios.filter((s) => s.id !== data.servicioId),
+          prevServicios.filter((s) => s.id !== data.id),
         );
 
         // Si es el servicio seleccionado actualmente, limpiarlo
-        if (selectedServicio?.id === data.servicioId) {
+        if (selectedServicio?.id === data.id) {
           clearSelectedServicio();
         }
 
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
+          console.log(serviciosWithRoutes)
+          console.log(data)
           setServiciosWithRoutes((prevServicios) =>
-            prevServicios.filter((s) => s.id !== data.servicioId),
+            prevServicios.filter((s) => s.id !== data.id),
           );
         }
 
@@ -1147,16 +1149,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
+        console.log(data)
+
         if (data.estado === "aprobado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);
-
-          console.log(liquidacionesActualizado);
 
           addToast({
             title: "Liquidación aprobada!",
@@ -1184,13 +1186,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         if (data.estado === "rechazada") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);
-
-          console.log(liquidaciones);
 
           addToast({
             title: "Liquidación rechazada!",
@@ -1215,16 +1215,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
+        console.log(data)
+
         if (data.estado === "liquidado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id
-              ? { ...liquidacion, estado: data.estado }
+              ? data.liquidacion
               : liquidacion,
           );
 
           setLiquidaciones(liquidacionesActualizado);
-
-          console.log(liquidaciones);
 
           addToast({
             title: 'Liquidación regresada a estado "Liquidado"!',
