@@ -101,7 +101,6 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     <Modal
       backdrop="blur"
       isOpen={isOpen}
-      placement="center"
       size="3xl"
       onClose={handleCloseModal}
     >

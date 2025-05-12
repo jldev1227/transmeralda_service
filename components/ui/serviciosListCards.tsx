@@ -1,5 +1,5 @@
 import React from "react";
-import { Hash, Edit, Ticket, History, StampIcon } from "lucide-react";
+import { Hash, Edit, Ticket, History, StampIcon, Trash2Icon } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 
 import {
@@ -155,6 +155,11 @@ const ServiciosListCards = ({
   // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
     return estado === "en_curso";
+  };
+
+  // Determinar si se debe mostrar el botón para eliminar servicio
+  const showDelete = (estado: EstadoServicio) => {
+    return estado === "solicitado" || estado === "planificado" || estado === "en_curso";
   };
 
   // Determinar el color de la tarjeta según el estado del servicio
@@ -366,6 +371,14 @@ const ServiciosListCards = ({
                       onClick={(e) => handleFinalizar(e, servicio)}
                     >
                       <StampIcon size={16} />
+                    </button>
+                  )}
+                  {showDelete(servicio.estado) && (
+                    <button
+                      className="bg-red-500 text-white p-2 rounded-full shadow-md cursor-pointer"
+                      onClick={(e) => handleFinalizar(e, servicio)}
+                    >
+                      <Trash2Icon size={16} />
                     </button>
                   )}
                 </div>

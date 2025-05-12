@@ -13,8 +13,6 @@ class SocketService {
   private getSocketUrl(): string {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://api.transmeralda.com";
 
-    console.log(url);
-
     return url;
   }
 

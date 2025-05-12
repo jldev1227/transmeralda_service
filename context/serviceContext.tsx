@@ -1156,8 +1156,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
           setLiquidaciones(liquidacionesActualizado);
 
-          console.log(liquidacionesActualizado);
-
           addToast({
             title: "Liquidación aprobada!",
             description: `Se ha aprobado la liquidación ${data.liquidacion.consecutivo}`,
@@ -1190,8 +1188,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
           setLiquidaciones(liquidacionesActualizado);
 
-          console.log(liquidaciones);
-
           addToast({
             title: "Liquidación rechazada!",
             description: `Se ha rechazado la liquidación ${data.liquidacion.consecutivo}, revisa las observaciones para realizar las correcciones`,
@@ -1223,8 +1219,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           );
 
           setLiquidaciones(liquidacionesActualizado);
-
-          console.log(liquidaciones);
 
           addToast({
             title: 'Liquidación regresada a estado "Liquidado"!',

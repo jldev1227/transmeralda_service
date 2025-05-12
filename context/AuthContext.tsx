@@ -81,7 +81,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await apiClient.get("/api/usuarios/perfil");
 
       if (response.data && response.data.success) {
-        console.log(response.data);
         setUser(response.data.data);
         setError(null);
       } else {
