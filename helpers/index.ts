@@ -1,3 +1,5 @@
+import { ZonedDateTime } from "@internationalized/date";
+
 // Función de utilidad para formatear fechas
 export const formatearFecha = (
   fechaISOString: Date | string | undefined,
@@ -49,3 +51,16 @@ export const formatCurrency = (value: number) => {
     minimumFractionDigits: 0,
   }).format(value);
 };
+
+ // Función para convertir un objeto ZonedDateTime a formato para la base de datos
+export const convertirFechaParaDB = (
+    zonedDateTime: ZonedDateTime | null,
+  ): string | null => {
+    if (!zonedDateTime) return null;
+
+    // Convertir a objeto Date de JavaScript
+    const jsDate = zonedDateTime.toDate();
+
+    // Convertir el Date a string en formato ISO (o el formato que necesite tu BD)
+    return jsDate.toISOString();
+  };

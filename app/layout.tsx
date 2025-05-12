@@ -26,6 +26,9 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "white" },
   ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // Esta es la propiedad clave para las áreas seguras
 };
 
 // Componente servidor principal sin 'use client'
