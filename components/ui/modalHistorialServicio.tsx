@@ -261,7 +261,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                         : servicio.estado === "planificado"
                                           ? "warning"
                                           : servicio.estado ===
-                                            "planilla_asignada"
+                                              "planilla_asignada"
                                             ? "secondary"
                                             : "default"
                                 }
@@ -372,7 +372,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                     {item.valor_anterior
                                       ? item.valor_anterior.length > 30
                                         ? item.valor_anterior.substring(0, 30) +
-                                        "..."
+                                          "..."
                                         : item.valor_anterior
                                       : "Sin valor"}
                                   </span>
@@ -380,7 +380,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                                     {item.valor_nuevo
                                       ? item.valor_nuevo.length > 30
                                         ? item.valor_nuevo.substring(0, 30) +
-                                        "..."
+                                          "..."
                                         : item.valor_nuevo
                                       : "Sin valor"}
                                   </span>

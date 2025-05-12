@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Home, Menu, X, ChevronDown, CircleUserRound } from "lucide-react";
+import { Home, ChevronDown, CircleUserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -152,20 +152,6 @@ const Navbar = () => {
               <CircleUserRound size={28} />
             </button>
           </nav>
-
-          {/* Mobile menu button */}
-          <div className="lg:hidden flex items-center">
-            <button
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-emerald-600 hover:bg-gray-50 focus:outline-none"
-              type="button"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <span className="sr-only">Abrir menú principal</span>
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
         </div>
       </div>
 

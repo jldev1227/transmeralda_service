@@ -12,7 +12,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, PlusIcon, Truck } from "lucide-react";
+import { ClipboardList, LogOut, PlusIcon, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import LoadingComponent from "./ui/LoadingComponent";
@@ -24,6 +24,8 @@ import {
 } from "@/context/serviceContext";
 import { formatearFecha } from "@/helpers";
 import { getStatusText } from "@/utils/indext";
+import { useAuth } from "@/context/AuthContext";
+import { LogoutButton } from "./logout";
 
 interface EnhancedMapComponentProps {
   servicios: ServicioConRelaciones[];
@@ -111,6 +113,7 @@ const EnhancedMapComponent = ({
 
   const router = useRouter();
 
+  const { user } = useAuth()
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string>("");
   const [activeVehiclesData, setActiveVehiclesData] = useState<
@@ -394,21 +397,20 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${
-            isOrigin
-              ? `<div class="text-sm">
+          ${isOrigin
+        ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-              : `<div class="text-sm">
+        : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-          }
+      }
         </div>
       </div>
     `;
@@ -1204,11 +1206,24 @@ const EnhancedMapComponent = ({
           </div>
         </div>
       )}
-
-      <div className="absolute top-2.5 left-4 z-10 bg-white bg-opacity-90 p-2 rounded-md shadow">
-        <span className="text-sm font-medium">
-          Vehiculos con servicios en curso (Wialon): {activeVehiclesData.length}
-        </span>
+      {/* Header: Responsive layout for vehicle count, logout, and user name */}
+      <div
+        className="absolute top-2.5 left-4 z-10 flex flex-col gap-2"
+      >
+        {/* Welcome message (for all devices) */}
+        <div className="flex flex-wrap items-center gap-4">
+          <Tooltip color="danger" content="Cerrar sesión" radius="sm">
+            <div>
+              <LogoutButton />
+            </div>
+          </Tooltip>
+          <span className="text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
+            Bienvenido! {user?.nombre}
+          </span>
+          <span className="block text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
+            Vehículos con servicios en curso (Wialon): {activeVehiclesData.length}
+          </span>
+        </div>
       </div>
 
       {!isPanelOpen && (
@@ -1227,26 +1242,31 @@ const EnhancedMapComponent = ({
       )}
 
       <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
-        <Tooltip content="Liquidador de servicios" radius="sm">
-          <Button
-            isIconOnly
-            className="text-sm font-medium bg-white h-12 w-12"
-            radius="sm"
-            onPress={handleButtonPressLiquidar}
-          >
-            <ClipboardList color="#00bc7d" />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Agregar servicio" radius="sm">
-          <Button
-            isIconOnly
-            className="text-sm font-medium bg-white h-12 w-12"
-            radius="sm"
-            onPress={handleButtonPressForm}
-          >
-            <PlusIcon color="#00bc7d" />
-          </Button>
-        </Tooltip>
+        {(user?.permisos.liquidador || ["admin", "liquidador"].includes(user?.role || '')) && (
+          <Tooltip content="Liquidador de servicios" radius="sm">
+        <Button
+          isIconOnly
+          className="text-sm font-medium bg-white h-12 w-12"
+          radius="sm"
+          onPress={handleButtonPressLiquidar}
+        >
+          <ClipboardList color="#00bc7d" />
+        </Button>
+          </Tooltip>
+        )}
+
+        {(user?.permisos.gestor_servicio || ["admin", "gestor_servicio"].includes(user?.role || '')) && (
+          <Tooltip content="Agregar servicio" radius="sm">
+        <Button
+          isIconOnly
+          className="text-sm font-medium bg-white h-12 w-12"
+          radius="sm"
+          onPress={handleButtonPressForm}
+        >
+          <PlusIcon color="#00bc7d" />
+        </Button>
+          </Tooltip>
+        )}
       </div>
 
       {selectedServicio?.estado === "en_curso" &&

@@ -9,10 +9,10 @@ import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
 import { BuildingIcon } from "lucide-react";
+import { useMediaQuery } from "react-responsive";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
-import { useMediaQuery } from "react-responsive";
 import { convertirFechaParaDB } from "@/helpers";
 
 const UserIcon = () => (
@@ -132,7 +132,7 @@ export default function ModalFormServicio() {
   const { servicio, isEditing } = servicioEditar;
 
   const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   // Función para limpiar todos los estados del formulario
   const resetFormStates = () => {
@@ -452,6 +452,7 @@ export default function ModalFormServicio() {
       // Validar que la fecha de realización no sea anterior a la actual si no hay conductor y vehículo asignados
       const now = new Date();
       const fechaReal = fechaRealizacion?.toDate?.() ?? null;
+
       if (
         fechaReal &&
         fechaReal < now &&
@@ -464,6 +465,7 @@ export default function ModalFormServicio() {
             "No se puede registrar un servicio con fecha de realización anterior a la actual sin conductor y vehículo asignados.",
           color: "danger",
         });
+
         return;
       }
 
@@ -620,8 +622,8 @@ export default function ModalFormServicio() {
               </ModalHeader>
               <ModalBody className="space-y-4">
                 {/* Step Progress Bar - solo mostrar si no estamos en modo solo lectura */}
-                {!isReadOnly && (
-                  isMobile ? (
+                {!isReadOnly &&
+                  (isMobile ? (
                     <div className="flex items-center justify-center mb-4">
                       <StepIndicator
                         stepNumber={currentStep}
@@ -637,7 +639,10 @@ export default function ModalFormServicio() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <StepIndicator stepNumber={1} title="Información Básica" />
+                      <StepIndicator
+                        stepNumber={1}
+                        title="Información Básica"
+                      />
                       <div
                         className={`flex-1 h-0.5 mx-4 ${currentStep > 1 ? "bg-emerald-600" : "bg-gray-200"}`}
                       />
@@ -651,8 +656,7 @@ export default function ModalFormServicio() {
                       />
                       <StepIndicator stepNumber={4} title="Estado" />
                     </div>
-                  )
-                )}
+                  ))}
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
                   {/* Si está en modo solo lectura, mostrar todos los detalles juntos */}
@@ -1464,27 +1468,27 @@ export default function ModalFormServicio() {
                             </label>
                             <div className="relative">
                               <p className="text-md font-medium mb-4">
-                              {(() => {
-                                const now = new Date();
-                                const fechaReal = fechaRealizacion?.toDate?.() ?? null;
-                                if (
-                                fechaReal &&
-                                fechaReal < now
-                                ) {
-                                if (conductorSelected && vehicleSelected) {
-                                  return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
-                                } else {
-                                  return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
-                                }
-                                }
-                                return conductorSelected && vehicleSelected
-                                ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
-                                : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
-                              })()}
+                                {(() => {
+                                  const now = new Date();
+                                  const fechaReal =
+                                    fechaRealizacion?.toDate?.() ?? null;
+
+                                  if (fechaReal && fechaReal < now) {
+                                    if (conductorSelected && vehicleSelected) {
+                                      return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
+                                    } else {
+                                      return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
+                                    }
+                                  }
+
+                                  return conductorSelected && vehicleSelected
+                                    ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
+                                    : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
+                                })()}
                               </p>
                               <p className="text-xs text-gray-500">
-                              El estado se determina automáticamente según las
-                              asignaciones realizadas.
+                                El estado se determina automáticamente según las
+                                asignaciones realizadas.
                               </p>
                             </div>
                           </div>

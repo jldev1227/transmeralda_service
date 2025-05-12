@@ -231,7 +231,6 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
 
     if (!confirmed) return;
 
-
     try {
       // Enviamos las observaciones al endpoint si las hay
       const response = await apiClient.patch<Liquidacion>(

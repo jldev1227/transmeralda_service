@@ -52,15 +52,15 @@ export const formatCurrency = (value: number) => {
   }).format(value);
 };
 
- // Función para convertir un objeto ZonedDateTime a formato para la base de datos
+// Función para convertir un objeto ZonedDateTime a formato para la base de datos
 export const convertirFechaParaDB = (
-    zonedDateTime: ZonedDateTime | null,
-  ): string | null => {
-    if (!zonedDateTime) return null;
+  zonedDateTime: ZonedDateTime | null,
+): string | null => {
+  if (!zonedDateTime) return null;
 
-    // Convertir a objeto Date de JavaScript
-    const jsDate = zonedDateTime.toDate();
+  // Convertir a objeto Date de JavaScript
+  const jsDate = zonedDateTime.toDate();
 
-    // Convertir el Date a string en formato ISO (o el formato que necesite tu BD)
-    return jsDate.toISOString();
-  };
+  // Convertir el Date a string en formato ISO (o el formato que necesite tu BD)
+  return jsDate.toISOString();
+};

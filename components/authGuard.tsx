@@ -22,7 +22,10 @@ export function AuthGuard({
   useEffect(() => {
     // Si no está cargando y no está autenticado, redirigir al login
     if (!loading && !isAuthenticated) {
-      router.push(process.env.NEXT_PUBLIC_AUTH_SYSTEM || `http://auth.midominio.local:3001`);
+      router.push(
+        process.env.NEXT_PUBLIC_AUTH_SYSTEM ||
+          `http://auth.midominio.local:3001`,
+      );
 
       return;
     }
@@ -39,7 +42,6 @@ export function AuthGuard({
             // Si tiene el permiso específico en el objeto permisos
             (user.permisos && user.permisos[permission] === true),
         );
-
 
       // Si no tiene los permisos necesarios, lanzar un error que será
       // capturado por el error boundary más cercano

@@ -36,6 +36,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
+import Link from "next/link";
 
 import CustomTable, { SortDescriptor, Column } from "./ui/CustomTable";
 import ModalDetalleLiquidacion from "./ui/modalDetalleLiquidacion";
@@ -43,7 +44,6 @@ import ModalDetalleLiquidacion from "./ui/modalDetalleLiquidacion";
 import { apiClient } from "@/config/apiClient";
 import { formatearFecha } from "@/helpers";
 import { Liquidacion, useService } from "@/context/serviceContext";
-import Link from "next/link";
 
 interface LiquidacionesResponse {
   total: number;
@@ -671,7 +671,13 @@ const HistoricoLiquidaciones = () => {
           <h1 className="text-xl sm:text-2xl font-bold">
             Histórico de Liquidaciones
           </h1>
-          <Button className="w-full sm:w-auto" color="primary" as={Link} href="/liquidaciones" radius="sm">
+          <Button
+            as={Link}
+            className="w-full sm:w-auto"
+            color="primary"
+            href="/liquidaciones"
+            radius="sm"
+          >
             <ArrowLeft />
             Volver
           </Button>
@@ -736,16 +742,16 @@ const HistoricoLiquidaciones = () => {
             filtroUsuario ||
             fechaInicio ||
             fechaFin) && (
-              <Button
-                className="sm:w-auto"
-                color="danger"
-                startContent={<XIcon className="h-4 w-4" />}
-                variant="light"
-                onPress={resetearFiltros}
-              >
-                Limpiar filtros
-              </Button>
-            )}
+            <Button
+              className="sm:w-auto"
+              color="danger"
+              startContent={<XIcon className="h-4 w-4" />}
+              variant="light"
+              onPress={resetearFiltros}
+            >
+              Limpiar filtros
+            </Button>
+          )}
         </div>
 
         {/* Filtros avanzados (siempre visibles) */}
@@ -843,7 +849,7 @@ const HistoricoLiquidaciones = () => {
                     <FilterIcon className="mr-2 h-4 w-4" />
                     {filtroEstado
                       ? filtroEstado.charAt(0).toUpperCase() +
-                      filtroEstado.slice(1)
+                        filtroEstado.slice(1)
                       : "Todos los estados"}
                   </div>
                 </Button>

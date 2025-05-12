@@ -10,7 +10,7 @@ import { getStatusColor, getStatusText } from "@/utils/indext";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;
