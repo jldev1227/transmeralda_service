@@ -18,6 +18,7 @@ import {
 } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
 import { apiClient } from "@/config/apiClient";
+import { useAuth } from "@/context/AuthContext";
 
 interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
@@ -34,6 +35,9 @@ const ServiciosListCards = ({
   formatearFecha,
   handleClosePanel,
 }: ServiciosListCardsProps) => {
+
+  const { user } = useAuth()
+
   // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
   const [modalFinalizarOpen, setModalFinalizarServicio] = useState(false);
@@ -165,8 +169,10 @@ const ServiciosListCards = ({
 
   // Determinar si se debe mostrar el botón de proceder a liquidar
   const showPlanillaNumber = (estado: EstadoServicio) => {
-    return estado === "realizado" || estado === "planilla_asignada";
-  };
+    if (user?.permisos.gestor_planillas || ["admin", "gestor_planillas"].includes(user?.role || '')) {
+      return estado === "realizado" || estado === "planilla_asignada";
+    }
+  }
 
   // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
