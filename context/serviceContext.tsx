@@ -21,7 +21,7 @@ export interface Conductor {
   nombre: string;
   apellido: string;
   numero_identificacion: string;
-  salario_base: number;
+  telefono: string;
   email: string;
   foto_url: string;
 }
