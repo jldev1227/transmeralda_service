@@ -189,6 +189,7 @@ export interface Servicio {
   proposito_servicio: string;
   fecha_solicitud: string;
   fecha_realizacion?: string;
+  fecha_finalizacion?: string;
   hora_salida: string;
   distancia_km: number;
   valor: number;
@@ -1015,8 +1016,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          console.log(serviciosWithRoutes);
-          console.log(data);
           setServiciosWithRoutes((prevServicios) =>
             prevServicios.filter((s) => s.id !== data.id),
           );
@@ -1149,8 +1148,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-        console.log(data);
-
         if (data.estado === "aprobado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id ? data.liquidacion : liquidacion,
@@ -1210,8 +1207,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
-
-        console.log(data);
 
         if (data.estado === "liquidado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>

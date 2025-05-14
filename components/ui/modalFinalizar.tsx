@@ -41,7 +41,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
 
   // Cargar datos del historial cuando cambia el ID
   useEffect(() => {
-    const fetchHistorial = async () => {
+    const fetchServicio = async () => {
       if (!servicioId) return;
 
       setLoading(true);
@@ -56,11 +56,48 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
 
         if (servicioResponse.data.success) {
           setServicio(servicioResponse.data.data);
+
+          const { fecha_finalizacion } = servicioResponse.data.data;
+
+          if (fecha_finalizacion) {
+            try {
+              // Crear una fecha en UTC a partir de la cadena ISO
+              const utcDate = new Date(fecha_finalizacion);
+
+              // Crear la fecha en formato que necesita parseZonedDateTime pero respetando la zona horaria de Bogotá
+              // Calcular componentes de fecha y hora en la zona horaria de Bogotá (GMT-5)
+              const year = utcDate.getUTCFullYear();
+              const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(utcDate.getUTCDate()).padStart(2, '0');
+
+              // Ajustar la hora UTC a la hora de Bogotá (GMT-5)
+              let hours = utcDate.getUTCHours() - 5;
+              // Manejar el cambio de día si las horas son negativas
+              let adjustedDay = day;
+              if (hours < 0) {
+                hours += 24;
+                // Crear una nueva fecha restando un día y obtener el día correcto
+                const prevDay = new Date(utcDate);
+                prevDay.setUTCDate(utcDate.getUTCDate() - 1);
+                adjustedDay = String(prevDay.getUTCDate()).padStart(2, '0');
+              }
+
+              const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+              const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+
+              const formattedDate = `${year}-${month}-${adjustedDay}T${String(hours).padStart(2, '0')}:${minutes}:${seconds}[America/Bogota]`;
+
+              setFechaFinalizacion(parseZonedDateTime(formattedDate));
+            } catch (dateError) {
+              console.error("Error al parsear la fecha:", dateError);
+              // Mantener la fecha actual si hay error en la conversión
+            }
+          }
         }
       } catch (err) {
-        console.error("Error al cargar el historial:", err);
+        console.error("Error al cargar el servicio:", err);
         setError(
-          "Error al cargar el historial del servicio. Por favor, intenta nuevamente.",
+          "Error al cargar del servicio. Por favor, intenta nuevamente.",
         );
       } finally {
         setLoading(false);
@@ -68,7 +105,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
     };
 
     if (isOpen && servicioId) {
-      fetchHistorial();
+      fetchServicio();
     } else {
       // Limpiar datos cuando se cierra el modal
       setServicio(null);
@@ -234,7 +271,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                                           : servicio.estado === "planificado"
                                             ? "warning"
                                             : servicio.estado ===
-                                                "planilla_asignada"
+                                              "planilla_asignada"
                                               ? "secondary"
                                               : "default"
                                   }
@@ -253,7 +290,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               className="block text-sm font-medium text-gray-700 mb-1"
                               htmlFor="serviceDate"
                             >
-                              Fecha y hora de realización
+                              Fecha y Hora de Finalización
                             </label>
                             <div className="relative space-y-2">
                               <DateInput
@@ -281,13 +318,13 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                                 Fecha:{" "}
                                 {fechaFinalizacion
                                   ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaFinalizacion.toDate())
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }).format(fechaFinalizacion.toDate())
                                   : "--"}
                               </p>
                             </div>
@@ -300,7 +337,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               variant="flat"
                               onPress={finalizarServicio}
                             >
-                              Finalizar servicio
+                              {servicio.fecha_finalizacion ? "Editar Fecha Finalización" : "Finalizar servicio"}
                             </Button>
                           </div>
                         </div>

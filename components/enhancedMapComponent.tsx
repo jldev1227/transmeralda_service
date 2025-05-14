@@ -1154,6 +1154,15 @@ const EnhancedMapComponent = ({
             </div>
 
             <div>
+              <span className="text-sm text-gray-500">
+                Fecha y Hora de Finalización
+              </span>
+              <div className="font-medium">
+                {formatearFecha(selectedServicio.fecha_finalizacion)}
+              </div>
+            </div>
+
+            <div>
               <span className="text-sm text-gray-500">Distancia</span>
               <div className="font-medium">
                 {selectedServicio.routeDistance} km

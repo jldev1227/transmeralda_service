@@ -97,8 +97,6 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
     }
   };
 
-  console.log(textareaRequired);
-
   return (
     <Modal
       backdrop="blur"

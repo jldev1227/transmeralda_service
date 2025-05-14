@@ -139,7 +139,7 @@ const ServiciosListCards = ({
     }
   };
 
-  // Función para manejar la apertura del modal de historial
+  // Función para manejar la apertura del modal de finalizar servicio
   const handleFinalizar = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
@@ -147,10 +147,10 @@ const ServiciosListCards = ({
     e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
-    if (servicio.id && servicio.estado === "en_curso") {
-      setServicioFinalizarId(servicio.id);
-      setModalFinalizarServicio(true);
-    }
+  if (servicio.id && (servicio.estado === "en_curso" || servicio.estado === "realizado")) {
+    setServicioFinalizarId(servicio.id);
+    setModalFinalizarServicio(true);
+  }
   };
 
   // Determinar si se debe mostrar el botón de edición
@@ -176,7 +176,7 @@ const ServiciosListCards = ({
 
   // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
-    return estado === "en_curso";
+    return estado === "en_curso" || estado === "realizado";
   };
 
   // Determinar si se debe mostrar el botón para eliminar servicio
@@ -343,8 +343,6 @@ const ServiciosListCards = ({
       const response = await apiClient.delete<ServicioConRelaciones>(
         `/api/servicios/${id}`,
       );
-
-      console.log(response);
     } catch (err) {
       console.error("Error al eliminar el servicio:", err);
     }
