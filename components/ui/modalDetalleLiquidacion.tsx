@@ -353,11 +353,11 @@ const ModalDetalleLiquidacion: React.FC<ModalDetalleLiquidacionProps> = ({
                                 Cliente
                               </span>
                               <p>
-                                {liquidacion.servicios[0].cliente?.Nombre ||
+                                {liquidacion.servicios[0].cliente?.nombre ||
                                   "N/A"}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {liquidacion.servicios[0].cliente?.NIT || "N/A"}
+                                {liquidacion.servicios[0].cliente?.nit || "N/A"}
                               </p>
                             </div>
                           </div>

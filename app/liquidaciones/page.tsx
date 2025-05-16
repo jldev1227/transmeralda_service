@@ -158,7 +158,7 @@ const ServicioItem = React.memo(
         </div>
         <div className="text-sm text-gray-500">
           <span className="font-medium">Cliente:</span>{" "}
-          {servicio.cliente?.Nombre}
+          {servicio.cliente?.nombre}
         </div>
         <div className="text-sm text-gray-500">
           <span className="font-medium">Fecha:</span>{" "}
@@ -341,7 +341,7 @@ function ModalLiquidarServicios() {
         servicio.origen_especifico?.toLowerCase().includes(searchTermLower) ||
         servicio.destino_especifico?.toLowerCase().includes(searchTermLower) ||
         servicio.numero_planilla?.toLowerCase().includes(searchTermLower) ||
-        servicio.cliente.Nombre.toLowerCase().includes(searchTermLower)
+        servicio.cliente.nombre.toLowerCase().includes(searchTermLower)
       );
     });
   }, [serviciosRealizados, searchTerm]);
@@ -491,7 +491,7 @@ function ModalLiquidarServicios() {
               // Mostrar error si se intenta agregar servicio de diferente cliente
               addToast({
                 title: "Error",
-                description: `Debe agregar servicios realizados al cliente ${cliente?.Nombre}`,
+                description: `Debe agregar servicios realizados al cliente ${cliente?.nombre}`,
                 color: "danger",
               });
             }
@@ -614,7 +614,7 @@ function ModalLiquidarServicios() {
           // Validamos que el servicio sea del mismo cliente
           addToast({
             title: "Error",
-            description: `Debe agregar servicios realizados al cliente ${cliente.Nombre}`,
+            description: `Debe agregar servicios realizados al cliente ${cliente.nombre}`,
             color: "danger",
           });
 
@@ -1067,7 +1067,7 @@ function ModalLiquidarServicios() {
                 </div>
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Cliente:</span>{" "}
-                  {activeItem.cliente?.Nombre}
+                  {activeItem.cliente?.nombre}
                 </div>
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Fecha:</span>{" "}

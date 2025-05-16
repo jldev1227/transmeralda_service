@@ -1,6 +1,7 @@
 const statusColors = {
   solicitado: "#6a7282",
   realizado: "#155dfc",
+  liquidado: "#FF9800",
   en_curso: "#00bc7d",
   planificado: "#FF9800",
   cancelado: "#F44336",
@@ -10,6 +11,7 @@ const statusColors = {
 
 const statusTextMap: Record<string, string> = {
   realizado: "Realizado",
+  liquidado: "Liquidado",
   en_curso: "En curso",
   planificado: "Planificado",
   cancelado: "Cancelado",

@@ -80,21 +80,20 @@ export default function ModalTicket() {
                   {/* Cuerpo del ticket */}
                   <div className="flex flex-col md:flex-row">
                     {/* Sección izquierda - espacio para foto del conductor */}
-                    <div className="flex flex-row items-end gap-4 md:flex-col w-full md:w-1/4 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
-                      <div className="border-2 border-gray-300 rounded-lg w-30 md:w-full">
+                    <div className="flex flex-row items-center gap-4 md:flex-col w-full md:w-2/6 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
+                      <div className="border-2 border-gray-300 rounded-lg w-30 md:w-full h-40 md:h-48 relative">
                         <Image
-                          alt="Foto conductor  asignado"
-                          className="h-full w-full"
-                          height={250}
+                          alt="Foto conductor asignado"
+                          fill
+                          className="object-cover rounded-lg"
                           src={
                             servicio.conductor.foto_url ??
                             "/assets/not_user.avif"
                           }
-                          width={200}
                         />
                       </div>
                       <div>
-                        <div className="mt-4">
+                        <div>
                           <h3 className={`font-bold text-emerald-600`}>
                             Conductor
                           </h3>
@@ -106,6 +105,10 @@ export default function ModalTicket() {
                             {servicio.conductor?.tipo_identificacion}:{" "}
                             {servicio.conductor?.numero_identificacion ||
                               "No disponible"}
+                          </p>
+                          <p className="text-gray-500">
+                            Teléfono:{' '}
+                            {servicio.conductor?.telefono || 'No cuenta con teléfono'}
                           </p>
                         </div>
                         <div className="mt-4">
@@ -123,12 +126,11 @@ export default function ModalTicket() {
                     </div>
 
                     {/* Sección derecha - detalles del viaje */}
-                    <div className="w-full md:w-3/4 p-6">
-                      {/* Número de ticket */}
-                      <div className="flex justify-between items-center mb-6">
-                        <h1 className={`text-xl font-bold text-emerald-600`}>
-                          Servicio #{servicio.id}
-                        </h1>
+                    <div className="w-full md:w-4/6 p-6 space-y-6">
+                      {/* Ruta */}
+                      <RouteAndDetails servicio={servicio} />
+
+                      <div className="flex justify-end items-center">
                         <span
                           className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-1 flex-shrink-0"
                           style={{
@@ -140,8 +142,6 @@ export default function ModalTicket() {
                         </span>
                       </div>
 
-                      {/* Ruta */}
-                      <RouteAndDetails servicio={servicio} />
                     </div>
                   </div>
                 </div>

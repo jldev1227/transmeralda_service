@@ -1052,7 +1052,7 @@ const EnhancedMapComponent = ({
       )}
 
       <div ref={mapContainer} className="h-full w-full relative">
-        {!isMapLoaded && <LoadingComponent>Cargando mapa</LoadingComponent>}
+        {!isMapLoaded && <LoadingComponent>Cargando Mapa</LoadingComponent>}
       </div>
 
       {selectedServicio && detallesVisible && (
@@ -1099,7 +1099,7 @@ const EnhancedMapComponent = ({
               <div>
                 <span className="text-sm text-gray-500">Cliente</span>
                 <div className="font-medium">
-                  {selectedServicio.cliente.Nombre}
+                  {selectedServicio.cliente.nombre}
                 </div>
               </div>
             )}
@@ -1150,6 +1150,15 @@ const EnhancedMapComponent = ({
               </span>
               <div className="font-medium">
                 {formatearFecha(selectedServicio.fecha_realizacion)}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-sm text-gray-500">
+                Fecha y Hora de Finalización
+              </span>
+              <div className="font-medium">
+                {formatearFecha(selectedServicio.fecha_finalizacion)}
               </div>
             </div>
 

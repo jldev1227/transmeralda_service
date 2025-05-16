@@ -21,18 +21,19 @@ export interface Conductor {
   nombre: string;
   apellido: string;
   numero_identificacion: string;
-  salario_base: number;
+  telefono: string;
   email: string;
+  fecha_nacimiento: Date;
   foto_url: string;
 }
 
 export interface Empresa {
   id: string;
   nombre: string;
-  NIT: string;
-  Nombre: string;
-  Representante: string;
-  Cedula: string;
+  nit: string;
+  nombre: string;
+  representante: string;
+  cedula: string;
   Telefono: string;
   Direccion: string;
 }
@@ -87,8 +88,8 @@ export interface Liquidacion {
     numero_planilla: string;
     cliente: {
       id: string;
-      Nombre: string;
-      NIT: string;
+      nombre: string;
+      nit: string;
     };
     ServicioLiquidacion: {
       valor_liquidado: string;
@@ -189,6 +190,7 @@ export interface Servicio {
   proposito_servicio: string;
   fecha_solicitud: string;
   fecha_realizacion?: string;
+  fecha_finalizacion?: string;
   hora_salida: string;
   distancia_km: number;
   valor: number;
@@ -316,12 +318,12 @@ export interface Position {
 
 export interface Cliente {
   id: string;
-  Nombre: string;
-  NIT?: string;
-  Representante?: string;
+  nombre: string;
+  nit?: string;
+  representante?: string;
   paga_recargos: boolean;
   requiere_osi: boolean;
-  Cedula?: string;
+  cedula?: string;
   Telefono?: string;
   Direccion?: string;
   created_at?: Date;
@@ -1015,8 +1017,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         // Eliminar de serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
-          console.log(serviciosWithRoutes);
-          console.log(data);
           setServiciosWithRoutes((prevServicios) =>
             prevServicios.filter((s) => s.id !== data.id),
           );
@@ -1149,8 +1149,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-        console.log(data);
-
         if (data.estado === "aprobado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
             liquidacion.id === data.id ? data.liquidacion : liquidacion,
@@ -1210,8 +1208,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
-
-        console.log(data);
 
         if (data.estado === "liquidado") {
           const liquidacionesActualizado = liquidaciones.map((liquidacion) =>
