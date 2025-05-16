@@ -23,16 +23,17 @@ export interface Conductor {
   numero_identificacion: string;
   telefono: string;
   email: string;
+  fecha_nacimiento: Date;
   foto_url: string;
 }
 
 export interface Empresa {
   id: string;
   nombre: string;
-  NIT: string;
-  Nombre: string;
-  Representante: string;
-  Cedula: string;
+  nit: string;
+  nombre: string;
+  representante: string;
+  cedula: string;
   Telefono: string;
   Direccion: string;
 }
@@ -87,8 +88,8 @@ export interface Liquidacion {
     numero_planilla: string;
     cliente: {
       id: string;
-      Nombre: string;
-      NIT: string;
+      nombre: string;
+      nit: string;
     };
     ServicioLiquidacion: {
       valor_liquidado: string;
@@ -317,12 +318,12 @@ export interface Position {
 
 export interface Cliente {
   id: string;
-  Nombre: string;
-  NIT?: string;
-  Representante?: string;
+  nombre: string;
+  nit?: string;
+  representante?: string;
   paga_recargos: boolean;
   requiere_osi: boolean;
-  Cedula?: string;
+  cedula?: string;
   Telefono?: string;
   Direccion?: string;
   created_at?: Date;

@@ -340,7 +340,7 @@ const ServiciosListCards = ({
     setConfirmLoading(true);
 
     try {
-      const response = await apiClient.delete<ServicioConRelaciones>(
+      await apiClient.delete<ServicioConRelaciones>(
         `/api/servicios/${id}`,
       );
     } catch (err) {

@@ -67,11 +67,11 @@ export default function RouteAndDetails({
         <div className="flex-1 mb-4 md:mb-0">
           <p className="text-xs md:text-sm text-gray-500">Cliente</p>
           <p className="font-semibold break-words">
-            {servicio.cliente?.Nombre || "Cliente no especificado"}
+            {servicio.cliente?.nombre || "Cliente no especificado"}
           </p>
-          {servicio.cliente?.NIT && (
+          {servicio.cliente?.nit && (
             <p className="text-xs text-gray-500 break-words">
-              NIT: {servicio.cliente.NIT}
+              nit: {servicio.cliente.nit}
             </p>
           )}
         </div>

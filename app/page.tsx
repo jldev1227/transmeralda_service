@@ -401,7 +401,7 @@ const AdvancedDashboard = () => {
 
   const empresaOptions = empresas.map((empresa) => ({
     value: empresa.id,
-    label: `${empresa.Nombre} (NIT: ${empresa.NIT})`,
+    label: `${empresa.nombre} (nit: ${empresa.nit})`,
   }));
 
   function sortServicios(

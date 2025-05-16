@@ -163,8 +163,8 @@ const HistoricoLiquidaciones = () => {
           if (cliente && !clientesMap.has(cliente.id)) {
             clientesMap.set(cliente.id, {
               value: cliente.id,
-              label: cliente.Nombre,
-              nit: cliente.NIT || "",
+              label: cliente.nombre,
+              nit: cliente.nit || "",
             });
           }
         }
@@ -411,7 +411,7 @@ const HistoricoLiquidaciones = () => {
     if (liquidacionesSeleccionadas.length === 0) {
       setClienteSeleccionado({
         id: clienteLiquidacion.id,
-        nombre: clienteLiquidacion.Nombre,
+        nombre: clienteLiquidacion.nombre,
       });
       setLiquidacionesSeleccionadas([liquidacion]);
 
@@ -574,9 +574,9 @@ const HistoricoLiquidaciones = () => {
       <div className="flex items-start">
         <BuildingIcon className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
         <div>
-          <div className="font-semibold">{cliente.Nombre}</div>
+          <div className="font-semibold">{cliente.nombre}</div>
           <div className="text-xs text-gray-500">
-            NIT: {cliente.NIT || "N/A"}
+            nit: {cliente.nit || "N/A"}
           </div>
         </div>
       </div>
@@ -779,13 +779,13 @@ const HistoricoLiquidaciones = () => {
                 <div className="flex flex-col">
                   <span className="font-medium">{option.label}</span>
                   <span className="text-xs text-gray-500">
-                    NIT: {option.nit || "N/A"}
+                    nit: {option.nit || "N/A"}
                   </span>
                 </div>
               )}
               id="cliente"
               options={opcionesClientes}
-              placeholder="Buscar por nombre o NIT..."
+              placeholder="Buscar por nombre o nit..."
               styles={{
                 control: (base) => ({
                   ...base,

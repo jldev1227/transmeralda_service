@@ -8,12 +8,14 @@ import { Textarea } from "@heroui/input";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
-import { BuildingIcon } from "lucide-react";
+import { BuildingIcon, PlusIcon } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 import { convertirFechaParaDB } from "@/helpers";
+import { Button } from "@heroui/button";
+import Link from "next/link";
 
 const UserIcon = () => (
   <svg
@@ -565,7 +567,7 @@ export default function ModalFormServicio() {
 
   const empresaOptions = empresas.map((empresa) => ({
     value: empresa.id,
-    label: `${empresa.Nombre} (NIT: ${empresa.NIT})`,
+    label: `${empresa.nombre} (nit: ${empresa.nit})`,
   }));
 
   const municipioOptions = municipios
@@ -675,7 +677,7 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {empresas.find(
                                 (e) => e.id === servicio?.cliente_id,
-                              )?.Nombre || "No asignado"}
+                              )?.nombre || "No asignado"}
                             </p>
                           </div>
                           <div className="space-y-1">
@@ -693,8 +695,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                    servicio.fecha_solicitud,
-                                  ).toLocaleString()
+                                  servicio.fecha_solicitud,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -705,8 +707,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                    servicio.fecha_realizacion,
-                                  ).toLocaleString()
+                                  servicio.fecha_realizacion,
+                                ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -806,87 +808,100 @@ export default function ModalFormServicio() {
                             >
                               Cliente
                             </label>
-                            <div className="relative shadow-sm rounded-md">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <BuildingIcon className="w-5 h-5 text-gray-400" />
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <BuildingIcon className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <SelectReact
+                                  ref={selectRef}
+                                  isClearable
+                                  isSearchable
+                                  required
+                                  blurInputOnSelect={true}
+                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="client"
+                                  menuShouldScrollIntoView={false}
+                                  name="client"
+                                  options={empresaOptions}
+                                  placeholder="Seleccione una empresa"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: undefined,
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                      marginLeft: -35,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    clearIndicator: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      "&:hover": { color: "#ef4444" },
+                                      padding: "0px 8px",
+                                    }),
+                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                  value={
+                                    empresaOptions.find(
+                                      (opt) => opt.value === clienteSelected,
+                                    ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setCliente(option ? option.value : "")
+                                  }
+                                  menuShouldBlockScroll={true}
+                                  // Limita la cantidad de opciones visibles en el menú
+                                  maxMenuHeight={220}
+                                />
                               </div>
-                              <SelectReact
-                                ref={selectRef}
-                                isClearable
-                                isSearchable
-                                required
-                                blurInputOnSelect={true}
-                                className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                classNamePrefix="react-select"
-                                inputId="client"
-                                menuShouldScrollIntoView={false}
-                                name="client"
-                                options={empresaOptions}
-                                placeholder="Seleccione una empresa"
-                                styles={{
-                                  control: (base, state) => ({
-                                    ...base,
-                                    border: "none",
-                                    boxShadow: undefined,
-                                    backgroundColor: "white",
-                                  }),
-                                  placeholder: (base) => ({
-                                    ...base,
-                                    color: "#9ca3af",
-                                    fontSize: "0.875rem",
-                                  }),
-                                  singleValue: (base) => ({
-                                    ...base,
-                                    color: "#1f2937",
-                                    fontSize: "0.875rem",
-                                  }),
-                                  menu: (base) => ({
-                                    ...base,
-                                    zIndex: 9999,
-                                    marginLeft: -35,
-                                  }),
-                                  option: (base, state) => ({
-                                    ...base,
-                                    color: state.isSelected
-                                      ? "#059669"
-                                      : "#1f2937",
-                                    backgroundColor: state.isFocused
-                                      ? "#f0fdf4"
-                                      : "white",
-                                    fontSize: "0.875rem",
-                                  }),
-                                  dropdownIndicator: (base) => ({
-                                    ...base,
-                                    color: "#374151",
-                                    paddingRight: "0rem",
-                                  }),
-                                  indicatorSeparator: () => ({
-                                    display: "none",
-                                  }),
-                                  input: (base) => ({
-                                    ...base,
-                                    color: "#1f2937",
-                                    fontSize: "0.875rem",
-                                  }),
-                                  clearIndicator: (base) => ({
-                                    ...base,
-                                    color: "#9ca3af",
-                                    "&:hover": { color: "#ef4444" },
-                                    padding: "0px 8px",
-                                  }),
-                                }} // Aproximadamente 5-6 opciones dependiendo del tamaño
-                                value={
-                                  empresaOptions.find(
-                                    (opt) => opt.value === clienteSelected,
-                                  ) || null
-                                }
-                                onChange={(option) =>
-                                  setCliente(option ? option.value : "")
-                                }
-                                menuShouldBlockScroll={true}
-                                // Limita la cantidad de opciones visibles en el menú
-                                maxMenuHeight={220}
-                              />
+                              <Button
+                                as={Link}
+                                href={process.env.NEXT_PUBLIC_EMPRESAS_SYSTEM}
+                                color="success"
+                                isIconOnly
+                                variant="light"
+                                radius="sm"
+                                target="_blank"
+                              >
+                                <PlusIcon />
+                              </Button>
                             </div>
                           </div>
                           {/* Dates */}
@@ -924,13 +939,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaSolicitud.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -968,13 +983,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      }).format(fechaRealizacion.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -1244,89 +1259,103 @@ export default function ModalFormServicio() {
                                 className="block text-sm font-medium text-gray-700 mb-1"
                                 htmlFor="origin"
                               >
-                                Vehículo Asignado|
+                                Vehículo Asignado
                               </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <TruckIcon />
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 relative shadow-sm rounded-md">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <TruckIcon />
+                                  </div>
+                                  <SelectReact
+                                    isClearable
+                                    isSearchable
+                                    className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                    classNamePrefix="react-select"
+                                    inputId="driver"
+                                    name="driver"
+                                    options={vehiculos.map((vehiculo) => ({
+                                      value: vehiculo.id,
+                                      label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                    }))}
+                                    placeholder="Seleccione un vehiculo"
+                                    styles={{
+                                      control: (base, state) => ({
+                                        ...base,
+                                        border: "none",
+                                        boxShadow: state.isFocused
+                                          ? "0 0 0 1px #059669"
+                                          : undefined,
+                                        "&:hover": { borderColor: "#059669" },
+                                        backgroundColor: "white",
+                                      }),
+                                      placeholder: (base) => ({
+                                        ...base,
+                                        color: "#9ca3af",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      singleValue: (base) => ({
+                                        ...base,
+                                        color: "#1f2937",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      menu: (base) => ({
+                                        ...base,
+                                        zIndex: 9999,
+                                        marginLeft: -35,
+                                      }),
+                                      option: (base, state) => ({
+                                        ...base,
+                                        color: state.isSelected
+                                          ? "#059669"
+                                          : "#1f2937",
+                                        backgroundColor: state.isFocused
+                                          ? "#f0fdf4"
+                                          : "white",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      dropdownIndicator: (base) => ({
+                                        ...base,
+                                        color: "#374151",
+                                        paddingRight: "0rem",
+                                      }),
+                                      indicatorSeparator: () => ({
+                                        display: "none",
+                                      }),
+                                      input: (base) => ({
+                                        ...base,
+                                        color: "#1f2937",
+                                        fontSize: "0.875rem",
+                                      }),
+                                    }}
+                                    value={
+                                      vehiculos
+                                        .map((vehiculo) => ({
+                                          value: vehiculo.id,
+                                          label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                        }))
+                                        .find(
+                                          (opt) => opt.value === vehicleSelected,
+                                        ) || null
+                                    }
+                                    onChange={(option) =>
+                                      setVehicleSelected(
+                                        option ? option.value : "",
+                                      )
+                                    }
+                                  />
                                 </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="driver"
-                                  name="driver"
-                                  options={vehiculos.map((vehiculo) => ({
-                                    value: vehiculo.id,
-                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                  }))}
-                                  placeholder="Seleccione un vehiculo"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 9999,
-                                      marginLeft: -35,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                  }}
-                                  value={
-                                    vehiculos
-                                      .map((vehiculo) => ({
-                                        value: vehiculo.id,
-                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                      }))
-                                      .find(
-                                        (opt) => opt.value === vehicleSelected,
-                                      ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setVehicleSelected(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                />
+
+                                <Button
+                                  as={Link}
+                                  href={process.env.NEXT_PUBLIC_FLOTA_SYSTEM}
+                                  color="success"
+                                  isIconOnly
+                                  variant="light"
+                                  radius="sm"
+                                  target="_blank"
+                                >
+                                  <PlusIcon />
+                                </Button>
                               </div>
                             </div>
                             <div className="relative">
@@ -1336,88 +1365,101 @@ export default function ModalFormServicio() {
                               >
                                 Conductor Asignado
                               </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <UserIcon />
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 relative shadow-sm rounded-md">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <UserIcon />
+                                  </div>
+                                  <SelectReact
+                                    isClearable
+                                    isSearchable
+                                    className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                    classNamePrefix="react-select"
+                                    inputId="driver"
+                                    name="driver"
+                                    options={conductores.map((conductor) => ({
+                                      value: conductor.id,
+                                      label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                    }))}
+                                    placeholder="Seleccione un conductor"
+                                    styles={{
+                                      control: (base, state) => ({
+                                        ...base,
+                                        border: "none",
+                                        boxShadow: state.isFocused
+                                          ? "0 0 0 1px #059669"
+                                          : undefined,
+                                        "&:hover": { borderColor: "#059669" },
+                                        backgroundColor: "white",
+                                      }),
+                                      placeholder: (base) => ({
+                                        ...base,
+                                        color: "#9ca3af",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      singleValue: (base) => ({
+                                        ...base,
+                                        color: "#1f2937",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      menu: (base) => ({
+                                        ...base,
+                                        zIndex: 9999,
+                                        marginLeft: -35,
+                                      }),
+                                      option: (base, state) => ({
+                                        ...base,
+                                        color: state.isSelected
+                                          ? "#059669"
+                                          : "#1f2937",
+                                        backgroundColor: state.isFocused
+                                          ? "#f0fdf4"
+                                          : "white",
+                                        fontSize: "0.875rem",
+                                      }),
+                                      dropdownIndicator: (base) => ({
+                                        ...base,
+                                        color: "#374151",
+                                        paddingRight: "0rem",
+                                      }),
+                                      indicatorSeparator: () => ({
+                                        display: "none",
+                                      }),
+                                      input: (base) => ({
+                                        ...base,
+                                        color: "#1f2937",
+                                        fontSize: "0.875rem",
+                                      }),
+                                    }}
+                                    value={
+                                      conductores
+                                        .map((conductor) => ({
+                                          value: conductor.id,
+                                          label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                        }))
+                                        .find(
+                                          (opt) =>
+                                            opt.value === conductorSelected,
+                                        ) || null
+                                    }
+                                    onChange={(option) =>
+                                      setConductorSelected(
+                                        option ? option.value : "",
+                                      )
+                                    }
+                                  />
                                 </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="driver"
-                                  name="driver"
-                                  options={conductores.map((conductor) => ({
-                                    value: conductor.id,
-                                    label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                                  }))}
-                                  placeholder="Seleccione un conductor"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: state.isFocused
-                                        ? "0 0 0 1px #059669"
-                                        : undefined,
-                                      "&:hover": { borderColor: "#059669" },
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 9999,
-                                      marginLeft: -35,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                  }}
-                                  value={
-                                    conductores
-                                      .map((conductor) => ({
-                                        value: conductor.id,
-                                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                                      }))
-                                      .find(
-                                        (opt) =>
-                                          opt.value === conductorSelected,
-                                      ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setConductorSelected(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                />
+                                <Button
+                                  as={Link}
+                                  href={process.env.NEXT_PUBLIC_CONDUCTORES_SYSTEM}
+                                  color="success"
+                                  isIconOnly
+                                  variant="light"
+                                  radius="sm"
+                                  target="_blank"
+                                >
+                                  <PlusIcon />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -1541,36 +1583,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                  // onClick={async () => {
-                                  //   if (
-                                  //     servicio.id &&
-                                  //     window.confirm(
-                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                  //     )
-                                  //   ) {
-                                  //     try {
-                                  //       await actualizarEstadoServicio(
-                                  //         servicio.id,
-                                  //         "cancelado",
-                                  //       );
-                                  //       addToast({
-                                  //         title: "Éxito",
-                                  //         description:
-                                  //           "Servicio cancelado correctamente",
-                                  //         color: "success",
-                                  //       });
-                                  //       handleModalForm(); // Cerrar modal
-                                  //       resetFormStates();
-                                  //     } catch (error) {
-                                  //       addToast({
-                                  //         title: "Error",
-                                  //         description:
-                                  //           "No se pudo cancelar el servicio",
-                                  //         color: "danger",
-                                  //       });
-                                  //     }
-                                  //   }
-                                  // }}
+                                // onClick={async () => {
+                                //   if (
+                                //     servicio.id &&
+                                //     window.confirm(
+                                //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                //     )
+                                //   ) {
+                                //     try {
+                                //       await actualizarEstadoServicio(
+                                //         servicio.id,
+                                //         "cancelado",
+                                //       );
+                                //       addToast({
+                                //         title: "Éxito",
+                                //         description:
+                                //           "Servicio cancelado correctamente",
+                                //         color: "success",
+                                //       });
+                                //       handleModalForm(); // Cerrar modal
+                                //       resetFormStates();
+                                //     } catch (error) {
+                                //       addToast({
+                                //         title: "Error",
+                                //         description:
+                                //           "No se pudo cancelar el servicio",
+                                //         color: "danger",
+                                //       });
+                                //     }
+                                //   }
+                                // }}
                                 >
                                   Cancelar Servicio
                                 </button>
