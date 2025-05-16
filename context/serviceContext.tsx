@@ -31,7 +31,6 @@ export interface Empresa {
   id: string;
   nombre: string;
   nit: string;
-  nombre: string;
   representante: string;
   cedula: string;
   Telefono: string;
