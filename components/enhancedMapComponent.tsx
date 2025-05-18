@@ -37,13 +37,11 @@ interface EnhancedMapComponentProps {
   handleClosePanel: () => void;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
   getServiceTypeText: (text: string) => string;
-  mapboxToken: string;
   onWialonRequest: (
     sessionId: string,
     endpoint: string,
     params: any,
   ) => Promise<any>;
-  wialonToken: string;
   setServicioWithRoutes: Dispatch<SetStateAction<ServicioConRelaciones | null>>;
 }
 
@@ -98,12 +96,13 @@ const EnhancedMapComponent = ({
   handleClosePanel,
   handleSelectServicio,
   getServiceTypeText,
-  mapboxToken,
   onWialonRequest,
-  wialonToken,
   setSelectedServicio,
   setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
+
+  const WIALON_API_TOKEN  = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
+  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
   const { handleModalForm } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -144,10 +143,10 @@ const EnhancedMapComponent = ({
 
   useEffect(() => {
     const initWialon = async () => {
-      if (!wialonToken) return;
+      if (!WIALON_API_TOKEN) return;
 
       try {
-        const loginData = await onWialonRequest(wialonToken, "token/login", {});
+        const loginData = await onWialonRequest(WIALON_API_TOKEN, "token/login", {});
 
         if (loginData?.eid) {
           setWialonSessionId(loginData.eid);
@@ -158,7 +157,7 @@ const EnhancedMapComponent = ({
     };
 
     initWialon();
-  }, [wialonToken, onWialonRequest]);
+  }, [WIALON_API_TOKEN, onWialonRequest]);
 
   useEffect(() => {
     if (selectedServicio || !wialonSessionId) return;
@@ -223,17 +222,17 @@ const EnhancedMapComponent = ({
   }, [selectedServicio, servicios, wialonSessionId, onWialonRequest]);
 
   useEffect(() => {
-    if (!mapboxToken) {
+    if (!MAPBOX_ACCESS_TOKEN ) {
       setMapError("Token de Mapbox no configurado");
 
       return;
     }
 
-    mapboxgl.accessToken = mapboxToken;
-  }, [mapboxToken]);
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN ;
+  }, [MAPBOX_ACCESS_TOKEN ]);
 
   useEffect(() => {
-    if (!mapboxToken || !mapContainer.current || map.current) return;
+    if (!MAPBOX_ACCESS_TOKEN  || !mapContainer.current || map.current) return;
 
     try {
       map.current = new mapboxgl.Map({
@@ -259,7 +258,7 @@ const EnhancedMapComponent = ({
         map.current = null;
       }
     };
-  }, [mapboxToken]);
+  }, [MAPBOX_ACCESS_TOKEN ]);
 
   const createPulsingVehicleMarker = (
     vehicleData: any,
@@ -570,10 +569,10 @@ const EnhancedMapComponent = ({
     origin: [number, number],
     destination: [number, number],
   ): Promise<number[][]> => {
-    if (!mapboxToken) return [origin, destination]; // Fallback to straight line
+    if (!MAPBOX_ACCESS_TOKEN ) return [origin, destination]; // Fallback to straight line
 
     try {
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${mapboxToken}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN }`;
 
       const response = await fetch(url);
 
@@ -782,7 +781,7 @@ const EnhancedMapComponent = ({
     // 5. Mostrar panel de detalles
     setDetallesVisible(true);
     // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
-  }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
+  }, [selectedServicio, isMapLoaded, color, vehicleTracking, MAPBOX_ACCESS_TOKEN ]);
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
     if (
@@ -1253,27 +1252,27 @@ const EnhancedMapComponent = ({
       <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
         {(user?.permisos.liquidador || ["admin", "liquidador"].includes(user?.role || '')) && (
           <Tooltip content="Liquidador de servicios" radius="sm">
-        <Button
-          isIconOnly
-          className="text-sm font-medium bg-white h-12 w-12"
-          radius="sm"
-          onPress={handleButtonPressLiquidar}
-        >
-          <ClipboardList color="#00bc7d" />
-        </Button>
+            <Button
+              isIconOnly
+              className="text-sm font-medium bg-white h-12 w-12"
+              radius="sm"
+              onPress={handleButtonPressLiquidar}
+            >
+              <ClipboardList color="#00bc7d" />
+            </Button>
           </Tooltip>
         )}
 
         {(user?.permisos.gestor_servicio || ["admin", "gestor_servicio"].includes(user?.role || '')) && (
           <Tooltip content="Agregar servicio" radius="sm">
-        <Button
-          isIconOnly
-          className="text-sm font-medium bg-white h-12 w-12"
-          radius="sm"
-          onPress={handleButtonPressForm}
-        >
-          <PlusIcon color="#00bc7d" />
-        </Button>
+            <Button
+              isIconOnly
+              className="text-sm font-medium bg-white h-12 w-12"
+              radius="sm"
+              onPress={handleButtonPressForm}
+            >
+              <PlusIcon color="#00bc7d" />
+            </Button>
           </Tooltip>
         )}
       </div>

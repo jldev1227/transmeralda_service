@@ -132,6 +132,7 @@ export default function ModalFormServicio() {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { servicio, isEditing } = servicioEditar;
+  console.log(servicioEditar)
 
   const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
   const isMobile = useMediaQuery({ maxWidth: 1024 });
@@ -212,9 +213,6 @@ export default function ModalFormServicio() {
   // state
   const [observaciones, setObservaciones] = useState<string>("");
 
-  // Estado para controlar si se puede editar el servicio
-  const [isReadOnly, setIsReadOnly] = useState(false);
-
   const [loading, setLoading] = useState(false);
 
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
@@ -230,11 +228,6 @@ export default function ModalFormServicio() {
     // Si el modal está abierto y es para editar
     if (modalForm && isEditing && servicio) {
       // Determinar si el servicio está en estado no editable
-      // Se permite la edición para servicios en estado 'en_curso'
-      const isServiceReadOnly =
-        servicio.estado === "realizado" || servicio.estado === "cancelado";
-
-      setIsReadOnly(isServiceReadOnly);
 
       // Llenar los campos con la información del servicio
       setCliente(servicio.cliente_id || "");
@@ -320,7 +313,6 @@ export default function ModalFormServicio() {
     } else if (!modalForm) {
       // Si el modal está cerrado, resetear los estados
       resetFormStates();
-      setIsReadOnly(false);
     }
   }, [modalForm, isEditing, servicio]);
 
@@ -617,15 +609,12 @@ export default function ModalFormServicio() {
             <>
               <ModalHeader className="flex flex-col gap-1">
                 {isEditing
-                  ? isReadOnly
-                    ? `Ver detalles de servicio (${servicio?.estado})`
-                    : "Editar servicio"
+                  ? "Editar servicio"
                   : "Registro de servicio"}
               </ModalHeader>
               <ModalBody className="space-y-4">
                 {/* Step Progress Bar - solo mostrar si no estamos en modo solo lectura */}
-                {!isReadOnly &&
-                  (isMobile ? (
+                {isMobile ? (
                     <div className="flex items-center justify-center mb-4">
                       <StepIndicator
                         stepNumber={currentStep}
@@ -658,179 +647,495 @@ export default function ModalFormServicio() {
                       />
                       <StepIndicator stepNumber={4} title="Estado" />
                     </div>
-                  ))}
+                  )}
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
-                  {/* Si está en modo solo lectura, mostrar todos los detalles juntos */}
-                  {isReadOnly ? (
-                    <div className="space-y-6 animate-fadeIn">
-                      <div className="space-y-6">
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                          Información Básica
-                        </h3>
-                        {/* Cliente */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Cliente
-                            </p>
-                            <p className="text-md">
-                              {empresas.find(
-                                (e) => e.id === servicio?.cliente_id,
-                              )?.nombre || "No asignado"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Estado
-                            </p>
-                            <p className="text-md capitalize">
-                              {servicio?.estado}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Fecha de Solicitud
-                            </p>
-                            <p className="text-md">
-                              {servicio?.fecha_solicitud
-                                ? new Date(
-                                  servicio.fecha_solicitud,
-                                ).toLocaleString()
-                                : "No definida"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Fecha de Realización
-                            </p>
-                            <p className="text-md">
-                              {servicio?.fecha_realizacion
-                                ? new Date(
-                                  servicio.fecha_realizacion,
-                                ).toLocaleString()
-                                : "No definida"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                          Origen y Destino
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Origen
-                            </p>
-                            <p className="text-md">
-                              {servicio?.origen_especifico}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {municipios.find(
-                                (m) => m.id === servicio?.origen_id,
-                              )?.nombre_municipio || "No especificado"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Destino
-                            </p>
-                            <p className="text-md">
-                              {servicio?.destino_especifico}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {municipios.find(
-                                (m) => m.id === servicio?.destino_id,
-                              )?.nombre_municipio || "No especificado"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Propósito
-                            </p>
-                            <p className="text-md capitalize">
-                              {servicio?.proposito_servicio ||
-                                "No especificado"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                          Asignaciones
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Conductor
-                            </p>
-                            <p className="text-md">
-                              {conductores.find(
-                                (c) => c.id === servicio?.conductor_id,
-                              )
-                                ? `${conductores.find((c) => c.id === servicio?.conductor_id)?.nombre} ${conductores.find((c) => c.id === servicio?.conductor_id)?.apellido}`
-                                : "No asignado"}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-500">
-                              Vehículo
-                            </p>
-                            <p className="text-md">
-                              {vehiculos.find(
-                                (v) => v.id === servicio?.vehiculo_id,
-                              )
-                                ? `${vehiculos.find((v) => v.id === servicio?.vehiculo_id)?.placa} (${vehiculos.find((v) => v.id === servicio?.vehiculo_id)?.marca})`
-                                : "No asignado"}
-                            </p>
+                    {currentStep === 1 && (
+                      <div className="space-y-6 animate-fadeIn">
+                        {/* Client - Changed to SelectReact */}
+                        <div className="relative">
+                          <label
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                            htmlFor="client"
+                          >
+                            Cliente
+                          </label>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 relative shadow-sm rounded-md">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <BuildingIcon className="w-5 h-5 text-gray-400" />
+                              </div>
+                              <SelectReact
+                                ref={selectRef}
+                                isClearable
+                                isSearchable
+                                required
+                                blurInputOnSelect={true}
+                                className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                classNamePrefix="react-select"
+                                inputId="client"
+                                menuShouldScrollIntoView={false}
+                                name="client"
+                                options={empresaOptions}
+                                placeholder="Seleccione una empresa"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    border: "none",
+                                    boxShadow: undefined,
+                                    backgroundColor: "white",
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    zIndex: 9999,
+                                    marginLeft: -35,
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    color: state.isSelected
+                                      ? "#059669"
+                                      : "#1f2937",
+                                    backgroundColor: state.isFocused
+                                      ? "#f0fdf4"
+                                      : "white",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  dropdownIndicator: (base) => ({
+                                    ...base,
+                                    color: "#374151",
+                                    paddingRight: "0rem",
+                                  }),
+                                  indicatorSeparator: () => ({
+                                    display: "none",
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  clearIndicator: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    "&:hover": { color: "#ef4444" },
+                                    padding: "0px 8px",
+                                  }),
+                                }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                value={
+                                  empresaOptions.find(
+                                    (opt) => opt.value === clienteSelected,
+                                  ) || null
+                                }
+                                onChange={(option) =>
+                                  setCliente(option ? option.value : "")
+                                }
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220}
+                              />
+                            </div>
+                            <Button
+                              as={Link}
+                              href={process.env.NEXT_PUBLIC_EMPRESAS_SYSTEM}
+                              color="success"
+                              isIconOnly
+                              variant="light"
+                              radius="sm"
+                              target="_blank"
+                            >
+                              <PlusIcon />
+                            </Button>
                           </div>
                         </div>
-
-                        {servicio?.observaciones && (
-                          <>
-                            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-                              Observaciones
-                            </h3>
-                            <p className="text-md">{servicio.observaciones}</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Step 1: Basic Info */}
-                      {currentStep === 1 && (
-                        <div className="space-y-6 animate-fadeIn">
-                          {/* Client - Changed to SelectReact */}
+                        {/* Dates */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="relative">
                             <label
                               className="block text-sm font-medium text-gray-700 mb-1"
-                              htmlFor="client"
+                              htmlFor="requestDate"
                             >
-                              Cliente
+                              Fecha y hora de solicitud
+                            </label>
+                            <div className="relative space-y-2">
+                              <DateInput
+                                hideTimeZone
+                                classNames={{
+                                  inputWrapper: [
+                                    "!bg-transparent",
+                                    "data-[hover=true]:!bg-transparent",
+                                    "border-1",
+                                    "py-7",
+                                    "group-data-[focus=true]:!bg-transparent",
+                                    "rounded-md",
+                                  ],
+                                }}
+                                defaultValue={parseZonedDateTime(
+                                  `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                )}
+                                granularity="minute"
+                                value={fechaSolicitud}
+                                onChange={(value) => {
+                                  if (value) setFechaSolicitud(value);
+                                }}
+                              />
+                              <p className="text-default-500 text-sm">
+                                Fecha:{" "}
+                                {fechaSolicitud
+                                  ? new Intl.DateTimeFormat("es-CO", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }).format(fechaSolicitud.toDate())
+                                  : "--"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="serviceDate"
+                            >
+                              Fecha y hora de realización
+                            </label>
+                            <div className="relative space-y-2">
+                              <DateInput
+                                hideTimeZone
+                                classNames={{
+                                  inputWrapper: [
+                                    "!bg-transparent",
+                                    "data-[hover=true]:!bg-transparent",
+                                    "border-1",
+                                    "py-7",
+                                    "group-data-[focus=true]:!bg-transparent",
+                                    "rounded-md",
+                                  ],
+                                }}
+                                defaultValue={parseZonedDateTime(
+                                  `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                )}
+                                granularity="minute"
+                                value={fechaRealizacion}
+                                onChange={(value) => {
+                                  if (value) setFechaRealizacion(value);
+                                }}
+                              />
+                              <p className="text-default-500 text-sm">
+                                Fecha:{" "}
+                                {fechaRealizacion
+                                  ? new Intl.DateTimeFormat("es-CO", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }).format(fechaRealizacion.toDate())
+                                  : "--"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentStep === 2 && (
+                      <div className="space-y-6 animate-fadeIn">
+                        {/* Location */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="origin"
+                            >
+                              Origen del Trayecto
+                            </label>
+                            <div className="relative shadow-sm rounded-md">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <LocationMarkerIcon />
+                              </div>
+                              <SelectReact
+                                isClearable
+                                isSearchable
+                                required
+                                className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                classNamePrefix="react-select"
+                                inputId="origin"
+                                menuShouldScrollIntoView={false}
+                                name="origin"
+                                options={municipioOptions}
+                                placeholder="Seleccione un origen"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    border: "none",
+                                    boxShadow: undefined,
+                                    backgroundColor: "white",
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    zIndex: 9999,
+                                    marginLeft: -35,
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    color: state.isSelected
+                                      ? "#059669"
+                                      : "#1f2937",
+                                    backgroundColor: state.isFocused
+                                      ? "#f0fdf4"
+                                      : "white",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  dropdownIndicator: (base) => ({
+                                    ...base,
+                                    color: "#374151",
+                                    paddingRight: "0rem",
+                                  }),
+                                  indicatorSeparator: () => ({
+                                    display: "none",
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  clearIndicator: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    "&:hover": { color: "#ef4444" },
+                                    padding: "0px 8px",
+                                  }),
+                                }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                value={
+                                  municipioOptions.find(
+                                    (opt) => opt.value === selectedOriginMun,
+                                  ) || null
+                                }
+                                onChange={(option) =>
+                                  setSelectedOriginMun(
+                                    option ? option.value : "",
+                                  )
+                                }
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220}
+                              />
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="destination"
+                            >
+                              Destino del Trayecto
+                            </label>
+                            <div className="relative shadow-sm rounded-md">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <LocationMarkerIcon />
+                              </div>
+                              <SelectReact
+                                isClearable
+                                isSearchable
+                                required
+                                className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                classNamePrefix="react-select"
+                                inputId="destination"
+                                menuShouldScrollIntoView={false}
+                                name="destination"
+                                options={municipioOptions}
+                                placeholder="Seleccione un destino"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    border: "none",
+                                    boxShadow: undefined,
+                                    backgroundColor: "white",
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    zIndex: 9999,
+                                    marginLeft: -35,
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    color: state.isSelected
+                                      ? "#059669"
+                                      : "#1f2937",
+                                    backgroundColor: state.isFocused
+                                      ? "#f0fdf4"
+                                      : "white",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  dropdownIndicator: (base) => ({
+                                    ...base,
+                                    color: "#374151",
+                                    paddingRight: "0rem",
+                                  }),
+                                  indicatorSeparator: () => ({
+                                    display: "none",
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    color: "#1f2937",
+                                    fontSize: "0.875rem",
+                                  }),
+                                  clearIndicator: (base) => ({
+                                    ...base,
+                                    color: "#9ca3af",
+                                    "&:hover": { color: "#ef4444" },
+                                    padding: "0px 8px",
+                                  }),
+                                }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                value={
+                                  municipioOptions.find(
+                                    (opt) => opt.value === selectedDestMun,
+                                  ) || null
+                                }
+                                onChange={(option) =>
+                                  setSelectedDestMun(
+                                    option ? option.value : "",
+                                  )
+                                }
+                                menuShouldBlockScroll={true}
+                                // Limita la cantidad de opciones visibles en el menú
+                                maxMenuHeight={220}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <SearchInputsPlaces
+                            initialDestination={destSpecific}
+                            initialOrigin={originSpecific}
+                            onDestinationChange={(address, coords) =>
+                              handleDestSpecificChange(address, coords)
+                            }
+                            onOriginChange={(address, coords) =>
+                              handleOriginSpecificChange(address, coords)
+                            }
+                          />
+                        </div>
+                        {/* Purpose */}
+                        <div>
+                          <label
+                            className="block text-sm font-medium text-gray-700 mb-2"
+                            htmlFor="purpose-personnel"
+                          >
+                            Propósito del Servicio
+                          </label>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <div className="flex items-center">
+                              <input
+                                required
+                                checked={purpose === "personal"}
+                                className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                id="purpose-personnel"
+                                name="purpose"
+                                type="radio"
+                                value="personal"
+                                onChange={() => setPurpose("personal")}
+                              />
+                              <label
+                                className="ml-2 flex items-center text-sm text-gray-900 gap-2"
+                                htmlFor="purpose-personnel"
+                              >
+                                <UsersIcon />
+                                Transporte de personal
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                checked={purpose === "personal y herramienta"}
+                                className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                                id="purpose-tools"
+                                name="purpose"
+                                type="radio"
+                                value="personal y herramienta"
+                                onChange={() =>
+                                  setPurpose("personal y herramienta")
+                                }
+                              />
+                              <label
+                                className="ml-2 flex items-center text-sm text-gray-900 gap-2"
+                                htmlFor="purpose-tools"
+                              >
+                                <TruckIcon />
+                                Transporte de personal y herramienta
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentStep === 3 && (
+                      <div className="space-y-6 animate-fadeIn">
+                        {/* Location */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="origin"
+                            >
+                              Vehículo Asignado
                             </label>
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex-1 relative shadow-sm rounded-md">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <BuildingIcon className="w-5 h-5 text-gray-400" />
+                                  <TruckIcon />
                                 </div>
                                 <SelectReact
-                                  ref={selectRef}
                                   isClearable
                                   isSearchable
-                                  required
-                                  blurInputOnSelect={true}
                                   className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
-                                  inputId="client"
-                                  menuShouldScrollIntoView={false}
-                                  name="client"
-                                  options={empresaOptions}
-                                  placeholder="Seleccione una empresa"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={vehiculos.map((vehiculo) => ({
+                                    value: vehiculo.id,
+                                    label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                  }))}
+                                  placeholder="Seleccione un vehiculo"
                                   styles={{
                                     control: (base, state) => ({
                                       ...base,
                                       border: "none",
-                                      boxShadow: undefined,
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
                                       backgroundColor: "white",
                                     }),
                                     placeholder: (base) => ({
@@ -871,29 +1176,28 @@ export default function ModalFormServicio() {
                                       color: "#1f2937",
                                       fontSize: "0.875rem",
                                     }),
-                                    clearIndicator: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      "&:hover": { color: "#ef4444" },
-                                      padding: "0px 8px",
-                                    }),
-                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                  }}
                                   value={
-                                    empresaOptions.find(
-                                      (opt) => opt.value === clienteSelected,
-                                    ) || null
+                                    vehiculos
+                                      .map((vehiculo) => ({
+                                        value: vehiculo.id,
+                                        label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
+                                      }))
+                                      .find(
+                                        (opt) => opt.value === vehicleSelected,
+                                      ) || null
                                   }
                                   onChange={(option) =>
-                                    setCliente(option ? option.value : "")
+                                    setVehicleSelected(
+                                      option ? option.value : "",
+                                    )
                                   }
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
                                 />
                               </div>
+
                               <Button
                                 as={Link}
-                                href={process.env.NEXT_PUBLIC_EMPRESAS_SYSTEM}
+                                href={process.env.NEXT_PUBLIC_FLOTA_SYSTEM}
                                 color="success"
                                 isIconOnly
                                 variant="light"
@@ -904,731 +1208,255 @@ export default function ModalFormServicio() {
                               </Button>
                             </div>
                           </div>
-                          {/* Dates */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="requestDate"
-                              >
-                                Fecha y hora de solicitud
-                              </label>
-                              <div className="relative space-y-2">
-                                <DateInput
-                                  hideTimeZone
-                                  classNames={{
-                                    inputWrapper: [
-                                      "!bg-transparent",
-                                      "data-[hover=true]:!bg-transparent",
-                                      "border-1",
-                                      "py-7",
-                                      "group-data-[focus=true]:!bg-transparent",
-                                      "rounded-md",
-                                    ],
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="destination"
+                            >
+                              Conductor Asignado
+                            </label>
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 relative shadow-sm rounded-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <UserIcon />
+                                </div>
+                                <SelectReact
+                                  isClearable
+                                  isSearchable
+                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
+                                  classNamePrefix="react-select"
+                                  inputId="driver"
+                                  name="driver"
+                                  options={conductores.map((conductor) => ({
+                                    value: conductor.id,
+                                    label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                  }))}
+                                  placeholder="Seleccione un conductor"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      border: "none",
+                                      boxShadow: state.isFocused
+                                        ? "0 0 0 1px #059669"
+                                        : undefined,
+                                      "&:hover": { borderColor: "#059669" },
+                                      backgroundColor: "white",
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      color: "#9ca3af",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                      marginLeft: -35,
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      color: state.isSelected
+                                        ? "#059669"
+                                        : "#1f2937",
+                                      backgroundColor: state.isFocused
+                                        ? "#f0fdf4"
+                                        : "white",
+                                      fontSize: "0.875rem",
+                                    }),
+                                    dropdownIndicator: (base) => ({
+                                      ...base,
+                                      color: "#374151",
+                                      paddingRight: "0rem",
+                                    }),
+                                    indicatorSeparator: () => ({
+                                      display: "none",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      color: "#1f2937",
+                                      fontSize: "0.875rem",
+                                    }),
                                   }}
-                                  defaultValue={parseZonedDateTime(
-                                    `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
-                                  )}
-                                  granularity="minute"
-                                  value={fechaSolicitud}
-                                  onChange={(value) => {
-                                    if (value) setFechaSolicitud(value);
-                                  }}
+                                  value={
+                                    conductores
+                                      .map((conductor) => ({
+                                        value: conductor.id,
+                                        label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                      }))
+                                      .find(
+                                        (opt) =>
+                                          opt.value === conductorSelected,
+                                      ) || null
+                                  }
+                                  onChange={(option) =>
+                                    setConductorSelected(
+                                      option ? option.value : "",
+                                    )
+                                  }
                                 />
-                                <p className="text-default-500 text-sm">
-                                  Fecha:{" "}
-                                  {fechaSolicitud
-                                    ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaSolicitud.toDate())
-                                    : "--"}
-                                </p>
                               </div>
-                            </div>
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="serviceDate"
+                              <Button
+                                as={Link}
+                                href={process.env.NEXT_PUBLIC_CONDUCTORES_SYSTEM}
+                                color="success"
+                                isIconOnly
+                                variant="light"
+                                radius="sm"
+                                target="_blank"
                               >
-                                Fecha y hora de realización
-                              </label>
-                              <div className="relative space-y-2">
-                                <DateInput
-                                  hideTimeZone
-                                  classNames={{
-                                    inputWrapper: [
-                                      "!bg-transparent",
-                                      "data-[hover=true]:!bg-transparent",
-                                      "border-1",
-                                      "py-7",
-                                      "group-data-[focus=true]:!bg-transparent",
-                                      "rounded-md",
-                                    ],
-                                  }}
-                                  defaultValue={parseZonedDateTime(
-                                    `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
-                                  )}
-                                  granularity="minute"
-                                  value={fechaRealizacion}
-                                  onChange={(value) => {
-                                    if (value) setFechaRealizacion(value);
-                                  }}
-                                />
-                                <p className="text-default-500 text-sm">
-                                  Fecha:{" "}
-                                  {fechaRealizacion
-                                    ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaRealizacion.toDate())
-                                    : "--"}
-                                </p>
-                              </div>
+                                <PlusIcon />
+                              </Button>
                             </div>
                           </div>
                         </div>
-                      )}
-
-                      {/* Step 2: Journey Details */}
-                      {currentStep === 2 && (
-                        <div className="space-y-6 animate-fadeIn">
-                          {/* Location */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="origin"
-                              >
-                                Origen del Trayecto
-                              </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <LocationMarkerIcon />
-                                </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  required
-                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="origin"
-                                  menuShouldScrollIntoView={false}
-                                  name="origin"
-                                  options={municipioOptions}
-                                  placeholder="Seleccione un origen"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: undefined,
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 9999,
-                                      marginLeft: -35,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    clearIndicator: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      "&:hover": { color: "#ef4444" },
-                                      padding: "0px 8px",
-                                    }),
-                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
-                                  value={
-                                    municipioOptions.find(
-                                      (opt) => opt.value === selectedOriginMun,
-                                    ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setSelectedOriginMun(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
-                                />
-                              </div>
-                            </div>
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="destination"
-                              >
-                                Destino del Trayecto
-                              </label>
-                              <div className="relative shadow-sm rounded-md">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <LocationMarkerIcon />
-                                </div>
-                                <SelectReact
-                                  isClearable
-                                  isSearchable
-                                  required
-                                  className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                  classNamePrefix="react-select"
-                                  inputId="destination"
-                                  menuShouldScrollIntoView={false}
-                                  name="destination"
-                                  options={municipioOptions}
-                                  placeholder="Seleccione un destino"
-                                  styles={{
-                                    control: (base, state) => ({
-                                      ...base,
-                                      border: "none",
-                                      boxShadow: undefined,
-                                      backgroundColor: "white",
-                                    }),
-                                    placeholder: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    singleValue: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      zIndex: 9999,
-                                      marginLeft: -35,
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      color: state.isSelected
-                                        ? "#059669"
-                                        : "#1f2937",
-                                      backgroundColor: state.isFocused
-                                        ? "#f0fdf4"
-                                        : "white",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    dropdownIndicator: (base) => ({
-                                      ...base,
-                                      color: "#374151",
-                                      paddingRight: "0rem",
-                                    }),
-                                    indicatorSeparator: () => ({
-                                      display: "none",
-                                    }),
-                                    input: (base) => ({
-                                      ...base,
-                                      color: "#1f2937",
-                                      fontSize: "0.875rem",
-                                    }),
-                                    clearIndicator: (base) => ({
-                                      ...base,
-                                      color: "#9ca3af",
-                                      "&:hover": { color: "#ef4444" },
-                                      padding: "0px 8px",
-                                    }),
-                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
-                                  value={
-                                    municipioOptions.find(
-                                      (opt) => opt.value === selectedDestMun,
-                                    ) || null
-                                  }
-                                  onChange={(option) =>
-                                    setSelectedDestMun(
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <SearchInputsPlaces
-                              initialDestination={destSpecific}
-                              initialOrigin={originSpecific}
-                              onDestinationChange={(address, coords) =>
-                                handleDestSpecificChange(address, coords)
-                              }
-                              onOriginChange={(address, coords) =>
-                                handleOriginSpecificChange(address, coords)
+                        {/* Observaciones */}
+                        <div className="relative md:col-span-2">
+                          <label
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                            htmlFor="departureTime"
+                          >
+                            Observaciones
+                          </label>
+                          <div className="relative bg-white">
+                            <Textarea
+                              classNames={{
+                                inputWrapper: [
+                                  "!bg-transparent",
+                                  "data-[hover=true]:!bg-transparent",
+                                  "group-data-[focus=true]:!bg-transparent",
+                                  "border-1",
+                                  "focus-within:border-emerald-600",
+                                  "focus-within:border", // Corregido desde "focus-within:border-1"
+                                  "transition-colors",
+                                  "duration-300",
+                                  "ease-in-out",
+                                  "rounded-md",
+                                ],
+                              }}
+                              placeholder="Escribe las observaciones del servicio"
+                              value={observaciones}
+                              onChange={(e) =>
+                                setObservaciones(e.target.value)
                               }
                             />
                           </div>
-                          {/* Purpose */}
-                          <div>
-                            <label
-                              className="block text-sm font-medium text-gray-700 mb-2"
-                              htmlFor="purpose-personnel"
-                            >
-                              Propósito del Servicio
-                            </label>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                              <div className="flex items-center">
-                                <input
-                                  required
-                                  checked={purpose === "personal"}
-                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                                  id="purpose-personnel"
-                                  name="purpose"
-                                  type="radio"
-                                  value="personal"
-                                  onChange={() => setPurpose("personal")}
-                                />
-                                <label
-                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                                  htmlFor="purpose-personnel"
-                                >
-                                  <UsersIcon />
-                                  Transporte de personal
-                                </label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  checked={purpose === "personal y herramienta"}
-                                  className="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
-                                  id="purpose-tools"
-                                  name="purpose"
-                                  type="radio"
-                                  value="personal y herramienta"
-                                  onChange={() =>
-                                    setPurpose("personal y herramienta")
-                                  }
-                                />
-                                <label
-                                  className="ml-2 flex items-center text-sm text-gray-900 gap-2"
-                                  htmlFor="purpose-tools"
-                                >
-                                  <TruckIcon />
-                                  Transporte de personal y herramienta
-                                </label>
-                              </div>
-                            </div>
-                          </div>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Step 3: Planning (Optional) */}
-                      {currentStep === 3 && (
-                        <div className="space-y-6 animate-fadeIn">
-                          {/* Location */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="origin"
-                              >
-                                Vehículo Asignado
-                              </label>
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1 relative shadow-sm rounded-md">
-                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <TruckIcon />
-                                  </div>
-                                  <SelectReact
-                                    isClearable
-                                    isSearchable
-                                    className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                    classNamePrefix="react-select"
-                                    inputId="driver"
-                                    name="driver"
-                                    options={vehiculos.map((vehiculo) => ({
-                                      value: vehiculo.id,
-                                      label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                    }))}
-                                    placeholder="Seleccione un vehiculo"
-                                    styles={{
-                                      control: (base, state) => ({
-                                        ...base,
-                                        border: "none",
-                                        boxShadow: state.isFocused
-                                          ? "0 0 0 1px #059669"
-                                          : undefined,
-                                        "&:hover": { borderColor: "#059669" },
-                                        backgroundColor: "white",
-                                      }),
-                                      placeholder: (base) => ({
-                                        ...base,
-                                        color: "#9ca3af",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      singleValue: (base) => ({
-                                        ...base,
-                                        color: "#1f2937",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      menu: (base) => ({
-                                        ...base,
-                                        zIndex: 9999,
-                                        marginLeft: -35,
-                                      }),
-                                      option: (base, state) => ({
-                                        ...base,
-                                        color: state.isSelected
-                                          ? "#059669"
-                                          : "#1f2937",
-                                        backgroundColor: state.isFocused
-                                          ? "#f0fdf4"
-                                          : "white",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      dropdownIndicator: (base) => ({
-                                        ...base,
-                                        color: "#374151",
-                                        paddingRight: "0rem",
-                                      }),
-                                      indicatorSeparator: () => ({
-                                        display: "none",
-                                      }),
-                                      input: (base) => ({
-                                        ...base,
-                                        color: "#1f2937",
-                                        fontSize: "0.875rem",
-                                      }),
-                                    }}
-                                    value={
-                                      vehiculos
-                                        .map((vehiculo) => ({
-                                          value: vehiculo.id,
-                                          label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
-                                        }))
-                                        .find(
-                                          (opt) => opt.value === vehicleSelected,
-                                        ) || null
-                                    }
-                                    onChange={(option) =>
-                                      setVehicleSelected(
-                                        option ? option.value : "",
-                                      )
-                                    }
-                                  />
-                                </div>
-
-                                <Button
-                                  as={Link}
-                                  href={process.env.NEXT_PUBLIC_FLOTA_SYSTEM}
-                                  color="success"
-                                  isIconOnly
-                                  variant="light"
-                                  radius="sm"
-                                  target="_blank"
-                                >
-                                  <PlusIcon />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="relative">
-                              <label
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                                htmlFor="destination"
-                              >
-                                Conductor Asignado
-                              </label>
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1 relative shadow-sm rounded-md">
-                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <UserIcon />
-                                  </div>
-                                  <SelectReact
-                                    isClearable
-                                    isSearchable
-                                    className="border-1 pl-10 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
-                                    classNamePrefix="react-select"
-                                    inputId="driver"
-                                    name="driver"
-                                    options={conductores.map((conductor) => ({
-                                      value: conductor.id,
-                                      label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                                    }))}
-                                    placeholder="Seleccione un conductor"
-                                    styles={{
-                                      control: (base, state) => ({
-                                        ...base,
-                                        border: "none",
-                                        boxShadow: state.isFocused
-                                          ? "0 0 0 1px #059669"
-                                          : undefined,
-                                        "&:hover": { borderColor: "#059669" },
-                                        backgroundColor: "white",
-                                      }),
-                                      placeholder: (base) => ({
-                                        ...base,
-                                        color: "#9ca3af",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      singleValue: (base) => ({
-                                        ...base,
-                                        color: "#1f2937",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      menu: (base) => ({
-                                        ...base,
-                                        zIndex: 9999,
-                                        marginLeft: -35,
-                                      }),
-                                      option: (base, state) => ({
-                                        ...base,
-                                        color: state.isSelected
-                                          ? "#059669"
-                                          : "#1f2937",
-                                        backgroundColor: state.isFocused
-                                          ? "#f0fdf4"
-                                          : "white",
-                                        fontSize: "0.875rem",
-                                      }),
-                                      dropdownIndicator: (base) => ({
-                                        ...base,
-                                        color: "#374151",
-                                        paddingRight: "0rem",
-                                      }),
-                                      indicatorSeparator: () => ({
-                                        display: "none",
-                                      }),
-                                      input: (base) => ({
-                                        ...base,
-                                        color: "#1f2937",
-                                        fontSize: "0.875rem",
-                                      }),
-                                    }}
-                                    value={
-                                      conductores
-                                        .map((conductor) => ({
-                                          value: conductor.id,
-                                          label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
-                                        }))
-                                        .find(
-                                          (opt) =>
-                                            opt.value === conductorSelected,
-                                        ) || null
-                                    }
-                                    onChange={(option) =>
-                                      setConductorSelected(
-                                        option ? option.value : "",
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <Button
-                                  as={Link}
-                                  href={process.env.NEXT_PUBLIC_CONDUCTORES_SYSTEM}
-                                  color="success"
-                                  isIconOnly
-                                  variant="light"
-                                  radius="sm"
-                                  target="_blank"
-                                >
-                                  <PlusIcon />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Observaciones */}
-                          <div className="relative md:col-span-2">
-                            <label
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                              htmlFor="departureTime"
-                            >
-                              Observaciones
-                            </label>
-                            <div className="relative bg-white">
-                              <Textarea
-                                classNames={{
-                                  inputWrapper: [
-                                    "!bg-transparent",
-                                    "data-[hover=true]:!bg-transparent",
-                                    "group-data-[focus=true]:!bg-transparent",
-                                    "border-1",
-                                    "focus-within:border-emerald-600",
-                                    "focus-within:border", // Corregido desde "focus-within:border-1"
-                                    "transition-colors",
-                                    "duration-300",
-                                    "ease-in-out",
-                                    "rounded-md",
-                                  ],
-                                }}
-                                placeholder="Escribe las observaciones del servicio"
-                                value={observaciones}
-                                onChange={(e) =>
-                                  setObservaciones(e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 4: Status */}
-                      {currentStep === 4 && (
-                        <div className="space-y-6 animate-fadeIn">
+                    {currentStep === 4 && (
+                      <div className="space-y-6 animate-fadeIn">
+                        <div className="relative">
+                          <label
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                            htmlFor="status"
+                          >
+                            Estado del Servicio
+                          </label>
                           <div className="relative">
-                            <label
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                              htmlFor="status"
-                            >
-                              Estado del Servicio
-                            </label>
-                            <div className="relative">
-                              <p className="text-md font-medium mb-4">
-                                {(() => {
-                                  const now = new Date();
-                                  const fechaReal =
-                                    fechaRealizacion?.toDate?.() ?? null;
+                            <p className="text-md font-medium mb-4">
+                              {(() => {
+                                const now = new Date();
+                                const fechaReal =
+                                  fechaRealizacion?.toDate?.() ?? null;
 
-                                  if (fechaReal && fechaReal < now) {
-                                    if (conductorSelected && vehicleSelected) {
-                                      return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
-                                    } else {
-                                      return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
-                                    }
+                                if (fechaReal && fechaReal < now) {
+                                  if (conductorSelected && vehicleSelected) {
+                                    return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
+                                  } else {
+                                    return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
                                   }
+                                }
 
-                                  return conductorSelected && vehicleSelected
-                                    ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
-                                    : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
-                                })()}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                El estado se determina automáticamente según las
-                                asignaciones realizadas.
-                              </p>
-                            </div>
+                                return conductorSelected && vehicleSelected
+                                  ? "El servicio será registrado como PLANIFICADO ya que tiene conductor y vehículo asignados."
+                                  : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
+                              })()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              El estado se determina automáticamente según las
+                              asignaciones realizadas.
+                            </p>
                           </div>
                         </div>
-                      )}
-                    </>
-                  )}
+                      </div>
+                    )}
 
-                  {/* Navigation Buttons */}
                   <div className="flex justify-between pt-6 border-t border-gray-200">
-                    {isReadOnly ? (
-                      // Botones para modo solo lectura
+                    <button
+                      className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
+                      disabled={currentStep === 1}
+                      type="button"
+                      onClick={prevStep}
+                    >
+                      Anterior
+                    </button>
+                    {currentStep < totalSteps ? (
                       <button
-                        className="border-1 py-2 px-4 rounded-md shadow-sm"
+                        className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                         type="button"
-                        onClick={() => {
-                          handleModalForm();
-                          resetFormStates();
-                        }}
+                        onClick={nextStep}
                       >
-                        Cerrar
+                        Siguiente
                       </button>
                     ) : (
-                      // Botones para modo edición/creación
-                      <>
-                        <button
-                          className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={currentStep === 1}
-                          type="button"
-                          onClick={prevStep}
-                        >
-                          Anterior
-                        </button>
-                        {currentStep < totalSteps ? (
-                          <button
-                            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                            type="button"
-                            onClick={nextStep}
-                          >
-                            Siguiente
-                          </button>
-                        ) : (
-                          <div className="flex gap-2">
-                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en_curso */}
-                            {isEditing &&
-                              servicio &&
-                              (servicio.estado === "solicitado" ||
-                                servicio.estado === "planificado" ||
-                                servicio.estado === "en_curso") && (
-                                <button
-                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                  type="button"
-                                // onClick={async () => {
-                                //   if (
-                                //     servicio.id &&
-                                //     window.confirm(
-                                //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                //     )
-                                //   ) {
-                                //     try {
-                                //       await actualizarEstadoServicio(
-                                //         servicio.id,
-                                //         "cancelado",
-                                //       );
-                                //       addToast({
-                                //         title: "Éxito",
-                                //         description:
-                                //           "Servicio cancelado correctamente",
-                                //         color: "success",
-                                //       });
-                                //       handleModalForm(); // Cerrar modal
-                                //       resetFormStates();
-                                //     } catch (error) {
-                                //       addToast({
-                                //         title: "Error",
-                                //         description:
-                                //           "No se pudo cancelar el servicio",
-                                //         color: "danger",
-                                //       });
-                                //     }
-                                //   }
-                                // }}
-                                >
-                                  Cancelar Servicio
-                                </button>
-                              )}
+                      <div className="flex gap-2">
+                        {isEditing &&
+                          servicio &&
+                          (servicio.estado === "solicitado" ||
+                            servicio.estado === "planificado" ||
+                            servicio.estado === "en_curso") && (
                             <button
-                              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                              disabled={loading}
-                              type="submit"
+                              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                              type="button"
+                            // onClick={async () => {
+                            //   if (
+                            //     servicio.id &&
+                            //     window.confirm(
+                            //       "¿Estás seguro de que deseas cancelar este servicio?",
+                            //     )
+                            //   ) {
+                            //     try {
+                            //       await actualizarEstadoServicio(
+                            //         servicio.id,
+                            //         "cancelado",
+                            //       );
+                            //       addToast({
+                            //         title: "Éxito",
+                            //         description:
+                            //           "Servicio cancelado correctamente",
+                            //         color: "success",
+                            //       });
+                            //       handleModalForm(); // Cerrar modal
+                            //       resetFormStates();
+                            //     } catch (error) {
+                            //       addToast({
+                            //         title: "Error",
+                            //         description:
+                            //           "No se pudo cancelar el servicio",
+                            //         color: "danger",
+                            //       });
+                            //     }
+                            //   }
+                            // }}
                             >
-                              {isEditing
-                                ? "Actualizar Servicio"
-                                : "Registrar Servicio"}
+                              Cancelar Servicio
                             </button>
-                          </div>
-                        )}
-                      </>
+                          )}
+                        <button
+                          className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                          disabled={loading}
+                          type="submit"
+                        >
+                          {isEditing
+                            ? "Actualizar Servicio"
+                            : "Registrar Servicio"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </form>

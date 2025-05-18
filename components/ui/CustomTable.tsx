@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+
+import { useService } from "@/context/serviceContext";
 
 export type SortDescriptor = {
   column: string;
@@ -13,6 +15,15 @@ export interface Column {
   renderCell?: (item: any) => React.ReactNode;
 }
 
+interface RowAnimationState {
+  [key: string]: {
+    isNew: boolean;
+    isUpdated: boolean;
+    eventType: string; // Añadir el tipo de evento
+    timestamp: number;
+  };
+}
+
 interface CustomTableProps {
   columns: Column[];
   data: any[];
@@ -23,7 +34,6 @@ interface CustomTableProps {
   isLoading?: boolean;
   className?: string;
   onRowClick?: (item: any) => void;
-  selectable?: boolean;
   selectedItems?: any[];
   onSelectionChange?: (item: any) => void;
   getItemId?: (item: any) => string;
@@ -39,13 +49,14 @@ const CustomTable: React.FC<CustomTableProps> = ({
   isLoading = false,
   className = "",
   onRowClick,
-  selectable = false,
-  selectedItems = [],
-  onSelectionChange,
-  getItemId = (item) => item.id,
 }) => {
+  const { socketEventLogs } = useService();
+
+  const [rowAnimations, setRowAnimations] = useState<RowAnimationState>({});
+
   // Manejar cambio de ordenamiento
   const handleSort = (column: string) => {
+    console.log(column)
     if (
       !onSortChange ||
       !columns.find((col) => col.key === column)?.allowsSorting
@@ -62,16 +73,85 @@ const CustomTable: React.FC<CustomTableProps> = ({
     onSortChange({ column, direction });
   };
 
+  // Actualiza el useEffect donde procesas los eventos de socket
+  useEffect(() => {
+    if (!socketEventLogs || socketEventLogs.length === 0) return;
+
+    // Obtener el evento más reciente
+    const latestEvents = [...socketEventLogs]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 5); // Solo procesar los 5 eventos más recientes
+
+    const now = Date.now();
+    const newAnimations: RowAnimationState = { ...rowAnimations };
+
+    latestEvents.forEach((event) => {
+      // Obtener ID del conductor según el tipo de evento
+      let conductorId = "";
+
+      if (event.data.conductor) {
+        conductorId = event.data.conductor.id;
+      } else if (event.data.id) {
+        conductorId = event.data.id;
+      }
+
+      if (!conductorId) return;
+
+      if (event.eventName === "conductor:creado") {
+        newAnimations[conductorId] = {
+          isNew: true,
+          isUpdated: false,
+          eventType: event.eventName,
+          timestamp: now,
+        };
+      } else {
+        // Para cualquier otro evento, marcar como actualizado
+        newAnimations[conductorId] = {
+          isNew: false,
+          isUpdated: true,
+          eventType: event.eventName,
+          timestamp: now,
+        };
+      }
+
+      // Scroll al conductor si es nuevo
+      if (event.eventName === "conductor:creado") {
+        setTimeout(() => {
+          const row = document.getElementById(`conductor-row-${conductorId}`);
+
+          if (row) {
+            row.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+      }
+    });
+
+    setRowAnimations(newAnimations);
+
+    // Limpiar animaciones después de 5 segundos
+    const timer = setTimeout(() => {
+      setRowAnimations((prev) => {
+        const updated: RowAnimationState = {};
+
+        // Solo mantener animaciones que sean más recientes que 5 segundos
+        Object.entries(prev).forEach(([id, state]) => {
+          if (now - state.timestamp < 5000) {
+            updated[id] = state;
+          }
+        });
+
+        return updated;
+      });
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [socketEventLogs]);
+
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            {selectable && (
-              <th className="w-10 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <span className="sr-only">Seleccionar</span>
-              </th>
-            )}
             {columns.map((column) => (
               <th
                 key={column.key}
@@ -100,71 +180,51 @@ const CustomTable: React.FC<CustomTableProps> = ({
             <tr>
               <td
                 className="px-6 py-4 whitespace-nowrap"
-                colSpan={columns.length + (selectable ? 1 : 0)}
+                colSpan={columns.length}
               >
-                {loadingContent || (
-                  <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
-                  </div>
-                )}
+                {loadingContent}
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
               <td
-                className="px-6 py-4 whitespace-nowrap text-center"
-                colSpan={columns.length + (selectable ? 1 : 0)}
+                className="px-6 py-4 whitespace-nowrap"
+                colSpan={columns.length}
               >
                 {emptyContent}
               </td>
             </tr>
           ) : (
-            data.map((item, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`hover:bg-gray-50 transition-colors cursor-pointer ${
-                  selectable &&
-                  selectedItems.some(
-                    (selected) => getItemId(selected) === getItemId(item),
-                  )
-                    ? "bg-gray-100"
-                    : ""
-                }`}
-                onClick={() => onRowClick && onRowClick(item)}
-              >
-                {selectable && (
-                  <td
-                    className="w-10 px-6 py-4 whitespace-nowrap"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectionChange && onSelectionChange(item);
-                    }}
-                  >
-                    <div className="flex items-center justify-center">
-                      <input
-                        checked={selectedItems.some(
-                          (selected) => getItemId(selected) === getItemId(item),
-                        )}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                        disabled={!onSelectionChange}
-                        type="checkbox"
-                        onChange={() => {}} // Evitar warning de input sin onChange
-                      />
-                    </div>
-                  </td>
-                )}
-                {columns.map((column) => (
-                  <td
-                    key={`${rowIndex}-${column.key}`}
-                    className="px-6 py-4 whitespace-nowrap"
-                  >
-                    {column.renderCell
-                      ? column.renderCell(item)
-                      : item[column.key]}
-                  </td>
-                ))}
-              </tr>
-            ))
+            data.map((item, rowIndex) => {
+              const conductorId = item.id || "";
+              const animation = rowAnimations[conductorId];
+              const isNew = animation?.isNew || false;
+              const isUpdated = animation?.isUpdated || false;
+
+              return (
+                <tr
+                  key={rowIndex}
+                  className={`
+                    hover:bg-gray-50 transition-colors cursor-pointer
+                    ${isNew ? "animate-pulse bg-success-50 border-l-2 border-success-400" : ""}
+                    ${isUpdated ? "animate-pulse bg-primary-50 border-l-2 border-primary-400" : ""}
+                  `}
+                  id={`servicio-${item.id}`}
+                  onClick={() => onRowClick && onRowClick(item)}
+                >
+                  {columns.map((column, columIndex) => (
+                    <td
+                      key={columIndex}
+                      className="px-6 py-4 whitespace-nowrap"
+                    >
+                      {column.renderCell
+                        ? column.renderCell(item)
+                        : item[column.key]}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

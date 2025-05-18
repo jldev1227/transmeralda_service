@@ -14,6 +14,7 @@ import { useAuth } from "./AuthContext";
 
 import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
+import { AxiosError, isAxiosError } from "axios";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -51,6 +52,16 @@ export interface SocketEventLog {
   timestamp: Date;
 }
 
+
+export interface BusquedaParams {
+  page?: number;
+  limit?: number;
+  search?: string; // Para búsqueda general (nombre, apellido, correo, etc.)
+  estado?: EstadoServicio | EstadoServicio[];
+  sort?: string;
+  order?: "ASC" | "DESC";
+}
+
 export interface ServicioEditar {
   servicio: ServicioConRelaciones | null;
   isEditing: boolean;
@@ -62,6 +73,13 @@ export interface ServicioTicket {
 
 export interface ServicioLiquidar {
   servicio: ServicioConRelaciones | null;
+}
+
+export interface ServiciosState {
+  data: ServicioConRelaciones[];
+  count: number;
+  totalPages: number;
+  currentPage: number;
 }
 
 // Tipado para la respuesta de liquidaciones
@@ -96,10 +114,17 @@ export interface Liquidacion {
   }>;
 }
 
+export interface ServiciosState {
+  data: ServicioConRelaciones[];
+  count: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 // Interfaz para el contexto
 interface ServiceContextType {
   // Datos
-  servicios: ServicioConRelaciones[];
+  serviciosState: ServiciosState;
   liquidaciones: Liquidacion[];
   servicio: Servicio | null;
   municipios: Municipio[];
@@ -107,6 +132,7 @@ interface ServiceContextType {
   vehiculos: Vehiculo[];
   empresas: Empresa[];
   loading: boolean;
+  fetchServicios: (paramsBusqueda: BusquedaParams) => Promise<void>;
   registrarServicio: (servicioData: CreateServicioDTO) => void;
   actualizarServicio: (
     id: string,
@@ -174,6 +200,16 @@ export type EstadoServicio =
   | "cancelado"
   | "liquidado"
   | "planilla_asignada";
+
+export enum EstadoServicioEnum {
+  solicitado = "solicitado",
+  planificado = "planificado",
+  en_curso = "en_curso",
+  realizado = "realizado",
+  cancelado = "cancelado",
+  planilla_asignada = "planilla_asignada",
+  liquidado = "liquidado",
+}
 
 // Interface para el modelo Servicio
 export interface Servicio {
@@ -384,17 +420,22 @@ export interface BuscarServiciosParams {
   limite?: number;
 }
 
+export interface ValidationError {
+  campo: string;
+  mensaje: string;
+}
+
 // Interface para respuesta de API
 export interface ApiResponse<T> {
   success: boolean;
+  data: T;
+  count?: number;
+  currentPage?: number;
+  totalPages?: number;
   message?: string;
-  data?: T;
-  total?: number;
-  errors?: Array<{
-    field: string;
-    message: string;
-  }>;
+  errores?: ValidationError[];
 }
+
 
 interface LiquidacionErrorEvent {
   error: string;
@@ -408,16 +449,24 @@ const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   children,
 }) => {
-  const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
+  const [serviciosState, setServiciosState] = useState<ServiciosState>({
+    data: [],
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+  });
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [conductores, setConductores] = useState<Conductor[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [initializing, setInitializing] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalForm, setModalForm] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<
+    ValidationError[] | null
+  >(null); const [modalForm, setModalForm] = useState(false);
   const [modalTicket, setModalTicket] = useState(false);
   const [modalPlanilla, setModalPlanilla] = useState(false);
   const [modalLiquidar, setModalLiquidar] = useState(false);
@@ -432,30 +481,113 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicio: null,
   });
 
-  // Obtener todas las servicios
-  const obtenerServicios = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get("/api/servicios");
+   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+    column: "nombre",
+    direction: "ascending",
+  });
 
-      if (response.data.success) {
-        setServicios(response.data.data);
+
+  // Función para manejar errores de Axios
+  const handleApiError = (err: unknown, defaultMessage: string): string => {
+    if (isAxiosError(err)) {
+      const axiosError = err as AxiosError<ApiResponse<any>>;
+
+      if (axiosError.response) {
+        // El servidor respondió con un código de estado fuera del rango 2xx
+        const statusCode = axiosError.response.status;
+        const errorMessage = axiosError.response.data?.message;
+        const validationErrors = axiosError.response.data?.errores;
+
+        if (validationErrors) {
+          setValidationErrors(validationErrors);
+        }
+
+        if (statusCode === 401) {
+          return "Sesión expirada o usuario no autenticado";
+        } else if (statusCode === 403) {
+          return "No tienes permisos para realizar esta acción";
+        } else if (statusCode === 404) {
+          return "Conductor no encontrado";
+        } else {
+          return errorMessage || `Error en la petición (${statusCode})`;
+        }
+      } else if (axiosError.request) {
+        // La petición fue hecha pero no se recibió respuesta
+        return "No se pudo conectar con el servidor. Verifica tu conexión a internet";
       } else {
-        throw new Error(
-          response.data.message || "Error al obtener liquidaciones",
-        );
+        // Error al configurar la petición
+        return `Error al configurar la petición: ${axiosError.message}`;
       }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+    } else {
+      // Error que no es de Axios
+      return `${defaultMessage}: ${(err as Error).message}`;
+    }
+  };
+
+  // Función para limpiar errores
+  const clearError = () => {
+    setError(null);
+    setValidationErrors(null);
+  };
+
+  // Obtener todas las servicios
+  const fetchServicios = async (paramsBusqueda: BusquedaParams = {}) => {
+    setLoading(true);
+    clearError();
+
+    try {
+      // Prepara los parámetros básicos
+      const params: any = {
+        page: paramsBusqueda.page || serviciosState.currentPage,
+        limit: paramsBusqueda.limit || 10,
+        sort: paramsBusqueda.sort || sortDescriptor.column,
+        order: paramsBusqueda.order || sortDescriptor.direction,
+      };
+
+      // Añade el término de búsqueda si existe
+      if (paramsBusqueda.search) {
+        params.search = paramsBusqueda.search;
+      }
+
+      // Añade filtros de estado
+      if (paramsBusqueda.estado) {
+        if (Array.isArray(paramsBusqueda.estado)) {
+          params.estado = paramsBusqueda.estado.join(",");
+        } else {
+          params.estado = paramsBusqueda.estado;
+        }
+      }
+
+      const response = await apiClient.get<ApiResponse<ServicioConRelaciones[]>>(
+        "/api/servicios",
+        {
+          params,
+        },
       );
+
+      console.log(response)
+
+      if (response.data && response.data.success) {
+        setServiciosState({
+          data: response.data.data,
+          count: response.data.count || 0,
+          totalPages: response.data.totalPages || 1,
+          currentPage: parseInt(params.page) || 1,
+        });
+
+        return;
+      } else {
+        throw new Error("Respuesta no exitosa del servidor");
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err, "Error al obtener conductores");
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      setInitializing(false);
     }
-  }, []);
+  };
 
   // Obtener todas las municipios
   const obtenerMunicipios = useCallback(async (): Promise<void> => {
@@ -472,8 +604,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -497,8 +629,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -520,8 +652,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -543,8 +675,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
+        err.message ||
+        "Error al conectar con el servidor",
       );
     } finally {
       setLoading(false);
@@ -572,8 +704,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       } catch (err: any) {
         setError(
           err.response?.data?.message ||
-            err.message ||
-            "Error al conectar con el servidor",
+          err.message ||
+          "Error al conectar con el servidor",
         );
 
         return null;
@@ -802,8 +934,34 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setModalLiquidar(!modalLiquidar);
   };
 
+  // Efecto que se ejecuta cuando cambia la página actual
   useEffect(() => {
-    obtenerServicios();
+    const params: BusquedaParams = {
+      page: serviciosState.currentPage,
+    };
+
+    fetchServicios(params);
+  }, [serviciosState.currentPage]);
+
+  // Efecto de inicialización
+  useEffect(() => {
+    const params: BusquedaParams = {
+      page: serviciosState.currentPage,
+    };
+
+    fetchServicios(params);
+
+    // Establecer un tiempo máximo para la inicialización
+    const timeoutId = setTimeout(() => {
+      if (initializing) {
+        setInitializing(false);
+      }
+    }, 5000); // 5 segundos máximo de espera
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
     obtenerMunicipios();
     obtenerConductores();
     obtenerVehiculos();
@@ -897,7 +1055,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
 
         // Añadir a la lista principal de servicios
-        setServicios((prevServicios) => [data, ...prevServicios]);
+        setServiciosState((prevServicios) => [data, ...prevServicios]);
 
         // Añadir a serviciosWithRoutes si existe
         if (serviciosWithRoutes) {
@@ -922,7 +1080,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
 
         // Actualizar en la lista de servicios
-        setServicios((prevServicios) =>
+        setServiciosState((prevServicios) =>
           prevServicios.map((s) => (s.id === data.id ? data : s)),
         );
 
@@ -1005,7 +1163,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
 
         // Eliminar de la lista principal de servicios
-        setServicios((prevServicios) =>
+        setServiciosState((prevServicios) =>
           prevServicios.filter((s) => s.id !== data.id),
         );
 
@@ -1051,7 +1209,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
 
         // Actualizar en la lista principal de servicios
-        setServicios((prevServicios) =>
+        setServiciosState((prevServicios) =>
           prevServicios.map((s) =>
             s.id === data.servicio.id ? data.servicio : s,
           ),
@@ -1117,7 +1275,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
 
         // Actualizar en la lista de servicios
-        setServicios((prevServicios) =>
+        setServiciosState((prevServicios) =>
           prevServicios.map((s) => (s.id === data.id ? data.servicio : s)),
         );
 
@@ -1294,7 +1452,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
   // Valor del contexto
   const value: ServiceContextType = {
-    servicios,
+    serviciosState,
     liquidaciones,
     servicio,
     servicioTicket,
@@ -1304,6 +1462,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     vehiculos,
     empresas,
     loading,
+    fetchServicios,
     registrarServicio,
     obtenerServicio,
     setError,
