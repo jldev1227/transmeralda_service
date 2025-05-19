@@ -324,24 +324,23 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
         <Modal
             backdrop="opaque"
             classNames={{
-                backdrop:
-                    "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
-                base: "max-w-[90vw]", // Esto establece el ancho al 75% del viewport width
-
+                backdrop: "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+                base: "max-w-[95vw] md:max-w-[90vw]", // Más ancho en móvil, un poco menos en desktop
             }}
             isOpen={isOpen}
-            scrollBehavior="inside"
+            scrollBehavior="outside" // Cambiado a outside para que el modal en sí no tenga scroll
             size="5xl"
             onClose={onClose}
         >
-            <ModalContent className="w-full h-full !p-0 gap-0">
+            <ModalContent className="w-full !p-0 gap-0">
                 {() => (
                     <>
                         <ModalBody className="!p-0 rounded-xl">
-                            <div className="flex-1 grid grid-cols-3">
-                                <div className="animate-fade-up bg-white p-5 rounded-lg shadow-sm">
+                            <div className="flex flex-col lg:flex-row w-full h-full"> {/* Altura fija para el contenedor principal */}
+                                {/* Panel de detalles - con scroll independiente */}
+                                <div className="w-full lg:w-3/6 h-[45vh] lg:h-[90vh] overflow-y-auto bg-white p-4 lg:p-5 rounded-lg shadow-sm">
                                     {/* Encabezado con estado */}
-                                    <div className="flex justify-between items-center mb-4">
+                                    <div className="flex justify-between items-center mb-4 bg-white pt-1 pb-2 z-10">
                                         <h3 className="text-xl font-bold text-gray-800">Detalles del Servicio</h3>
                                         <div
                                             className="px-3 py-1.5 rounded-full text-sm font-medium"
@@ -355,15 +354,15 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                     </div>
 
                                     {/* Conductor - Row completa con foto e información */}
-                                    <div className="mb-6 pb-6 border-b border-gray-200">
-                                        <h3 className="font-semibold text-emerald-600 text-lg mb-4 flex items-center">
+                                    <div className="mb-5 pb-5 border-b border-gray-200">
+                                        <h3 className="font-semibold text-emerald-600 text-lg mb-3 flex items-center">
                                             <span className="w-1 h-5 bg-emerald-600 inline-block mr-3"></span>
                                             Conductor
                                         </h3>
 
-                                        <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="flex flex-col md:flex-row gap-4">
                                             {/* Foto del conductor */}
-                                            <div className="w-full md:w-1/5 lg:w-1/6">
+                                            <div className="w-full md:w-1/6 lg:w-1/6">
                                                 <div className="border border-gray-200 shadow-sm rounded-lg aspect-square relative overflow-hidden">
                                                     <Image
                                                         alt="Conductor asignado"
@@ -375,30 +374,28 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                             </div>
 
                                             {/* Información del conductor */}
-                                            <div className="w-full md:w-4/5 lg:w-5/6">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="w-full md:w-5/6 lg:w-5/6">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <div>
                                                         <p className="text-gray-500 text-sm">Nombre</p>
                                                         <p className="text-gray-900 font-medium">
                                                             {servicio.conductor?.nombre} {servicio.conductor?.apellido}
                                                         </p>
-                                                        <div>
-                                                            <p className="text-gray-500 text-sm">Identificación</p>
-                                                            <p className="text-gray-900">
-                                                                CC: {servicio.conductor?.numero_identificacion || "No disponible"}
-                                                            </p>
-                                                        </div>
                                                     </div>
                                                     <div>
-                                                        <div>
-                                                            <p className="text-gray-500 text-sm">Teléfono</p>
-                                                            <p className="text-gray-900 flex items-center">
-                                                                <svg className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                                                </svg>
-                                                                {servicio.conductor?.telefono || 'No disponible'}
-                                                            </p>
-                                                        </div>
+                                                        <p className="text-gray-500 text-sm">Identificación</p>
+                                                        <p className="text-gray-900">
+                                                            CC: {servicio.conductor?.numero_identificacion || "No disponible"}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-500 text-sm">Teléfono</p>
+                                                        <p className="text-gray-900 flex items-center">
+                                                            <svg className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                                            </svg>
+                                                            {servicio.conductor?.telefono || 'No disponible'}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -406,13 +403,13 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                     </div>
 
                                     {/* Vehículo - Row completa solo con información */}
-                                    <div className="mb-8 pb-6 border-b border-gray-200">
-                                        <h3 className="font-semibold text-emerald-600 text-lg mb-4 flex items-center">
+                                    <div className="mb-5 pb-5 border-b border-gray-200">
+                                        <h3 className="font-semibold text-emerald-600 text-lg mb-3 flex items-center">
                                             <span className="w-1 h-5 bg-emerald-600 inline-block mr-3"></span>
                                             Vehículo
                                         </h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                             <div>
                                                 <p className="text-gray-500 text-sm">Placa</p>
                                                 <p className="text-gray-900 font-medium">
@@ -443,58 +440,75 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* Información del servicio - Grid con 3 columnas en desktop */}
-                                    <div className="grid grid-cols-1 gap-x-4 gap-y-3">
-                                        {/* Origen y Destino - Primera columna */}
-                                        <div className="space-y-3">
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Origen</span>
-                                                <div className="font-medium text-gray-800">{servicio.origen_especifico}</div>
-                                            </div>
+                                    {/* Información del servicio - Grid mejorado */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Columna izquierda - Origen, Destino, Cliente */}
+                                        <div>
+                                            <h3 className="font-semibold text-emerald-600 text-lg mb-3 flex items-center">
+                                                <span className="w-1 h-5 bg-emerald-600 inline-block mr-3"></span>
+                                                Ubicaciones
+                                            </h3>
 
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Destino</span>
-                                                <div className="font-medium text-gray-800">{servicio.destino_especifico}</div>
-                                            </div>
-
-                                            {servicio.cliente && (
-                                                <div className="bg-gray-50 p-2 rounded">
-                                                    <span className="text-sm text-gray-500">Cliente</span>
-                                                    <div className="font-medium text-gray-800">{servicio.cliente.nombre}</div>
+                                            <div className="space-y-3">
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <span className="text-sm text-gray-500">Origen</span>
+                                                    <div className="font-medium text-gray-800">{servicio.origen_especifico}</div>
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        {/* Fechas - Segunda columna */}
-                                        <div className="space-y-3">
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Fecha y Hora de Solicitud</span>
-                                                <div className="font-medium text-gray-800">{formatearFecha(servicio.fecha_solicitud)}</div>
-                                            </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <span className="text-sm text-gray-500">Destino</span>
+                                                    <div className="font-medium text-gray-800">{servicio.destino_especifico}</div>
+                                                </div>
 
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Fecha y Hora de Realización</span>
-                                                <div className="font-medium text-gray-800">{formatearFecha(servicio.fecha_realizacion)}</div>
-                                            </div>
-
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Fecha y Hora de Finalización</span>
-                                                <div className="font-medium text-gray-800">{formatearFecha(servicio.fecha_finalizacion)}</div>
+                                                {servicio.cliente && (
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Cliente</span>
+                                                        <div className="font-medium text-gray-800">{servicio.cliente.nombre}</div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {/* Otros detalles - Tercera columna */}
-                                        <div className="space-y-3">
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Distancia</span>
-                                                <div className="font-medium text-gray-800">{servicioWithRoutes?.routeDistance || 0} km</div>
-                                            </div>
+                                        {/* Columna derecha - Fechas y otros detalles */}
+                                        <div>
+                                            <h3 className="font-semibold text-emerald-600 text-lg mb-3 flex items-center">
+                                                <span className="w-1 h-5 bg-emerald-600 inline-block mr-3"></span>
+                                                Tiempos y Detalles
+                                            </h3>
 
-                                            <div className="bg-gray-50 p-2 rounded">
-                                                <span className="text-sm text-gray-500">Observaciones</span>
-                                                <div className="font-medium text-gray-800 max-h-20 overflow-y-auto">
-                                                    {servicio.observaciones || "No hay observaciones"}
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Solicitud</span>
+                                                        <div className="font-medium text-gray-800 text-sm">{formatearFecha(servicio.fecha_solicitud)}</div>
+                                                    </div>
                                                 </div>
+
+                                                <div>
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Realización</span>
+                                                        <div className="font-medium text-gray-800 text-sm">{formatearFecha(servicio.fecha_realizacion)}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Finalización</span>
+                                                        <div className="font-medium text-gray-800 text-sm">{formatearFecha(servicio.fecha_finalizacion)}</div>
+                                                    </div>
+
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Distancia</span>
+                                                        <div className="font-medium text-gray-800">{servicioWithRoutes?.routeDistance || 0} km</div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2 bg-gray-50 p-3 rounded-lg">
+                                            <span className="text-sm text-gray-500">Observaciones</span>
+                                            <div className="font-medium text-gray-800 max-h-20 overflow-y-auto">
+                                                {servicio.observaciones || "No hay observaciones"}
                                             </div>
                                         </div>
                                     </div>
@@ -502,29 +516,33 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                     {/* Tracking del Vehículo (si está en curso) */}
                                     {servicio.estado === "en_curso" && (
                                         <div className="mt-5 pt-4 border-t border-gray-200">
-                                            <h4 className="font-bold text-lg mb-3 text-gray-800">Tracking del Vehículo</h4>
+                                            <h3 className="font-semibold text-emerald-600 text-lg mb-3 flex items-center">
+                                                <span className="w-1 h-5 bg-emerald-600 inline-block mr-3"></span>
+                                                Tracking del Vehículo
+                                            </h3>
+
                                             {vehicleTracking ? (
                                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                    <div className="bg-indigo-50 p-2 rounded">
-                                                        <span className="text-sm text-gray-500">Vehículo:</span>{" "}
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Vehículo</span>
                                                         <div className="font-medium text-gray-800">{vehicleTracking.name}</div>
                                                     </div>
-                                                    <div className="bg-indigo-50 p-2 rounded">
-                                                        <span className="text-sm text-gray-500">Velocidad:</span>{" "}
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Velocidad</span>
                                                         <div className="font-medium text-gray-800">{vehicleTracking.position.s || 0} km/h</div>
                                                     </div>
-                                                    <div className="bg-indigo-50 p-2 rounded">
-                                                        <span className="text-sm text-gray-500">Dirección:</span>{" "}
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Dirección</span>
                                                         <div className="font-medium text-gray-800">{vehicleTracking.position.c || 0}°</div>
                                                     </div>
-                                                    <div className="bg-indigo-50 p-2 rounded">
-                                                        <span className="text-sm text-gray-500">Ubicación:</span>{" "}
+                                                    <div className="bg-gray-50 p-3 rounded-lg md:col-span-2">
+                                                        <span className="text-sm text-gray-500">Ubicación</span>
                                                         <div className="font-medium text-gray-800">
                                                             {vehicleTracking.position.x.toFixed(6)}, {vehicleTracking.position.y.toFixed(6)}
                                                         </div>
                                                     </div>
-                                                    <div className="bg-indigo-50 p-2 rounded md:col-span-2">
-                                                        <span className="text-sm text-gray-500">Última actualización:</span>{" "}
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <span className="text-sm text-gray-500">Actualización</span>
                                                         <div className="font-medium text-gray-800">{formatTime(vehicleTracking.lastUpdate)}</div>
                                                     </div>
                                                 </div>
@@ -536,7 +554,9 @@ const ModalDetalleServicio: React.FC<ModalDetalleConductorProps> = ({
                                         </div>
                                     )}
                                 </div>
-                                <div className="col-span-2 w-full h-full">
+
+                                {/* Mapa - sin scroll, altura fija */}
+                                <div className="w-full lg:w-4/6 h-[45vh] lg:h-[90vh] overflow-hidden">
                                     <EnhancedMapComponent
                                         selectedServicio={servicioWithRoutes}
                                         vehicleTracking={vehicleTracking}
