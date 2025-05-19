@@ -14,18 +14,14 @@ import ServiciosTable from "@/components/ui/table";
 import { SortDescriptor } from "@/components/ui/customTable";
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import ModalDetalleServicio from "@/components/ui/modalDetalle";
-// import ModalForm from "@/components/ui/modalForm";
-// import ModalDetalleConductor from "@/components/ui/modalDetalle";
-// import BuscadorFiltrosConductores, {
-//   FilterOptions,
-// } from "@/components/ui/buscadorFiltros";
+import BuscadorFiltrosServicios, {
+  FilterOptions,
+} from "@/components/ui/buscadorFiltros";
 
-export default function GestionConductores() {
+export default function GestionServicios() {
   const {
     serviciosState,
     fetchServicios,
-    registrarServicio,
-    actualizarServicio,
     handleModalForm
   } = useService();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -50,13 +46,13 @@ export default function GestionConductores() {
     null,
   );
 
-  // Inicialización: cargar conductores
+  // Inicialización: cargar servicios
   useEffect(() => {
-    cargarConductores();
+    cargarServicios();
   }, []);
 
-  /// Función para cargar conductores con parámetros de búsqueda/filtros
-  const cargarConductores = async (
+  /// Función para cargar servicios con parámetros de búsqueda/filtros
+  const cargarServicios = async (
     page: number = 1,
     searchTermParam?: string,
     filtrosParam?: FilterOptions,
@@ -101,12 +97,12 @@ export default function GestionConductores() {
 
   // Manejar la búsqueda
   const handleSearch = async (termino: string) => {
-    await cargarConductores(1, termino, undefined);
+    await cargarServicios(1, termino, undefined);
   };
 
   // Manejar los filtros
   const handleFilter = async (nuevosFiltros: FilterOptions) => {
-    await cargarConductores(1, undefined, nuevosFiltros);
+    await cargarServicios(1, undefined, nuevosFiltros);
   };
 
   // Manejar reset de búsqueda y filtros
@@ -118,26 +114,26 @@ export default function GestionConductores() {
       estados: [],
     };
 
-    await cargarConductores(1, "", filtrosVacios);
+    await cargarServicios(1, "", filtrosVacios);
   };
 
   // Manejar cambio de página
   const handlePageChange = (page: number) => {
-    cargarConductores(page);
+    cargarServicios(page);
   };
 
   // Manejar cambio de ordenamiento
   const handleSortChange = (descriptor: SortDescriptor) => {
     setSortDescriptor(descriptor);
-    cargarConductores(1); // Volver a la primera página con el nuevo ordenamiento
+    cargarServicios(1); // Volver a la primera página con el nuevo ordenamiento
   };
 
-  // Manejar la selección de conductores
+  // Manejar la selección de servicios
   const handleSelectItem = (servicio: Servicio) => {
-    if (selectedIds.includes(servicio.id)) {
+    if (selectedIds.includes(servicio.id || '')) {
       setSelectedIds(selectedIds.filter((id) => id !== servicio.id));
     } else {
-      setSelectedIds([...selectedIds, servicio.id]);
+      setSelectedIds([...selectedIds, servicio.id || '']);
     }
   };
 
@@ -152,31 +148,6 @@ export default function GestionConductores() {
     setSelectedServicioId(null);
   };
 
-  // Función para guardar servicio (nueva o editada)
-  const guardarConductor = async (conductorData: Servicio) => {
-    try {
-      setLoading(true);
-      if (conductorData.id) {
-        // Editar servicio existente
-        await actualizarServicio(conductorData.id, conductorData);
-      } else {
-        // Crear nuevo servicio
-        await registrarServicio(conductorData);
-      }
-
-      // Recargar la lista de conductores con los filtros actuales
-      await cargarConductores(serviciosState.currentPage);
-    } catch (error) {
-      // Si hay un error, no hacemos nada aquí ya que los errores ya son manejados
-      console.log(
-        "Error al guardar el servicio, el modal permanece abierto:",
-        error,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="container mx-auto p-5 sm:p-10 space-y-5">
       <div className="flex gap-3 flex-col sm:flex-row w-full items-start md:items-center justify-between">
@@ -189,7 +160,7 @@ export default function GestionConductores() {
           isDisabled={loading}
           radius="sm"
           startContent={<PlusIcon />}
-          onPress={handleModalForm}
+          onPress={()=>handleModalForm}
         >
           Nuevo Servicio
         </Button>
@@ -202,12 +173,12 @@ export default function GestionConductores() {
         variant="faded"
       />
 
-      {/* Componente de búsqueda y filtros
-      <BuscadorFiltrosConductores
+      {/* Componente de búsqueda y filtros */}
+      <BuscadorFiltrosServicios
         onFilter={handleFilter}
         onReset={handleReset}
         onSearch={handleSearch}
-      /> */}
+      />
 
       <ModalFormServicio />
       <ModalDetalleServicio
@@ -227,7 +198,7 @@ export default function GestionConductores() {
       />
 
       {/* Información sobre resultados filtrados */}
-      {(searchTerm || Object.values(filtros).some((f) => f.length > 0)) && (
+      {(searchTerm || Object.values(filtros).some((f : any) => f.length > 0)) && (
         <div className="bg-blue-50 p-3 rounded-md text-blue-700 text-sm">
           Mostrando {serviciosState.data.length} resultado(s) de{" "}
           {serviciosState.count} servicio(es) total(es)

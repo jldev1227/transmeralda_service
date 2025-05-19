@@ -9,7 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { ServicioConRelaciones, EstadoServicioEnum } from "@/context/serviceContext";
+import { ServicioConRelaciones, EstadoServicioEnum, EstadoServicio } from "@/context/serviceContext";
 import CustomTable, {
   Column,
   SortDescriptor,
@@ -63,7 +63,7 @@ export default function SeeviciosTable({
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1023 });
 
   // Función para mostrar el estado del servicio con el color adecuado
-  const renderEstado = (estado: EstadoServicioEnum) => {
+  const renderEstado = (estado: EstadoServicio) => {
     return (
       <span className="inline-flex items-center px-2 text-xs leading-5 font-semibold rounded-full bg-green-100"
         style={{
@@ -105,14 +105,14 @@ export default function SeeviciosTable({
       renderCell: (servicio: ServicioConRelaciones) => (
         <div>
           <p className="truncate max-w-[200px]" title={servicio.cliente.nombre}>
-            {servicio.cliente.nombre.length > 30
+            {servicio.cliente.nombre && servicio.cliente.nombre.length > 30
               ? servicio.cliente.nombre.slice(0, 30) + "..."
               : servicio.cliente.nombre}
           </p>
           <p className="text-gray-500 truncate max-w-[200px]" title={servicio.cliente.nit}>
-            {servicio.cliente.nit.length > 30
+            {servicio.cliente.nit && servicio.cliente.nit.length > 30
               ? servicio.cliente.nit.slice(0, 30) + "..."
-              : servicio.cliente.nit}
+              : servicio.cliente.nit || ""}
           </p>
         </div>
       ),
@@ -134,8 +134,8 @@ export default function SeeviciosTable({
       allowsSorting: true,
       renderCell: (servicio: ServicioConRelaciones) => (
         <div>
-          <p>{servicio.conductor.nombre}</p>
-          <p className="text-gray-500">{servicio.conductor.nit}</p>
+          <p>{servicio.conductor.nombre} {servicio.conductor.apellido}</p>
+          <p className="text-gray-500">{servicio.conductor.numero_identificacion}</p>
         </div>
       ),
     },
@@ -145,10 +145,8 @@ export default function SeeviciosTable({
       allowsSorting: true,
       renderCell: (servicio: ServicioConRelaciones) => (
         <div
-
         >
           <span
-
           >{renderEstado(servicio.estado)}</span>
         </div>
       ),
@@ -435,7 +433,7 @@ export default function SeeviciosTable({
           </div>
         }
         selectedItems={currentItems.filter((item) =>
-          selectedIds.includes(item.id),
+          selectedIds.includes(item.id || ''),
         )}
         sortDescriptor={sortDescriptor}
         onRowClick={(servicio) => abrirModalDetalle(servicio.id)}

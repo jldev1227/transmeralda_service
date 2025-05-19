@@ -5,15 +5,10 @@ import React, {
   useEffect,
   useRef,
   useMemo,
-  SetStateAction,
-  Dispatch,
+  useCallback,
 } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Button } from "@heroui/button";
-import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, LogOut, PlusIcon, Truck } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import LoadingComponent from "./ui/LoadingComponent";
 
@@ -22,27 +17,14 @@ import {
   useService,
   VehicleTracking,
 } from "@/context/serviceContext";
-import { formatearFecha } from "@/helpers";
 import { getStatusText } from "@/utils/indext";
-import { useAuth } from "@/context/AuthContext";
-import { LogoutButton } from "./logout";
+import axios from "axios";
 
 interface EnhancedMapComponentProps {
-  servicios: ServicioConRelaciones[];
-  selectedServicio: ServicioConRelaciones | null;
-  setSelectedServicio: Dispatch<SetStateAction<ServicioConRelaciones | null>>;
   vehicleTracking: VehicleTracking | null;
-  trackingError: string;
-  isPanelOpen: boolean;
-  handleClosePanel: () => void;
-  handleSelectServicio: (servicio: ServicioConRelaciones) => void;
-  getServiceTypeText: (text: string) => string;
-  onWialonRequest: (
-    sessionId: string,
-    endpoint: string,
-    params: any,
-  ) => Promise<any>;
-  setServicioWithRoutes: Dispatch<SetStateAction<ServicioConRelaciones | null>>;
+  selectedServicio: ServicioConRelaciones | null;
+  wialonToken: string;
+  mapboxToken: string;
 }
 
 interface VehicleMarkerData {
@@ -88,39 +70,25 @@ interface Vehicle {
 }
 
 const EnhancedMapComponent = ({
-  servicios,
   selectedServicio,
+  wialonToken,
+  mapboxToken,
   vehicleTracking,
-  trackingError,
-  isPanelOpen,
-  handleClosePanel,
-  handleSelectServicio,
-  getServiceTypeText,
-  onWialonRequest,
-  setSelectedServicio,
-  setServicioWithRoutes,
 }: EnhancedMapComponentProps) => {
 
-  const WIALON_API_TOKEN  = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
-  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-  const { handleModalForm } = useService();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkersRef>({
     activeVehicles: new Map(),
   });
 
-  const router = useRouter();
-
-  const { user } = useAuth()
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string>("");
   const [activeVehiclesData, setActiveVehiclesData] = useState<
     VehicleMarkerData[]
   >([]);
-  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
-  const [detallesVisible, setDetallesVisible] = useState(false);
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
+
 
   const statusColors = {
     solicitado: "#6a7282",
@@ -128,8 +96,19 @@ const EnhancedMapComponent = ({
     en_curso: "#00bc7d",
     planilla_asignada: "#ad46ff",
     planificado: "#FF9800",
+    liquidado: "#FF9800",
     cancelado: "#F44336",
     default: "#3388ff",
+  };
+
+  const serviceTypeTextMap: Record<string, string> = {
+    herramienta: "Cargado con herramienta",
+    personal: "Deplazamineto de personal",
+    vehiculo: "Posicionar vehiculo",
+  };
+
+  const getServiceTypeText = (tipo: string): string => {
+    return serviceTypeTextMap[tipo] || tipo;
   };
 
   const color = useMemo(() => {
@@ -141,12 +120,43 @@ const EnhancedMapComponent = ({
     );
   }, [selectedServicio]);
 
-  useEffect(() => {
-    const initWialon = async () => {
-      if (!WIALON_API_TOKEN) return;
+  const onWialonRequest = useCallback(
+    async (sessionIdOrToken: string, service: string, params: any) => {
+      const isLoginCall = service === "token/login";
+      const payload = {
+        token: isLoginCall ? null : sessionIdOrToken,
+        service,
+        params,
+      };
+
+      if (isLoginCall) {
+        payload.params = { ...params, token: sessionIdOrToken };
+      }
 
       try {
-        const loginData = await onWialonRequest(WIALON_API_TOKEN, "token/login", {});
+        const response = await axios.post("/api/wialon-api", payload);
+
+        if (response.data && response.data.error) {
+          throw new Error(
+            `Error Wialon API (${response.data.error}): ${response.data.reason || service}`,
+          );
+        }
+
+        return response.data;
+      } catch (err) {
+        console.error(`Error llamando a ${service} via /api/wialon-api:`, err);
+        throw err;
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const initWialon = async () => {
+      if (!wialonToken) return;
+
+      try {
+        const loginData = await onWialonRequest(wialonToken, "token/login", {});
 
         if (loginData?.eid) {
           setWialonSessionId(loginData.eid);
@@ -157,13 +167,12 @@ const EnhancedMapComponent = ({
     };
 
     initWialon();
-  }, [WIALON_API_TOKEN, onWialonRequest]);
+  }, [wialonToken, onWialonRequest]);
 
   useEffect(() => {
     if (selectedServicio || !wialonSessionId) return;
 
     const fetchActiveVehicles = async () => {
-      setIsLoadingVehicles(true);
       try {
         const vehiclesData = await onWialonRequest(
           wialonSessionId,
@@ -183,35 +192,9 @@ const EnhancedMapComponent = ({
         );
 
         if (!vehiclesData?.items) return;
-
-        const serviciosEnCurso = servicios.filter(
-          (s) => s.estado === "en_curso",
-        );
-        const vehicleMarkers: VehicleMarkerData[] = [];
-
-        for (const servicio of serviciosEnCurso) {
-          // Skip services without vehicle information
-          if (!servicio.vehiculo || !servicio.vehiculo.placa) continue;
-
-          const vehicleData = vehiclesData.items.find(
-            (v: { nm: string }) =>
-              v.nm.includes(servicio.vehiculo.placa) ||
-              v.nm.toLowerCase() === servicio.vehiculo.placa.toLowerCase(),
-          );
-
-          if (vehicleData?.pos) {
-            vehicleMarkers.push({
-              vehicle: vehicleData,
-              service: servicio,
-            });
-          }
-        }
-
-        setActiveVehiclesData(vehicleMarkers);
       } catch (error) {
         console.error("Error al obtener vehículos activos:", error);
       } finally {
-        setIsLoadingVehicles(false);
       }
     };
 
@@ -219,20 +202,20 @@ const EnhancedMapComponent = ({
     const interval = setInterval(fetchActiveVehicles, 30000);
 
     return () => clearInterval(interval);
-  }, [selectedServicio, servicios, wialonSessionId, onWialonRequest]);
+  }, [selectedServicio, wialonSessionId, onWialonRequest]);
 
   useEffect(() => {
-    if (!MAPBOX_ACCESS_TOKEN ) {
+    if (!mapboxToken) {
       setMapError("Token de Mapbox no configurado");
 
       return;
     }
 
-    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN ;
-  }, [MAPBOX_ACCESS_TOKEN ]);
+    mapboxgl.accessToken = mapboxToken;
+  }, [mapboxToken]);
 
   useEffect(() => {
-    if (!MAPBOX_ACCESS_TOKEN  || !mapContainer.current || map.current) return;
+    if (!mapboxToken || !mapContainer.current || map.current) return;
 
     try {
       map.current = new mapboxgl.Map({
@@ -258,7 +241,7 @@ const EnhancedMapComponent = ({
         map.current = null;
       }
     };
-  }, [MAPBOX_ACCESS_TOKEN ]);
+  }, [mapboxToken]);
 
   const createPulsingVehicleMarker = (
     vehicleData: any,
@@ -312,15 +295,8 @@ const EnhancedMapComponent = ({
       marker.togglePopup();
     });
 
-    el.addEventListener("dblclick", () => {
-      handleSelectServicio(service);
-    });
-
     return marker;
   };
-
-  // Track previous selectedServicio state to detect when it changes from non-null to null
-  const prevSelectedServicioRef = useRef<ServicioConRelaciones | null>(null);
 
   // Track the number of times we've created markers to avoid duplicates
   const markersCreatedRef = useRef<boolean>(false);
@@ -569,16 +545,18 @@ const EnhancedMapComponent = ({
     origin: [number, number],
     destination: [number, number],
   ): Promise<number[][]> => {
-    if (!MAPBOX_ACCESS_TOKEN ) return [origin, destination]; // Fallback to straight line
+    if (!mapboxToken) return [origin, destination]; // Fallback to straight line
 
     try {
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN }`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${mapboxToken}`;
 
       const response = await fetch(url);
 
       if (!response.ok) throw new Error("Mapbox API error");
 
       const data = await response.json();
+
+      console.log(data, "mapbox")
 
       if (!data.routes || data.routes.length === 0)
         throw new Error("No route found");
@@ -596,6 +574,8 @@ const EnhancedMapComponent = ({
     // Validación inicial
     if (!isMapLoaded || !map.current || !selectedServicio) return;
 
+
+    console.log(isMapLoaded)
     // Siempre limpiar completamente todos los objetos del mapa
     clearMapObjects();
 
@@ -778,10 +758,9 @@ const EnhancedMapComponent = ({
     // 4. Ajustar mapa inicialmente (se volverá a ajustar cuando las rutas se actualicen)
     fitMapToBounds();
 
-    // 5. Mostrar panel de detalles
-    setDetallesVisible(true);
     // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
-  }, [selectedServicio, isMapLoaded, color, vehicleTracking, MAPBOX_ACCESS_TOKEN ]);
+  }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
+
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
     if (
@@ -889,7 +868,6 @@ const EnhancedMapComponent = ({
     if ((modalForm || !selectedServicio) && map.current) {
       // Limpiar completamente todos los elementos del mapa
       clearMapObjects();
-      setDetallesVisible(false);
 
       // Si no hay modal abierto y no hay servicio seleccionado, mostrar solo los marcadores pulsantes de vehículos en_curso
       if (!modalForm && !selectedServicio && activeVehiclesData.length > 0) {
@@ -943,105 +921,6 @@ const EnhancedMapComponent = ({
     });
   };
 
-  const getStatusColor = (estado: string) => {
-    return (
-      statusColors[estado as keyof typeof statusColors] || statusColors.default
-    );
-  };
-
-  const clearServicio = () => {
-    // Clear selected servicio reference completely
-    setServicioWithRoutes(null);
-    setSelectedServicio(null);
-    prevSelectedServicioRef.current = null;
-
-    setDetallesVisible(false);
-    clearMapObjects();
-
-    // Reset marker creation flag to allow fresh creation
-    markersCreatedRef.current = false;
-
-    // Force re-render of active vehicles after clearing service - show only pulsing markers for active services
-    if (activeVehiclesData.length > 0 && map.current) {
-      setTimeout(() => {
-        if (!map.current) return;
-
-        // First make sure all existing markers are removed (including vehicle marker)
-        markersRef.current.activeVehicles.forEach((marker) => marker.remove());
-        markersRef.current.activeVehicles.clear();
-
-        // Also specifically clear vehicle marker if it exists
-        if (markersRef.current.vehicle) {
-          markersRef.current.vehicle.remove();
-          markersRef.current.vehicle = undefined;
-        }
-
-        // Create markers ONLY for active vehicles with services "en_curso"
-        activeVehiclesData.forEach((data: VehicleMarkerData) => {
-          // Solo crear marcador si el servicio está en_curso
-          if (data.service.estado === "en_curso") {
-            const marker = createPulsingVehicleMarker(
-              data.vehicle,
-              data.service,
-            );
-
-            if (marker) {
-              markersRef.current.activeVehicles.set(
-                data.vehicle.id.toString(),
-                marker,
-              );
-            }
-          }
-        });
-
-        // Mark that we've created markers
-        markersCreatedRef.current = true;
-
-        // Fit map to show all active vehicles
-        if (activeVehiclesData.length > 0) {
-          const bounds = new mapboxgl.LngLatBounds();
-
-          activeVehiclesData.forEach((data) => {
-            if (data.service.estado === "en_curso") {
-              bounds.extend([data.vehicle.pos.x, data.vehicle.pos.y]);
-            }
-          });
-
-          if (!bounds.isEmpty()) {
-            map.current.fitBounds(bounds, {
-              padding: 100,
-              maxZoom: 14,
-            });
-          }
-        }
-      }, 100); // Short delay to ensure state is updated
-    }
-  };
-
-  const handleButtonPressForm = () => {
-    // Primero limpiar el mapa completamente
-    clearMapObjects();
-    setDetallesVisible(false);
-
-    // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
-    setTimeout(() => {
-      // Abrir el modal de agregar servicio
-      handleModalForm();
-    }, 50);
-  };
-
-  const handleButtonPressLiquidar = () => {
-    // Primero limpiar el mapa completamente
-    clearMapObjects();
-    setDetallesVisible(false);
-
-    // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
-    setTimeout(() => {
-      // Abrir el modal de agregar servicio
-      router.push("/liquidaciones");
-    }, 50);
-  };
-
   return (
     <div className="h-full w-full relative">
       {mapError && (
@@ -1053,237 +932,6 @@ const EnhancedMapComponent = ({
       <div ref={mapContainer} className="h-full w-full relative">
         {!isMapLoaded && <LoadingComponent>Cargando Mapa</LoadingComponent>}
       </div>
-
-      {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute bottom-0 z-30 w-full md:bottom-auto md:w-80 md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg">
-          <div className="flex justify-between items-start mb-3">
-            <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={clearServicio}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <div>
-              <span className="text-sm text-gray-500">Estado</span>
-              <div
-                className="inline-block ml-2 px-2 py-1 rounded-full text-xs font-semibold"
-                style={{
-                  backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
-                  color: getStatusColor(selectedServicio.estado),
-                }}
-              >
-                {getStatusText(selectedServicio.estado)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Origen</span>
-              <div className="font-medium">
-                {selectedServicio.origen_especifico}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Destino</span>
-              <div className="font-medium">
-                {selectedServicio.destino_especifico}
-              </div>
-            </div>
-
-            {selectedServicio.cliente && (
-              <div>
-                <span className="text-sm text-gray-500">Cliente</span>
-                <div className="font-medium">
-                  {selectedServicio.cliente.nombre}
-                </div>
-              </div>
-            )}
-
-            {selectedServicio.vehiculo && (
-              <div>
-                <span className="text-sm text-gray-500">Vehiculo</span>
-                <div className="font-medium">
-                  {selectedServicio.vehiculo.placa}{" "}
-                  {selectedServicio.vehiculo.linea}{" "}
-                  {selectedServicio.vehiculo.modelo}
-                </div>
-              </div>
-            )}
-
-            {selectedServicio.conductor && (
-              <>
-                <div>
-                  <span className="text-sm text-gray-500">Conductor</span>
-                  <div className="font-medium">
-                    {selectedServicio.conductor.nombre}{" "}
-                    {selectedServicio.conductor.apellido}{" "}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-sm text-gray-500">Identificación</span>
-                  <div className="font-medium">
-                    {selectedServicio.conductor.tipo_identificacion}{" "}
-                    {selectedServicio.conductor.numero_identificacion}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Solicitud
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_solicitud)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Realización
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_realizacion)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Finalización
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_finalizacion)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Distancia</span>
-              <div className="font-medium">
-                {selectedServicio.routeDistance} km
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Observaciones</span>
-              <div className="font-medium">
-                {selectedServicio.observaciones || "No hay observaciones"}
-              </div>
-            </div>
-
-            {selectedServicio.estado === "en_curso" && (
-              <div className="mt-4 pt-4 border-t">
-                <h4 className="font-semibold mb-2">Tracking del Vehículo</h4>
-                {vehicleTracking ? (
-                  <div className="space-y-1">
-                    <div>
-                      <span className="text-sm text-gray-500">Vehículo:</span>{" "}
-                      {vehicleTracking.name}
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Velocidad:</span>{" "}
-                      {vehicleTracking.position.s || 0} km/h
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Dirección:</span>{" "}
-                      {vehicleTracking.position.c || 0}°
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Ubicación:</span>{" "}
-                      {vehicleTracking.position.x.toFixed(6)},{" "}
-                      {vehicleTracking.position.y.toFixed(6)}
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        Última actualización:
-                      </span>{" "}
-                      {formatTime(vehicleTracking.lastUpdate)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-amber-600 text-sm">
-                    {trackingError || "Buscando información del vehículo..."}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Header: Responsive layout for vehicle count, logout, and user name */}
-      <div
-        className="absolute top-2.5 left-4 z-10 flex flex-col gap-2"
-      >
-        {/* Welcome message (for all devices) */}
-        <div className="flex flex-wrap items-center gap-4">
-          <Tooltip color="danger" content="Cerrar sesión" radius="sm">
-            <div>
-              <LogoutButton />
-            </div>
-          </Tooltip>
-          <span className="text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
-            Bienvenido! {user?.nombre}
-          </span>
-          <span className="block text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
-            Vehículos con servicios en curso (Wialon): {activeVehiclesData.length}
-          </span>
-        </div>
-      </div>
-
-      {!isPanelOpen && (
-        <div className="absolute bottom-10 left-4 animate-fadeIn">
-          <Tooltip content="Abrir panel de servicios" radius="sm">
-            <Button
-              isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
-              radius="sm"
-              onPress={handleClosePanel}
-            >
-              <Truck color="#00bc7d" />
-            </Button>
-          </Tooltip>
-        </div>
-      )}
-
-      <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
-        {(user?.permisos.liquidador || ["admin", "liquidador"].includes(user?.role || '')) && (
-          <Tooltip content="Liquidador de servicios" radius="sm">
-            <Button
-              isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
-              radius="sm"
-              onPress={handleButtonPressLiquidar}
-            >
-              <ClipboardList color="#00bc7d" />
-            </Button>
-          </Tooltip>
-        )}
-
-        {(user?.permisos.gestor_servicio || ["admin", "gestor_servicio"].includes(user?.role || '')) && (
-          <Tooltip content="Agregar servicio" radius="sm">
-            <Button
-              isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
-              radius="sm"
-              onPress={handleButtonPressForm}
-            >
-              <PlusIcon color="#00bc7d" />
-            </Button>
-          </Tooltip>
-        )}
-      </div>
-
-      {selectedServicio?.estado === "en_curso" &&
-        trackingError &&
-        !vehicleTracking && (
-          <div className="absolute bottom-2 left-2 max-w-max right-2 z-20 bg-white bg-opacity-90 text-amber-800 text-xs p-2 rounded-md shadow">
-            <span className="font-medium">Información:</span> {trackingError}
-          </div>
-        )}
 
       <style global jsx>{`
         .marker-popup .popup-header {
@@ -1306,10 +954,13 @@ const EnhancedMapComponent = ({
         .popup-realizado {
           background-color: #155dfc;
         }
-        .popup-en-curso {
+        .popup-en_curso {
           background-color: #00d492;
         }
         .popup-planificado {
+          background-color: #ff9800;
+        }
+        .popup-liquidado {
           background-color: #ff9800;
         }
         .popup-cancelado {
