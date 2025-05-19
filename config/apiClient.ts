@@ -71,7 +71,7 @@ const createApiClient = () => {
         (error.response.status === 401 || error.response.status === 403)
       ) {
         // Ejecutar logout si hay error de autenticación
-        handleLogout();
+        // handleLogout();
       }
 
       return Promise.reject(error);
