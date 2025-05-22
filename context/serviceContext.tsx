@@ -1222,7 +1222,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           });
         }
       };
-      // Manejadores para eventos de liquidacion
+
+      // Manejadores para eventos de empresa
       const handleEmpresaCreada = (data: Empresa) => {
         setSocketEventLogs((prev) => [
           ...prev,
@@ -1238,6 +1239,26 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           addToast({
             title: 'Se acaba de realizar el registro de una nueva Empresa!',
             description: `Se ha registrado la empresa: "${data.nombre}" con el NIT: "${data.nit}"`,
+            color: "success",
+          });
+      };
+
+      // Manejadores para eventos de conductores
+      const handleConductorCreado = (data: Conductor) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "conductor:creado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+          setConductores([...conductores, data])
+
+          addToast({
+            title: 'Se acaba de realizar el registro de un nuevo Conductor!',
+            description: `Se ha registrado el conductor: "${data.nombre} ${data.apellido}"`,
             color: "success",
           });
       };
@@ -1287,6 +1308,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "empresa:creado",
         handleEmpresaCreada,
       );
+      socketService.on(
+        "conductor:creado",
+        handleConductorCreado,
+      );
       socketService.on("liquidacion:error", handleLiquidacionError);
 
       return () => {
@@ -1306,6 +1331,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("liquidacion:estado-rechazada");
         socketService.off("liquidacion:estado-regresa-liquidado");
         socketService.off("empresa:creado");
+        socketService.off("conductor:creado");
         socketService.off("liquidacion:error");
       };
     }
