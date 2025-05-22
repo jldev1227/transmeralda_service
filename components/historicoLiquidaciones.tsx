@@ -576,7 +576,7 @@ const HistoricoLiquidaciones = () => {
         <div>
           <div className="font-semibold">{cliente.nombre}</div>
           <div className="text-xs text-gray-500">
-            nit: {cliente.nit || "N/A"}
+            NIT: {cliente.nit || "N/A"}
           </div>
         </div>
       </div>
@@ -779,7 +779,7 @@ const HistoricoLiquidaciones = () => {
                 <div className="flex flex-col">
                   <span className="font-medium">{option.label}</span>
                   <span className="text-xs text-gray-500">
-                    nit: {option.nit || "N/A"}
+                    NIT: {option.nit || "N/A"}
                   </span>
                 </div>
               )}

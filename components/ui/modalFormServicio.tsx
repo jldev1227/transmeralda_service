@@ -567,7 +567,7 @@ export default function ModalFormServicio() {
 
   const empresaOptions = empresas.map((empresa) => ({
     value: empresa.id,
-    label: `${empresa.nombre} (nit: ${empresa.nit})`,
+    label: `${empresa.nombre} (NIT: ${empresa.nit})`,
   }));
 
   const municipioOptions = municipios
@@ -888,7 +888,7 @@ export default function ModalFormServicio() {
                                   }
                                   menuShouldBlockScroll={true}
                                   // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
+                                  maxMenuHeight={150}
                                 />
                               </div>
                               <Button
@@ -1089,7 +1089,7 @@ export default function ModalFormServicio() {
                                   }
                                   menuShouldBlockScroll={true}
                                   // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
+                                  maxMenuHeight={150}
                                 />
                               </div>
                             </div>
@@ -1179,7 +1179,7 @@ export default function ModalFormServicio() {
                                   }
                                   menuShouldBlockScroll={true}
                                   // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={220}
+                                  maxMenuHeight={150}
                                 />
                               </div>
                             </div>
@@ -1342,6 +1342,9 @@ export default function ModalFormServicio() {
                                         option ? option.value : "",
                                       )
                                     }
+                                    menuShouldBlockScroll={true}
+                                    // Limita la cantidad de opciones visibles en el menú
+                                    maxMenuHeight={150}
                                   />
                                 </div>
 
@@ -1447,6 +1450,9 @@ export default function ModalFormServicio() {
                                         option ? option.value : "",
                                       )
                                     }
+                                    menuShouldBlockScroll={true}
+                                    // Limita la cantidad de opciones visibles en el menú
+                                    maxMenuHeight={150}
                                   />
                                 </div>
                                 <Button

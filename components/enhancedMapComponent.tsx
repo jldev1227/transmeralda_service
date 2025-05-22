@@ -12,9 +12,9 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, LogOut, PlusIcon, Truck } from "lucide-react";
+import { ClipboardList, LogOut, PlusIcon, Truck, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-
+import { Link } from '@heroui/link'
 import LoadingComponent from "./ui/LoadingComponent";
 
 import {
@@ -1226,9 +1226,10 @@ const EnhancedMapComponent = ({
               <LogoutButton />
             </div>
           </Tooltip>
-          <span className="text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
+          <Link href={process.env.NEXT_PUBLIC_AUTH_SYSTEM} className="inline-flex items-center gap-2 text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow all">
+            <UserIcon className="w-5 h-5"/>
             Bienvenido! {user?.nombre}
-          </span>
+          </Link>
           <span className="block text-sm font-medium bg-white bg-opacity-90 p-2 rounded-md shadow">
             Vehículos con servicios en curso (Wialon): {activeVehiclesData.length}
           </span>

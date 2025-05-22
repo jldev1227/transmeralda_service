@@ -71,7 +71,7 @@ export default function RouteAndDetails({
           </p>
           {servicio.cliente?.nit && (
             <p className="text-xs text-gray-500 break-words">
-              nit: {servicio.cliente.nit}
+              NIT: {servicio.cliente.nit}
             </p>
           )}
         </div>

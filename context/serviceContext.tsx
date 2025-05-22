@@ -1222,6 +1222,25 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           });
         }
       };
+      // Manejadores para eventos de liquidacion
+      const handleEmpresaCreada = (data: Empresa) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "empresa:creado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+          setEmpresas([...empresas, data])
+
+          addToast({
+            title: 'Se acaba de realizar el registro de una nueva Empresa!',
+            description: `Se ha registrado la empresa: "${data.nombre}" con el NIT: "${data.nit}"`,
+            color: "success",
+          });
+      };
 
       const handleLiquidacionError = (data: LiquidacionErrorEvent) => {
         // Verificar si el error corresponde a la liquidación actual
@@ -1264,6 +1283,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "liquidacion:estado-regresa-liquidado",
         handleLiquidacionRegresaLiquidado,
       );
+      socketService.on(
+        "empresa:creado",
+        handleEmpresaCreada,
+      );
       socketService.on("liquidacion:error", handleLiquidacionError);
 
       return () => {
@@ -1282,6 +1305,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("liquidacion:estado-aprobado");
         socketService.off("liquidacion:estado-rechazada");
         socketService.off("liquidacion:estado-regresa-liquidado");
+        socketService.off("empresa:creado");
         socketService.off("liquidacion:error");
       };
     }
