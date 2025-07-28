@@ -52,7 +52,6 @@ class SocketService {
 
   // Manejador de conexión exitosa
   private handleConnect = () => {
-    console.log("Socket conectado");
     this.reconnectAttempts = 0; // Resetear conteo de intentos al conectar
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);

@@ -83,8 +83,8 @@ export default function ModalTicket() {
                     <div className="flex flex-row items-center gap-4 md:flex-col w-full md:w-2/6 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
                       <div className="border-2 border-gray-300 rounded-lg w-30 md:w-full h-40 md:h-48 relative">
                         <Image
-                          alt="Foto conductor asignado"
                           fill
+                          alt="Foto conductor asignado"
                           className="object-cover rounded-lg"
                           src={
                             servicio.conductor.foto_url ??
@@ -104,11 +104,12 @@ export default function ModalTicket() {
                           <p className="text-sm text-gray-500">
                             {servicio.conductor?.tipo_identificacion}:{" "}
                             {servicio.conductor?.numero_identificacion ||
-                              "No disponible"}
+                              "No cuenta con identificación"}
                           </p>
                           <p className="text-gray-500">
-                            Teléfono:{' '}
-                            {servicio.conductor?.telefono || 'No cuenta con teléfono'}
+                            Teléfono:{" "}
+                            {servicio.conductor?.telefono ||
+                              "No cuenta con teléfono"}
                           </p>
                         </div>
                         <div className="mt-4">
@@ -141,7 +142,6 @@ export default function ModalTicket() {
                           {getStatusText(servicio.estado)}
                         </span>
                       </div>
-
                     </div>
                   </div>
                 </div>

@@ -35,8 +35,7 @@ const ServiciosListCards = ({
   formatearFecha,
   handleClosePanel,
 }: ServiciosListCardsProps) => {
-
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
@@ -147,7 +146,10 @@ const ServiciosListCards = ({
     e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
-    if (servicio.id && (servicio.estado === "en_curso" || servicio.estado === "realizado")) {
+    if (
+      servicio.id &&
+      (servicio.estado === "en_curso" || servicio.estado === "realizado")
+    ) {
       setServicioFinalizarId(servicio.id);
       setModalFinalizarServicio(true);
     }
@@ -169,22 +171,30 @@ const ServiciosListCards = ({
 
   // Determinar si se debe mostrar el botón de proceder a liquidar
   const showPlanillaNumber = (estado: EstadoServicio) => {
-    if (user?.permisos.gestor_planillas || ["admin", "gestor_planillas"].includes(user?.role || '')) {
+    if (
+      user?.permisos.gestor_planillas ||
+      ["admin", "gestor_planillas"].includes(user?.role || "")
+    ) {
       return estado === "realizado" || estado === "planilla_asignada";
     }
-  }
+  };
 
   // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
-    if (user?.permisos.gestor_planillas || ["admin", "gestor_servicio"].includes(user?.role || '')) {
+    if (
+      user?.permisos.gestor_planillas ||
+      ["admin", "gestor_servicio"].includes(user?.role || "")
+    ) {
       return estado === "en_curso" || estado === "realizado";
     }
   };
 
   // Determinar si se debe mostrar el botón para eliminar servicio
   const showDelete = (estado: EstadoServicio) => {
-
-    if (user?.permisos.gestor_planillas || ["admin", "gestor_servicio"].includes(user?.role || '')) {
+    if (
+      user?.permisos.gestor_planillas ||
+      ["admin", "gestor_servicio"].includes(user?.role || "")
+    ) {
       return (
         estado === "solicitado" ||
         estado === "planificado" ||
@@ -345,9 +355,7 @@ const ServiciosListCards = ({
     setConfirmLoading(true);
 
     try {
-      await apiClient.delete<ServicioConRelaciones>(
-        `/api/servicios/${id}`,
-      );
+      await apiClient.delete<ServicioConRelaciones>(`/api/servicios/${id}`);
     } catch (err) {
       console.error("Error al eliminar el servicio:", err);
     }

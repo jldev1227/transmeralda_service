@@ -8,14 +8,16 @@ import { Textarea } from "@heroui/input";
 import { DateInput } from "@heroui/date-input";
 import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
 import { addToast } from "@heroui/toast";
-import { BuildingIcon, PlusIcon } from "lucide-react";
+import { BuildingIcon } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
+
+import ModalNewEmpresa from "./modalNewEmpresa";
+import ModalNewConductor from "./modalNewConductor";
+import ModalNewVehiculo from "./modalNewVehiculo";
 
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 import { convertirFechaParaDB } from "@/helpers";
-import { Button } from "@heroui/button";
-import Link from "next/link";
 
 const UserIcon = () => (
   <svg
@@ -695,8 +697,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_solicitud
                                 ? new Date(
-                                  servicio.fecha_solicitud,
-                                ).toLocaleString()
+                                    servicio.fecha_solicitud,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -707,8 +709,8 @@ export default function ModalFormServicio() {
                             <p className="text-md">
                               {servicio?.fecha_realizacion
                                 ? new Date(
-                                  servicio.fecha_realizacion,
-                                ).toLocaleString()
+                                    servicio.fecha_realizacion,
+                                  ).toLocaleString()
                                 : "No definida"}
                             </p>
                           </div>
@@ -891,17 +893,7 @@ export default function ModalFormServicio() {
                                   maxMenuHeight={150}
                                 />
                               </div>
-                              <Button
-                                as={Link}
-                                href={process.env.NEXT_PUBLIC_EMPRESAS_SYSTEM}
-                                color="success"
-                                isIconOnly
-                                variant="light"
-                                radius="sm"
-                                target="_blank"
-                              >
-                                <PlusIcon />
-                              </Button>
+                              <ModalNewEmpresa />
                             </div>
                           </div>
                           {/* Dates */}
@@ -939,13 +931,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaSolicitud
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaSolicitud.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaSolicitud.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -983,13 +975,13 @@ export default function ModalFormServicio() {
                                   Fecha:{" "}
                                   {fechaRealizacion
                                     ? new Intl.DateTimeFormat("es-CO", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }).format(fechaRealizacion.toDate())
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }).format(fechaRealizacion.toDate())
                                     : "--"}
                                 </p>
                               </div>
@@ -1334,7 +1326,8 @@ export default function ModalFormServicio() {
                                           label: `${vehiculo.placa} ${vehiculo.linea} (${vehiculo.modelo})`,
                                         }))
                                         .find(
-                                          (opt) => opt.value === vehicleSelected,
+                                          (opt) =>
+                                            opt.value === vehicleSelected,
                                         ) || null
                                     }
                                     onChange={(option) =>
@@ -1347,18 +1340,7 @@ export default function ModalFormServicio() {
                                     maxMenuHeight={150}
                                   />
                                 </div>
-
-                                <Button
-                                  as={Link}
-                                  href={process.env.NEXT_PUBLIC_FLOTA_SYSTEM}
-                                  color="success"
-                                  isIconOnly
-                                  variant="light"
-                                  radius="sm"
-                                  target="_blank"
-                                >
-                                  <PlusIcon />
-                                </Button>
+                                <ModalNewVehiculo />
                               </div>
                             </div>
                             <div className="relative">
@@ -1382,7 +1364,7 @@ export default function ModalFormServicio() {
                                     name="driver"
                                     options={conductores.map((conductor) => ({
                                       value: conductor.id,
-                                      label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                      label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion || "No cuenta con identificación"})`,
                                     }))}
                                     placeholder="Seleccione un conductor"
                                     styles={{
@@ -1438,7 +1420,7 @@ export default function ModalFormServicio() {
                                       conductores
                                         .map((conductor) => ({
                                           value: conductor.id,
-                                          label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion})`,
+                                          label: `${conductor.nombre} ${conductor.apellido} (${conductor.numero_identificacion || "No cuenta con identificación"})`,
                                         }))
                                         .find(
                                           (opt) =>
@@ -1455,17 +1437,7 @@ export default function ModalFormServicio() {
                                     maxMenuHeight={150}
                                   />
                                 </div>
-                                <Button
-                                  as={Link}
-                                  href={process.env.NEXT_PUBLIC_CONDUCTORES_SYSTEM}
-                                  color="success"
-                                  isIconOnly
-                                  variant="light"
-                                  radius="sm"
-                                  target="_blank"
-                                >
-                                  <PlusIcon />
-                                </Button>
+                                <ModalNewConductor />
                               </div>
                             </div>
                           </div>
@@ -1589,36 +1561,36 @@ export default function ModalFormServicio() {
                                 <button
                                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                   type="button"
-                                // onClick={async () => {
-                                //   if (
-                                //     servicio.id &&
-                                //     window.confirm(
-                                //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                //     )
-                                //   ) {
-                                //     try {
-                                //       await actualizarEstadoServicio(
-                                //         servicio.id,
-                                //         "cancelado",
-                                //       );
-                                //       addToast({
-                                //         title: "Éxito",
-                                //         description:
-                                //           "Servicio cancelado correctamente",
-                                //         color: "success",
-                                //       });
-                                //       handleModalForm(); // Cerrar modal
-                                //       resetFormStates();
-                                //     } catch (error) {
-                                //       addToast({
-                                //         title: "Error",
-                                //         description:
-                                //           "No se pudo cancelar el servicio",
-                                //         color: "danger",
-                                //       });
-                                //     }
-                                //   }
-                                // }}
+                                  // onClick={async () => {
+                                  //   if (
+                                  //     servicio.id &&
+                                  //     window.confirm(
+                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
+                                  //     )
+                                  //   ) {
+                                  //     try {
+                                  //       await actualizarEstadoServicio(
+                                  //         servicio.id,
+                                  //         "cancelado",
+                                  //       );
+                                  //       addToast({
+                                  //         title: "Éxito",
+                                  //         description:
+                                  //           "Servicio cancelado correctamente",
+                                  //         color: "success",
+                                  //       });
+                                  //       handleModalForm(); // Cerrar modal
+                                  //       resetFormStates();
+                                  //     } catch (error) {
+                                  //       addToast({
+                                  //         title: "Error",
+                                  //         description:
+                                  //           "No se pudo cancelar el servicio",
+                                  //         color: "danger",
+                                  //       });
+                                  //     }
+                                  //   }
+                                  // }}
                                 >
                                   Cancelar Servicio
                                 </button>

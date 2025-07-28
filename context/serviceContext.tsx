@@ -20,29 +20,28 @@ export interface Conductor {
   id: string;
   nombre: string;
   apellido: string;
-  numero_identificacion: string;
-  telefono: string;
-  email: string;
-  fecha_nacimiento: Date;
-  foto_url: string;
+  numero_identificacion?: string;
+  tipo_identificacion: string;
+  telefono?: string;
+  email?: string;
+  fecha_nacimiento?: Date;
+  foto_url?: string;
 }
 
 export interface Empresa {
   id: string;
   nombre: string;
   nit: string;
-  representante: string;
-  cedula: string;
-  Telefono: string;
-  Direccion: string;
 }
 
 export interface Vehiculo {
   id: string;
   placa: string;
-  modelo: string;
-  linea: string;
+  clase_vehiculo: string;
   marca: string;
+  linea: string;
+  color: string;
+  modelo: string;
 }
 
 export interface SocketEventLog {
@@ -245,24 +244,14 @@ export interface Municipio {
   updated_at?: Date | string;
 }
 
-export interface Conductor {
-  id: string; // UUID
-  nombre: string;
-  apellido: string;
-  tipo_identificacion: string;
-  numero_identificacion: string;
-  created_at?: Date | string;
-  updated_at?: Date | string;
-}
-
 // interfaces/vehiculo.interface.ts
 export interface Vehiculo {
   id: string;
   placa: string;
   modelo: string;
+  linea: string;
   marca: string;
-  anio: number;
-  capacidad: number;
+  clase_vehiculo: string;
   tipo?: string;
   estado?: string;
   kilometraje?: number;
@@ -1224,6 +1213,31 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       };
 
       // Manejadores para eventos de empresa
+      const handleEmpresaCreadaGlobal = (data: {
+        usuarioId: string;
+        usuarioNombre: string;
+        empresa: Empresa;
+      }) => {
+        if (data.usuarioId === user.id) return;
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "empresa:creado-global",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+        const { id, nombre, nit } = data.empresa;
+
+        setEmpresas((prev) => [...prev, { id, nombre, nit }]);
+        addToast({
+          title: "Se acaba de realizar el registro de una nueva Empresa!",
+          description: `${data.usuarioNombre} ha registrado la empresa: "${data.empresa.nombre}" con el NIT: "${data.empresa.nit}"`,
+          color: "success",
+        });
+      };
+
+      // Manejadores para eventos de empresa
       const handleEmpresaCreada = (data: Empresa) => {
         setSocketEventLogs((prev) => [
           ...prev,
@@ -1233,14 +1247,56 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
+        const { id, nombre, nit } = data;
 
-          setEmpresas([...empresas, data])
+        setEmpresas((prev) => [...prev, { id, nombre, nit }]);
+        addToast({
+          title: "Acabas de registrar una nueva Empresa!",
+          description: `Has registrado la empresa: "${data.nombre}" con el NIT: "${data.nit}"`,
+          color: "success",
+        });
+      };
 
-          addToast({
-            title: 'Se acaba de realizar el registro de una nueva Empresa!',
-            description: `Se ha registrado la empresa: "${data.nombre}" con el NIT: "${data.nit}"`,
-            color: "success",
-          });
+      // Manejadores para eventos de conductores - global
+      const handleConductorCreadaGlobal = (data: {
+        usuarioId: string;
+        usuarioNombre: string;
+        conductor: Conductor;
+      }) => {
+        if (data.usuarioId === user.id) return;
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "conductor:creado-global",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+        const {
+          id,
+          nombre,
+          apellido,
+          numero_identificacion,
+          telefono,
+          tipo_identificacion,
+        } = data.conductor;
+
+        setConductores((prev) => [
+          ...prev,
+          {
+            id,
+            nombre,
+            apellido,
+            numero_identificacion,
+            telefono,
+            tipo_identificacion,
+          },
+        ]);
+        addToast({
+          title: "Se acaba de realizar el registro de un nuevo Conductor!",
+          description: `${data.usuarioNombre} ha registrado el conductor: "${data.conductor.nombre} ${data.conductor.apellido}"`,
+          color: "success",
+        });
       };
 
       // Manejadores para eventos de conductores
@@ -1254,13 +1310,85 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-          setConductores([...conductores, data])
+        const {
+          id,
+          nombre,
+          apellido,
+          numero_identificacion,
+          telefono,
+          tipo_identificacion,
+        } = data;
 
-          addToast({
-            title: 'Se acaba de realizar el registro de un nuevo Conductor!',
-            description: `Se ha registrado el conductor: "${data.nombre} ${data.apellido}"`,
-            color: "success",
-          });
+        setConductores((prev) => [
+          ...prev,
+          {
+            id,
+            nombre,
+            apellido,
+            numero_identificacion,
+            telefono,
+            tipo_identificacion,
+          },
+        ]);
+
+        addToast({
+          title: "Se acaba de realizar el registro de un nuevo Conductor!",
+          description: `Se ha registrado el conductor: "${data.nombre} ${data.apellido}"`,
+          color: "success",
+        });
+      };
+
+      // Manejadores para eventos de vehiculos
+      const handleVehiculoCreado = (data: Vehiculo) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "vehiculo:creado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        const { id, placa, marca, clase_vehiculo, linea, modelo, color } = data;
+
+        setVehiculos((prev) => [
+          ...prev,
+          { id, placa, marca, clase_vehiculo, linea, modelo, color },
+        ]);
+
+        addToast({
+          title: "Se acaba de realizar el registro de un nuevo Vehículo!",
+          description: `Se ha registrado el vehículo: "${data.placa} - ${data.marca} - ${data.modelo}"`,
+          color: "success",
+        });
+      };
+
+      const handleVehiculoCreadaGlobal = (data: {
+        usuarioId: string;
+        usuarioNombre: string;
+        vehiculo: Vehiculo;
+      }) => {
+        if (data.usuarioId === user.id) return;
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "vehiculo:creado-global",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+        const { id, placa, marca, clase_vehiculo, linea, modelo, color } =
+          data.vehiculo;
+
+        setVehiculos((prev) => [
+          ...prev,
+          { id, placa, marca, clase_vehiculo, linea, modelo, color },
+        ]);
+        addToast({
+          title: "Se acaba de realizar el registro de una nueva vehiculo!",
+          description: `${data.usuarioNombre} ha registrado la vehiculo: "${data.vehiculo.placa} - ${data.vehiculo.marca} - ${data.vehiculo.modelo}"`,
+          color: "success",
+        });
       };
 
       const handleLiquidacionError = (data: LiquidacionErrorEvent) => {
@@ -1304,14 +1432,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         "liquidacion:estado-regresa-liquidado",
         handleLiquidacionRegresaLiquidado,
       );
-      socketService.on(
-        "empresa:creado",
-        handleEmpresaCreada,
-      );
-      socketService.on(
-        "conductor:creado",
-        handleConductorCreado,
-      );
+      socketService.on("empresa:creado-global", handleEmpresaCreadaGlobal);
+      socketService.on("empresa:creado", handleEmpresaCreada);
+      socketService.on("conductor:creado-global", handleConductorCreadaGlobal);
+      socketService.on("conductor:creado", handleConductorCreado);
+      socketService.on("vehiculo:creado-global", handleVehiculoCreadaGlobal);
+      socketService.on("vehiculo:creado", handleVehiculoCreado);
       socketService.on("liquidacion:error", handleLiquidacionError);
 
       return () => {
@@ -1330,8 +1456,12 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("liquidacion:estado-aprobado");
         socketService.off("liquidacion:estado-rechazada");
         socketService.off("liquidacion:estado-regresa-liquidado");
+        socketService.off("empresa:creado-global");
         socketService.off("empresa:creado");
+        socketService.off("conductor:creado-global");
         socketService.off("conductor:creado");
+        socketService.off("vehiculo:creado-global");
+        socketService.off("vehiculo:creado");
         socketService.off("liquidacion:error");
       };
     }

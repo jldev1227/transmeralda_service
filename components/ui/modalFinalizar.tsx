@@ -67,25 +67,27 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
               // Crear la fecha en formato que necesita parseZonedDateTime pero respetando la zona horaria de Bogotá
               // Calcular componentes de fecha y hora en la zona horaria de Bogotá (GMT-5)
               const year = utcDate.getUTCFullYear();
-              const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-              const day = String(utcDate.getUTCDate()).padStart(2, '0');
+              const month = String(utcDate.getUTCMonth() + 1).padStart(2, "0");
+              const day = String(utcDate.getUTCDate()).padStart(2, "0");
 
               // Ajustar la hora UTC a la hora de Bogotá (GMT-5)
               let hours = utcDate.getUTCHours() - 5;
               // Manejar el cambio de día si las horas son negativas
               let adjustedDay = day;
+
               if (hours < 0) {
                 hours += 24;
                 // Crear una nueva fecha restando un día y obtener el día correcto
                 const prevDay = new Date(utcDate);
+
                 prevDay.setUTCDate(utcDate.getUTCDate() - 1);
-                adjustedDay = String(prevDay.getUTCDate()).padStart(2, '0');
+                adjustedDay = String(prevDay.getUTCDate()).padStart(2, "0");
               }
 
-              const minutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
-              const seconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+              const minutes = String(utcDate.getUTCMinutes()).padStart(2, "0");
+              const seconds = String(utcDate.getUTCSeconds()).padStart(2, "0");
 
-              const formattedDate = `${year}-${month}-${adjustedDay}T${String(hours).padStart(2, '0')}:${minutes}:${seconds}[America/Bogota]`;
+              const formattedDate = `${year}-${month}-${adjustedDay}T${String(hours).padStart(2, "0")}:${minutes}:${seconds}[America/Bogota]`;
 
               setFechaFinalizacion(parseZonedDateTime(formattedDate));
             } catch (dateError) {
@@ -271,7 +273,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                                           : servicio.estado === "planificado"
                                             ? "warning"
                                             : servicio.estado ===
-                                              "planilla_asignada"
+                                                "planilla_asignada"
                                               ? "secondary"
                                               : "default"
                                   }
@@ -318,13 +320,13 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                                 Fecha:{" "}
                                 {fechaFinalizacion
                                   ? new Intl.DateTimeFormat("es-CO", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }).format(fechaFinalizacion.toDate())
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }).format(fechaFinalizacion.toDate())
                                   : "--"}
                               </p>
                             </div>
@@ -337,7 +339,9 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               variant="flat"
                               onPress={finalizarServicio}
                             >
-                              {servicio.fecha_finalizacion ? "Editar Fecha Finalización" : "Finalizar servicio"}
+                              {servicio.fecha_finalizacion
+                                ? "Editar Fecha Finalización"
+                                : "Finalizar servicio"}
                             </Button>
                           </div>
                         </div>
