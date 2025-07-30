@@ -1245,7 +1245,7 @@ const EnhancedMapComponent = ({
 
       {/* Botón de abrir panel también con mejor posicionamiento */}
       {!isPanelOpen && (
-        <div className="absolute bottom-safe left-4 animate-fadeIn z-[100]">
+        <div className="absolute bottom-safe left-4 animate-fadeIn z-[20]">
           {" "}
           {/* Agregado z-[100] y bottom-safe */}
           <Tooltip content="Abrir panel de servicios" radius="sm">
@@ -1261,7 +1261,7 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div className="absolute bottom-safe right-5 space-y-2 flex flex-col z-[100]">
+      <div className="absolute bottom-safe right-5 space-y-2 flex flex-col z-[20]">
         {(user?.permisos.liquidador ||
           ["admin", "liquidador"].includes(user?.role || "")) && (
           <Tooltip content="Liquidador de servicios" radius="sm">

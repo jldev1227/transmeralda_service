@@ -145,7 +145,7 @@
 
 /* Soporte para safe areas en dispositivos móviles */
 .bottom-safe {
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: max(2rem, env(safe-area-inset-bottom));
 }
 
 /* Asegurar que el contenedor del mapa use toda la altura disponible */
@@ -163,7 +163,7 @@
 /* Mejorar la visibilidad de los botones en mobile */
 @media (max-width: 768px) {
   .absolute.bottom-safe {
-    bottom: max(9rem, env(safe-area-inset-bottom, 9rem));
+    bottom: max(5rem, env(safe-area-inset-bottom, 5rem));
   }
 
   /* Asegurar que los botones sean fáciles de tocar */
