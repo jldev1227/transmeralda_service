@@ -496,7 +496,7 @@ const AdvancedDashboard = () => {
   }, [isMobile]);
 
   return (
-    <div className="flex h-screen relative overflow-hidden">
+    <div className="flex h-dvh relative overflow-hidden">
       {/* Sidebar/floating panel */}
       {isPanelOpen && (
         <div
@@ -962,7 +962,7 @@ const AdvancedDashboard = () => {
                   No se encontraron servicios
                 </div>
               ) : (
-                <div className="h-full">
+                <div className="h-dvh">
                   <ServiciosListCards
                     filteredServicios={sortedServices}
                     formatearFecha={formatearFecha}

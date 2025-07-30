@@ -13,6 +13,7 @@
   html {
     font-size: 0.875rem;
   }
+
   body {
     @apply text-sm;
   }
@@ -24,6 +25,7 @@
   100% {
     border-left-color: rgb(16, 185, 129);
   }
+
   50% {
     border-left-color: rgba(16, 185, 129, 0.5);
   }
@@ -34,6 +36,7 @@
   100% {
     border-left-color: rgb(168, 85, 247);
   }
+
   50% {
     border-left-color: rgba(168, 85, 247, 0.5);
   }
@@ -44,6 +47,7 @@
   100% {
     border-left-color: rgb(245, 158, 11);
   }
+
   50% {
     border-left-color: rgba(245, 158, 11, 0.5);
   }
@@ -54,6 +58,7 @@
   100% {
     border-left-color: rgb(239, 68, 68);
   }
+
   50% {
     border-left-color: rgba(239, 68, 68, 0.5);
   }
@@ -64,6 +69,7 @@
   100% {
     border-left-color: rgb(59, 130, 246);
   }
+
   50% {
     border-left-color: rgba(59, 130, 246, 0.5);
   }
@@ -74,6 +80,7 @@
   100% {
     border-left-color: rgb(156, 163, 175);
   }
+
   50% {
     border-left-color: rgba(156, 163, 175, 0.5);
   }
@@ -82,18 +89,23 @@
 .animate-pulse-emerald {
   animation: pulseEmerald 2s ease-in-out infinite;
 }
+
 .animate-pulse-purple {
   animation: pulsePurple 2s ease-in-out infinite;
 }
+
 .animate-pulse-amber {
   animation: pulseAmber 2s ease-in-out infinite;
 }
+
 .animate-pulse-red {
   animation: pulseRed 2s ease-in-out infinite;
 }
+
 .animate-pulse-primary {
   animation: pulsePrimary 2s ease-in-out infinite;
 }
+
 .animate-pulse-gray {
   animation: pulseGray 2s ease-in-out infinite;
 }
@@ -103,6 +115,7 @@
   0% {
     background-color: rgba(16, 185, 129, 0.2);
   }
+
   100% {
     background-color: transparent;
   }
@@ -112,6 +125,7 @@
   0% {
     background-color: rgba(168, 85, 247, 0.2);
   }
+
   100% {
     background-color: transparent;
   }
@@ -122,7 +136,39 @@
 .animate-fade-in-emerald {
   animation: fadeInEmerald 2s ease-out;
 }
+
 .animate-fade-in-purple {
   animation: fadeInPurple 2s ease-out;
 }
+
 /* ... el resto de las clases de animación fade-in ... */
+
+/* Soporte para safe areas en dispositivos móviles */
+.bottom-safe {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Asegurar que el contenedor del mapa use toda la altura disponible */
+.h-dvh {
+  height: 100dvh;
+}
+
+/* Fallback para navegadores que no soportan dvh */
+@supports not (height: 100dvh) {
+  .h-dvh {
+    height: 100vh;
+  }
+}
+
+/* Mejorar la visibilidad de los botones en mobile */
+@media (max-width: 768px) {
+  .absolute.bottom-safe {
+    bottom: max(9rem, env(safe-area-inset-bottom, 9rem));
+  }
+
+  /* Asegurar que los botones sean fáciles de tocar */
+  .h-12.w-12 {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}

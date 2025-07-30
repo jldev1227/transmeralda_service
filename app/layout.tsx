@@ -40,12 +40,7 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="es">
       <head />
-      <body
-        className={clsx(
-          "min-h-screen font-sans antialiased",
-          fontSans.variable,
-        )}
-      >
+      <body className={clsx("h-dvh font-sans antialiased", fontSans.variable)}>
         <Providers themeProps={{ attribute: "class", defaultTheme: "white" }}>
           <AuthGuard>
             <ClientLayout>{children}</ClientLayout>

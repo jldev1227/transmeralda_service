@@ -785,6 +785,7 @@ const EnhancedMapComponent = ({
     setDetallesVisible(true);
     // Se eliminó selectedServicioKey y se pasa el objeto completo para detectar cualquier cambio
   }, [selectedServicio, isMapLoaded, color, vehicleTracking, mapboxToken]);
+
   // Efecto para actualizar la posición del vehículo
   useEffect(() => {
     if (
@@ -1046,19 +1047,21 @@ const EnhancedMapComponent = ({
   };
 
   return (
-    <div className="h-full w-full relative">
+    <div className="h-dvh w-full relative">
       {mapError && (
         <div className="absolute top-2 left-2 right-2 z-[1000] bg-red-100 text-red-800 text-sm p-2 rounded-md shadow">
           <span className="font-medium">Error:</span> {mapError}
         </div>
       )}
 
-      <div ref={mapContainer} className="h-full w-full relative">
+      <div ref={mapContainer} className="h-dvh w-full relative">
         {!isMapLoaded && <LoadingComponent>Cargando Mapa</LoadingComponent>}
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute bottom-0 z-30 w-full md:bottom-auto md:w-80 md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg">
+        <div className="animate-fade-up absolute bottom-safe z-30 w-full md:bottom-auto md:w-80 md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg mb-2 mx-2 md:mx-0">
+          {" "}
+          {/* Agregado mb-2 mx-2 md:mx-0 y bottom-safe */}
           <div className="flex justify-between items-start mb-3">
             <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
             <button
@@ -1068,7 +1071,6 @@ const EnhancedMapComponent = ({
               ✕
             </button>
           </div>
-
           <div className="space-y-2">
             <div>
               <span className="text-sm text-gray-500">Estado</span>
@@ -1217,6 +1219,7 @@ const EnhancedMapComponent = ({
           </div>
         </div>
       )}
+
       {/* Header: Responsive layout for vehicle count, logout, and user name */}
       <div className="absolute top-2.5 left-4 z-10 flex flex-col gap-2">
         {/* Welcome message (for all devices) */}
@@ -1240,12 +1243,15 @@ const EnhancedMapComponent = ({
         </div>
       </div>
 
+      {/* Botón de abrir panel también con mejor posicionamiento */}
       {!isPanelOpen && (
-        <div className="absolute bottom-10 left-4 animate-fadeIn">
+        <div className="absolute bottom-safe left-4 animate-fadeIn z-[100]">
+          {" "}
+          {/* Agregado z-[100] y bottom-safe */}
           <Tooltip content="Abrir panel de servicios" radius="sm">
             <Button
               isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
+              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
               radius="sm"
               onPress={handleClosePanel}
             >
@@ -1255,13 +1261,13 @@ const EnhancedMapComponent = ({
         </div>
       )}
 
-      <div className="absolute bottom-10 right-5 space-y-2 flex flex-col">
+      <div className="absolute bottom-safe right-5 space-y-2 flex flex-col z-[100]">
         {(user?.permisos.liquidador ||
           ["admin", "liquidador"].includes(user?.role || "")) && (
           <Tooltip content="Liquidador de servicios" radius="sm">
             <Button
               isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
+              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
               radius="sm"
               onPress={handleButtonPressLiquidar}
             >
@@ -1269,13 +1275,12 @@ const EnhancedMapComponent = ({
             </Button>
           </Tooltip>
         )}
-
         {(user?.permisos.gestor_servicio ||
           ["admin", "gestor_servicio"].includes(user?.role || "")) && (
           <Tooltip content="Agregar servicio" radius="sm">
             <Button
               isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12"
+              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
               radius="sm"
               onPress={handleButtonPressForm}
             >
