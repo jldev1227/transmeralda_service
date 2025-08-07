@@ -87,7 +87,6 @@ const HistoricoLiquidaciones = () => {
 
   // Ahora los filtros siempre son visibles - eliminamos este estado
   const [totalResults, setTotalResults] = useState(0);
-  const [allLiquidaciones, setAllLiquidaciones] = useState<Liquidacion[]>([]);
   const [filteredLiquidaciones, setFilteredLiquidaciones] = useState<
     Liquidacion[]
   >([]);
@@ -300,23 +299,6 @@ const HistoricoLiquidaciones = () => {
   useEffect(() => {
     fetchAllLiquidaciones();
   }, []);
-
-  // Aplicar filtros y ordenamiento cuando cambian
-  useEffect(() => {
-    if (allLiquidaciones.length > 0) {
-      applyFiltersAndSort(allLiquidaciones);
-    }
-  }, [
-    page,
-    filtroEstado,
-    filtroUsuario,
-    filtroCliente,
-    searchTerm,
-    fechaInicio,
-    fechaFin,
-    sortDescriptor,
-    applyFiltersAndSort,
-  ]);
 
   // Manejar búsqueda
   const handleSearch = () => {

@@ -1,7 +1,6 @@
 import React from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
 import Image from "next/image";
-import { useMediaQuery } from "react-responsive";
 
 import RouteAndDetails from "./routeAndDetails";
 
@@ -10,7 +9,6 @@ import { getStatusColor, getStatusText } from "@/utils/indext";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
-  const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;

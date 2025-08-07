@@ -166,7 +166,6 @@ export default function ModalFormServicio() {
     setOriginCoords({ lat: 0, lng: 0 });
     setDestCoords({ lat: 0, lng: 0 });
     setPurpose("");
-    setState("solicitado");
     setObservaciones("");
   };
 
@@ -207,9 +206,6 @@ export default function ModalFormServicio() {
 
   // purpose
   const [purpose, setPurpose] = useState("");
-
-  // state
-  const [state, setState] = useState<EstadoServicio>("solicitado");
 
   // state
   const [observaciones, setObservaciones] = useState<string>("");
@@ -317,7 +313,6 @@ export default function ModalFormServicio() {
       }
 
       setPurpose(servicio.proposito_servicio || "");
-      setState(servicio.estado || "solicitado");
       setObservaciones(servicio.observaciones || "");
     } else if (!modalForm) {
       // Si el modal está cerrado, resetear los estados
@@ -402,24 +397,7 @@ export default function ModalFormServicio() {
 
         return;
       }
-      if (!originSpecific) {
-        addToast({
-          title: "Campos requeridos",
-          description: "Por favor ingrese una dirección de origen específica",
-          color: "danger",
-        });
 
-        return;
-      }
-      if (!destSpecific) {
-        addToast({
-          title: "Campos requeridos",
-          description: "Por favor ingrese una dirección de destino específica",
-          color: "danger",
-        });
-
-        return;
-      }
       if (!purpose) {
         addToast({
           title: "Campos requeridos",
@@ -829,7 +807,7 @@ export default function ModalFormServicio() {
                                   options={empresaOptions}
                                   placeholder="Seleccione una empresa"
                                   styles={{
-                                    control: (base, state) => ({
+                                    control: (base) => ({
                                       ...base,
                                       border: "none",
                                       boxShadow: undefined,
@@ -1018,7 +996,7 @@ export default function ModalFormServicio() {
                                   options={municipioOptions}
                                   placeholder="Seleccione un origen"
                                   styles={{
-                                    control: (base, state) => ({
+                                    control: (base) => ({
                                       ...base,
                                       border: "none",
                                       boxShadow: undefined,
@@ -1108,7 +1086,7 @@ export default function ModalFormServicio() {
                                   options={municipioOptions}
                                   placeholder="Seleccione un destino"
                                   styles={{
-                                    control: (base, state) => ({
+                                    control: (base) => ({
                                       ...base,
                                       border: "none",
                                       boxShadow: undefined,

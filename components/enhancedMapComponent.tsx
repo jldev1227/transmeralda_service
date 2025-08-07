@@ -120,7 +120,6 @@ const EnhancedMapComponent = ({
   const [activeVehiclesData, setActiveVehiclesData] = useState<
     VehicleMarkerData[]
   >([]);
-  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [detallesVisible, setDetallesVisible] = useState(false);
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
 
@@ -165,7 +164,6 @@ const EnhancedMapComponent = ({
     if (selectedServicio || !wialonSessionId) return;
 
     const fetchActiveVehicles = async () => {
-      setIsLoadingVehicles(true);
       try {
         const vehiclesData = await onWialonRequest(
           wialonSessionId,
@@ -212,8 +210,6 @@ const EnhancedMapComponent = ({
         setActiveVehiclesData(vehicleMarkers);
       } catch (error) {
         console.error("Error al obtener vehículos activos:", error);
-      } finally {
-        setIsLoadingVehicles(false);
       }
     };
 
@@ -690,10 +686,10 @@ const EnhancedMapComponent = ({
     };
 
     // 1. Crear marcador de origen (punto A)
-    if (selectedServicio.origen_latitud && selectedServicio.origen_longitud) {
+    if (selectedServicio.origenCoords[0] && selectedServicio.origenCoords[1]) {
       const lngLat: [number, number] = [
-        selectedServicio.origen_longitud,
-        selectedServicio.origen_latitud,
+        selectedServicio.origenCoords[1],
+        selectedServicio.origenCoords[0],
       ];
 
       if (!markersRef) return;
@@ -709,10 +705,13 @@ const EnhancedMapComponent = ({
     }
 
     // 2. Crear marcador de destino (punto B)
-    if (selectedServicio.destino_latitud && selectedServicio.destino_longitud) {
+    if (
+      selectedServicio.destinoCoords[0] &&
+      selectedServicio.destinoCoords[1]
+    ) {
       const lngLat: [number, number] = [
-        selectedServicio.destino_longitud,
-        selectedServicio.destino_latitud,
+        selectedServicio.destinoCoords[1],
+        selectedServicio.destinoCoords[0],
       ];
 
       if (!markersRef) return;
@@ -735,16 +734,16 @@ const EnhancedMapComponent = ({
     if (selectedServicio.estado === "en_curso" && vehicleTracking?.position) {
       // Para servicios 'en_curso' con vehículo activo, mostrar ruta desde vehículo al destino
       if (
-        selectedServicio.destino_latitud &&
-        selectedServicio.destino_longitud
+        selectedServicio.destinoCoords[0] &&
+        selectedServicio.destinoCoords[1]
       ) {
         const vehiclePosition: [number, number] = [
           vehicleTracking.position.x,
           vehicleTracking.position.y,
         ];
         const destinationPosition: [number, number] = [
-          selectedServicio.destino_longitud,
-          selectedServicio.destino_latitud,
+          selectedServicio.destinoCoords[1],
+          selectedServicio.destinoCoords[0],
         ];
 
         // Añadir posición del vehículo a los límites
@@ -759,19 +758,19 @@ const EnhancedMapComponent = ({
         );
       }
     } else if (
-      selectedServicio.origen_latitud &&
-      selectedServicio.origen_longitud &&
-      selectedServicio.destino_latitud &&
-      selectedServicio.destino_longitud
+      selectedServicio.origenCoords[0] &&
+      selectedServicio.origenCoords[1] &&
+      selectedServicio.destinoCoords[0] &&
+      selectedServicio.destinoCoords[1]
     ) {
       // Para otros estados, mostrar la ruta planeada completa
       const originPosition: [number, number] = [
-        selectedServicio.origen_longitud,
-        selectedServicio.origen_latitud,
+        selectedServicio.origenCoords[1],
+        selectedServicio.origenCoords[0],
       ];
       const destinationPosition: [number, number] = [
-        selectedServicio.destino_longitud,
-        selectedServicio.destino_latitud,
+        selectedServicio.destinoCoords[1],
+        selectedServicio.destinoCoords[0],
       ];
 
       // Crear ruta desde origen hasta destino
@@ -821,12 +820,12 @@ const EnhancedMapComponent = ({
     // Actualizar la ruta activa si existe
     if (
       map.current.getSource("active-route") &&
-      selectedServicio.destino_latitud &&
-      selectedServicio.destino_longitud
+      selectedServicio.destinoCoords[0] &&
+      selectedServicio.destinoCoords[1]
     ) {
       const destinationPosition: [number, number] = [
-        selectedServicio.destino_longitud,
-        selectedServicio.destino_latitud,
+        selectedServicio.destinoCoords[1],
+        selectedServicio.destinoCoords[0],
       ];
 
       // Actualizar con una línea recta (retroalimentación visual inmediata)
@@ -1088,6 +1087,7 @@ const EnhancedMapComponent = ({
             <div>
               <span className="text-sm text-gray-500">Origen</span>
               <div className="font-medium">
+                {selectedServicio.origen.nombre_municipio} /{" "}
                 {selectedServicio.origen_especifico}
               </div>
             </div>
@@ -1095,6 +1095,7 @@ const EnhancedMapComponent = ({
             <div>
               <span className="text-sm text-gray-500">Destino</span>
               <div className="font-medium">
+                {selectedServicio.destino.nombre_municipio} /{" "}
                 {selectedServicio.destino_especifico}
               </div>
             </div>

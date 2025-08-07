@@ -498,10 +498,11 @@ const ServiciosListCards = ({
               <div className="flex justify-between items-start mb-2">
                 <div className="overflow-hidden">
                   <div className="font-semibold truncate">
-                    {servicio.origen_especifico}
+                    {servicio.origen_especifico ||
+                      `${servicio.origen.nombre_municipio} -> ${servicio.destino.nombre_municipio}`}
                   </div>
                   <div className="text-sm text-gray-600 truncate">
-                    → {servicio.destino_especifico}
+                    {`${servicio.destino_especifico ? "→" : ""} ${servicio.destino_especifico || servicio.observaciones}`}
                   </div>
                 </div>
                 <span

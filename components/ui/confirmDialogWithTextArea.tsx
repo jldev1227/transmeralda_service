@@ -44,7 +44,6 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
   textareaLabel = "Observaciones",
   textareaPlaceholder = "Ingrese sus observaciones aquí...",
   textareaRequired = false,
-  textareaHelperText = "Por favor, indique el motivo del rechazo.",
 }) => {
   // Estado para el contenido del textarea
   const [observaciones, setObservaciones] = useState("");

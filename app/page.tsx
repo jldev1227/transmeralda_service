@@ -81,7 +81,6 @@ const AdvancedDashboard = () => {
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
     useState<VehicleTracking | null>(null);
-  const [isLoadingWialon, setIsLoadingWialon] = useState(false);
   const [trackingError, setTrackingError] = useState<string>("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
@@ -155,8 +154,18 @@ const AdvancedDashboard = () => {
 
       try {
         // For 'en_curso' services, try to get the vehicle position from Wialon first
-        let origenLat = servicio.origen_latitud;
-        let origenLng = servicio.origen_longitud;
+        let origenLat = Number(
+          servicio.origen_latitud || servicio.origen.latitud,
+        );
+        let origenLng = Number(
+          servicio.origen_longitud || servicio.origen.longitud,
+        );
+        let destinoLat = Number(
+          servicio.destino_latitud || servicio.destino.latitud,
+        );
+        let destinoLng = Number(
+          servicio.destino_longitud || servicio.destino.longitud,
+        );
         let useVehiclePosition = false;
 
         if (
@@ -166,7 +175,6 @@ const AdvancedDashboard = () => {
         ) {
           try {
             setTrackingError("");
-            setIsLoadingWialon(true);
 
             // Login to Wialon to get session ID
             const loginData = await callWialonApi(token, "token/login", {});
@@ -229,26 +237,16 @@ const AdvancedDashboard = () => {
           } catch (error) {
             console.error("Error al obtener posición del vehículo:", error);
             setTrackingError("Error al obtener información del vehículo");
-          } finally {
-            setIsLoadingWialon(false);
           }
         }
 
         // Ensure coordinates exist and are valid
-        if (
-          !origenLat ||
-          !origenLng ||
-          !servicio.destino_latitud ||
-          !servicio.destino_longitud
-        ) {
+        if (!origenLat || !origenLng || !destinoLat || !destinoLng) {
           throw new Error("Coordenadas de origen o destino no válidas");
         }
 
         const origenCoords: LatLngTuple = [origenLat, origenLng];
-        const destinoCoords: LatLngTuple = [
-          servicio.destino_latitud,
-          servicio.destino_longitud,
-        ];
+        const destinoCoords: LatLngTuple = [destinoLat, destinoLng];
 
         // Build URL for Mapbox Directions API
         const originCoords = `${origenCoords[1]},${origenCoords[0]}`; // [lng, lat] format
@@ -697,7 +695,7 @@ const AdvancedDashboard = () => {
                             color: "#9ca3af",
                             fontSize: "0.875rem",
                           }),
-                          singleValue: (base, props) => ({
+                          singleValue: (base) => ({
                             ...base,
                             color: "#1f2937",
                             fontSize: "0.875rem",
