@@ -122,6 +122,7 @@ const EnhancedMapComponent = ({
   >([]);
   const [detallesVisible, setDetallesVisible] = useState(false);
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const statusColors = {
     solicitado: "#6a7282",
@@ -1058,165 +1059,247 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute bottom-safe z-30 w-full md:bottom-auto md:w-80 md:top-2.5 md:right-14 bg-white p-4 rounded-lg shadow-lg mb-2 mx-2 md:mx-0">
-          {" "}
-          {/* Agregado mb-2 mx-2 md:mx-0 y bottom-safe */}
-          <div className="flex justify-between items-start mb-3">
-            <h3 className="text-lg font-semibold">Detalles del Servicio</h3>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={clearServicio}
-            >
-              ✕
-            </button>
+        <div className="animate-fade-up absolute top-28 z-30 left-2 right-2 md:w-80 md:top-2.5 md:right-14 md:left-auto bg-white rounded-lg shadow-lg mt-2 md:mx-0">
+          {/* Header siempre visible */}
+          <div className="p-4 border-b md:border-b-0">
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold md:mb-3">
+                  Detalles del Servicio
+                </h3>
+
+                {/* Info simplificada para móvil/tablet */}
+                <div className="md:hidden mt-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">
+                      {selectedServicio.origen.nombre_municipio} →{" "}
+                      {selectedServicio.destino.nombre_municipio}
+                    </span>
+                    <div
+                      className="px-2 py-1 rounded-full text-xs font-semibold"
+                      style={{
+                        backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
+                        color: getStatusColor(selectedServicio.estado),
+                      }}
+                    >
+                      {getStatusText(selectedServicio.estado)}
+                    </div>
+                  </div>
+
+                  {selectedServicio.conductor && (
+                    <div className="text-sm text-gray-600">
+                      Conductor: {selectedServicio.conductor.nombre}{" "}
+                      {selectedServicio.conductor.apellido}
+                    </div>
+                  )}
+
+                  {selectedServicio.vehiculo && (
+                    <div className="text-sm text-gray-600">
+                      Vehículo: {selectedServicio.vehiculo.placa}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center ml-2">
+                {/* Botón expandir/colapsar para móvil/tablet */}
+                <button
+                  className="md:hidden text-gray-500 hover:text-gray-700 p-1 mr-2"
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  <svg
+                    className={`w-5 h-5 transform transition-transform ${expanded ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19 9l-7 7-7-7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
+                  </svg>
+                </button>
+
+                {/* Botón cerrar */}
+                <button
+                  className="text-gray-500 hover:text-gray-700 p-1"
+                  onClick={clearServicio}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <div>
-              <span className="text-sm text-gray-500">Estado</span>
-              <div
-                className="inline-block ml-2 px-2 py-1 rounded-full text-xs font-semibold"
-                style={{
-                  backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
-                  color: getStatusColor(selectedServicio.estado),
-                }}
-              >
-                {getStatusText(selectedServicio.estado)}
-              </div>
-            </div>
 
-            <div>
-              <span className="text-sm text-gray-500">Origen</span>
-              <div className="font-medium">
-                {selectedServicio.origen.nombre_municipio} /{" "}
-                {selectedServicio.origen_especifico}
+          {/* Contenido expandible para móvil/tablet, siempre visible en desktop */}
+          <div
+            className={`
+      md:block overflow-hidden transition-all duration-300 ease-in-out
+      ${expanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}
+    `}
+          >
+            <div className="p-4 md:pt-0 space-y-3">
+              {/* Info completa - oculta en móvil cuando no está expandido, siempre visible en desktop */}
+              <div className="hidden md:block">
+                <div className="mb-3">
+                  <span className="text-sm text-gray-500">Estado</span>
+                  <div
+                    className="inline-block ml-2 px-2 py-1 rounded-full text-xs font-semibold"
+                    style={{
+                      backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
+                      color: getStatusColor(selectedServicio.estado),
+                    }}
+                  >
+                    {getStatusText(selectedServicio.estado)}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <span className="text-sm text-gray-500">Destino</span>
-              <div className="font-medium">
-                {selectedServicio.destino.nombre_municipio} /{" "}
-                {selectedServicio.destino_especifico}
-              </div>
-            </div>
-
-            {selectedServicio.cliente && (
               <div>
-                <span className="text-sm text-gray-500">Cliente</span>
+                <span className="text-sm text-gray-500">Origen</span>
                 <div className="font-medium">
-                  {selectedServicio.cliente.nombre}
+                  {selectedServicio.origen.nombre_municipio} /{" "}
+                  {selectedServicio.origen_especifico}
                 </div>
               </div>
-            )}
 
-            {selectedServicio.vehiculo && (
               <div>
-                <span className="text-sm text-gray-500">Vehiculo</span>
+                <span className="text-sm text-gray-500">Destino</span>
                 <div className="font-medium">
-                  {selectedServicio.vehiculo.placa}{" "}
-                  {selectedServicio.vehiculo.linea}{" "}
-                  {selectedServicio.vehiculo.modelo}
+                  {selectedServicio.destino.nombre_municipio} /{" "}
+                  {selectedServicio.destino_especifico}
                 </div>
               </div>
-            )}
 
-            {selectedServicio.conductor && (
-              <>
+              {selectedServicio.cliente && (
                 <div>
-                  <span className="text-sm text-gray-500">Conductor</span>
+                  <span className="text-sm text-gray-500">Cliente</span>
                   <div className="font-medium">
-                    {selectedServicio.conductor.nombre}{" "}
-                    {selectedServicio.conductor.apellido}{" "}
+                    {selectedServicio.cliente.nombre}
                   </div>
                 </div>
+              )}
 
+              {selectedServicio.vehiculo && (
                 <div>
-                  <span className="text-sm text-gray-500">Identificación</span>
+                  <span className="text-sm text-gray-500">Vehículo</span>
                   <div className="font-medium">
-                    {selectedServicio.conductor.tipo_identificacion}{" "}
-                    {selectedServicio.conductor.numero_identificacion}
+                    {selectedServicio.vehiculo.placa}{" "}
+                    {selectedServicio.vehiculo.linea}{" "}
+                    {selectedServicio.vehiculo.modelo}
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Solicitud
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_solicitud)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Realización
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_realizacion)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">
-                Fecha y Hora de Finalización
-              </span>
-              <div className="font-medium">
-                {formatearFecha(selectedServicio.fecha_finalizacion)}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Distancia</span>
-              <div className="font-medium">
-                {selectedServicio.routeDistance} km
-              </div>
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">Observaciones</span>
-              <div className="font-medium">
-                {selectedServicio.observaciones || "No hay observaciones"}
-              </div>
-            </div>
-
-            {selectedServicio.estado === "en_curso" && (
-              <div className="mt-4 pt-4 border-t">
-                <h4 className="font-semibold mb-2">Tracking del Vehículo</h4>
-                {vehicleTracking ? (
-                  <div className="space-y-1">
-                    <div>
-                      <span className="text-sm text-gray-500">Vehículo:</span>{" "}
-                      {vehicleTracking.name}
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Velocidad:</span>{" "}
-                      {vehicleTracking.position.s || 0} km/h
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Dirección:</span>{" "}
-                      {vehicleTracking.position.c || 0}°
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Ubicación:</span>{" "}
-                      {vehicleTracking.position.x.toFixed(6)},{" "}
-                      {vehicleTracking.position.y.toFixed(6)}
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        Última actualización:
-                      </span>{" "}
-                      {formatTime(vehicleTracking.lastUpdate)}
+              {selectedServicio.conductor && (
+                <>
+                  <div>
+                    <span className="text-sm text-gray-500">Conductor</span>
+                    <div className="font-medium">
+                      {selectedServicio.conductor.nombre}{" "}
+                      {selectedServicio.conductor.apellido}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-amber-600 text-sm">
-                    {trackingError || "Buscando información del vehículo..."}
+
+                  <div>
+                    <span className="text-sm text-gray-500">
+                      Identificación
+                    </span>
+                    <div className="font-medium">
+                      {selectedServicio.conductor.tipo_identificacion}{" "}
+                      {selectedServicio.conductor.numero_identificacion}
+                    </div>
                   </div>
-                )}
+                </>
+              )}
+
+              <div>
+                <span className="text-sm text-gray-500">
+                  Fecha y Hora de Solicitud
+                </span>
+                <div className="font-medium">
+                  {formatearFecha(selectedServicio.fecha_solicitud)}
+                </div>
               </div>
-            )}
+
+              <div>
+                <span className="text-sm text-gray-500">
+                  Fecha y Hora de Realización
+                </span>
+                <div className="font-medium">
+                  {formatearFecha(selectedServicio.fecha_realizacion)}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-sm text-gray-500">
+                  Fecha y Hora de Finalización
+                </span>
+                <div className="font-medium">
+                  {formatearFecha(selectedServicio.fecha_finalizacion)}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-sm text-gray-500">Distancia</span>
+                <div className="font-medium">
+                  {selectedServicio.routeDistance} km
+                </div>
+              </div>
+
+              <div>
+                <span className="text-sm text-gray-500">Observaciones</span>
+                <div className="font-medium">
+                  {selectedServicio.observaciones || "No hay observaciones"}
+                </div>
+              </div>
+
+              {/* Sección de tracking */}
+              {selectedServicio.estado === "en_curso" && (
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="font-semibold mb-2">Tracking del Vehículo</h4>
+                  {vehicleTracking ? (
+                    <div className="space-y-1">
+                      <div>
+                        <span className="text-sm text-gray-500">Vehículo:</span>{" "}
+                        {vehicleTracking.name}
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">
+                          Velocidad:
+                        </span>{" "}
+                        {vehicleTracking.position.s || 0} km/h
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">
+                          Dirección:
+                        </span>{" "}
+                        {vehicleTracking.position.c || 0}°
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">
+                          Ubicación:
+                        </span>{" "}
+                        {vehicleTracking.position.x.toFixed(6)},{" "}
+                        {vehicleTracking.position.y.toFixed(6)}
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">
+                          Última actualización:
+                        </span>{" "}
+                        {formatTime(vehicleTracking.lastUpdate)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-amber-600 text-sm">
+                      {trackingError || "Buscando información del vehículo..."}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

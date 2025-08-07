@@ -18,6 +18,7 @@ import ModalNewVehiculo from "./modalNewVehiculo";
 import { EstadoServicio, useService } from "@/context/serviceContext";
 import SearchInputsPlaces from "@/components/ui/originDestInputsPlaces";
 import { convertirFechaParaDB } from "@/helpers";
+import useKeyboardVisible from "@/hooks/useKeyboardVisible";
 
 const UserIcon = () => (
   <svg
@@ -137,6 +138,8 @@ export default function ModalFormServicio() {
 
   const selectRef = useRef<SelectInstance<EmpresaOption> | null>(null);
   const isMobile = useMediaQuery({ maxWidth: 1024 });
+  const isKeyboardVisible = useKeyboardVisible();
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   // Función para limpiar todos los estados del formulario
   const resetFormStates = () => {
@@ -564,22 +567,20 @@ export default function ModalFormServicio() {
         classNames={{
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
+          wrapper: `${isKeyboardVisible ? "items-start pt-4" : "items-center"}`,
+          base: `${isKeyboardVisible ? "max-h-[70vh] mt-0" : "max-h-[90vh]"} transition-all duration-300`,
         }}
         isOpen={modalForm}
         scrollBehavior="inside"
         size={"5xl"}
         onClose={() => {
-          // En NextUI/uso-modal.d.ts, isOpen es false cuando se cierra el modal
-          // No es necesario verificar !isOpen ya que siempre será false durante onClose
-
-          // Primero limpiar el servicio seleccionado para eliminar cualquier ruta/marcador en el mapa
+          // Tu lógica de cierre actual
           if (selectedServicio) {
             clearSelectedServicio();
           }
 
           if (selectRef.current) {
             try {
-              // Intenta usar los métodos directamente
               selectRef.current.clearValue?.();
               selectRef.current.blur?.();
             } catch (error) {
@@ -587,9 +588,9 @@ export default function ModalFormServicio() {
             }
           }
 
-          // Luego cerrar el modal
           handleModalForm();
           resetFormStates();
+          setFocusedInput(null); // Limpiar el estado de focus
         }}
       >
         <ModalContent className="p-6">
@@ -802,6 +803,8 @@ export default function ModalFormServicio() {
                                   className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm py-2 appearance-none text-gray-800"
                                   classNamePrefix="react-select"
                                   inputId="client"
+                                  maxMenuHeight={isKeyboardVisible ? 120 : 150}
+                                  menuShouldBlockScroll={true}
                                   menuShouldScrollIntoView={false}
                                   name="client"
                                   options={empresaOptions}
@@ -827,6 +830,13 @@ export default function ModalFormServicio() {
                                       ...base,
                                       zIndex: 9999,
                                       marginLeft: -35,
+                                      // Ajustar posición del menú cuando el teclado está visible
+                                      ...(isKeyboardVisible && {
+                                        maxHeight: "120px",
+                                        position: "fixed",
+                                        top: "auto",
+                                        bottom: "10px",
+                                      }),
                                     }),
                                     option: (base, state) => ({
                                       ...base,
@@ -857,18 +867,17 @@ export default function ModalFormServicio() {
                                       "&:hover": { color: "#ef4444" },
                                       padding: "0px 8px",
                                     }),
-                                  }} // Aproximadamente 5-6 opciones dependiendo del tamaño
+                                  }}
                                   value={
                                     empresaOptions.find(
                                       (opt) => opt.value === clienteSelected,
                                     ) || null
                                   }
+                                  onBlur={() => setFocusedInput(null)}
                                   onChange={(option) =>
                                     setCliente(option ? option.value : "")
                                   }
-                                  menuShouldBlockScroll={true}
-                                  // Limita la cantidad de opciones visibles en el menú
-                                  maxMenuHeight={150}
+                                  onFocus={() => setFocusedInput("client")}
                                 />
                               </div>
                               <ModalNewEmpresa />
@@ -901,9 +910,11 @@ export default function ModalFormServicio() {
                                   )}
                                   granularity="minute"
                                   value={fechaSolicitud}
+                                  onBlur={() => setFocusedInput(null)}
                                   onChange={(value) => {
                                     if (value) setFechaSolicitud(value);
                                   }}
+                                  onFocus={() => setFocusedInput("requestDate")}
                                 />
                                 <p className="text-default-500 text-sm">
                                   Fecha:{" "}
@@ -945,9 +956,11 @@ export default function ModalFormServicio() {
                                   )}
                                   granularity="minute"
                                   value={fechaRealizacion}
+                                  onBlur={() => setFocusedInput(null)}
                                   onChange={(value) => {
                                     if (value) setFechaRealizacion(value);
                                   }}
+                                  onFocus={() => setFocusedInput("serviceDate")}
                                 />
                                 <p className="text-default-500 text-sm">
                                   Fecha:{" "}
@@ -1496,21 +1509,22 @@ export default function ModalFormServicio() {
                   )}
 
                   {/* Navigation Buttons */}
-                  <div className="flex justify-between pt-6 border-t border-gray-200">
+                  <div
+                    className={`flex justify-between pt-6 border-t border-gray-200 ${isKeyboardVisible ? "pb-1" : ""}`}
+                  >
                     {isReadOnly ? (
-                      // Botones para modo solo lectura
                       <button
                         className="border-1 py-2 px-4 rounded-md shadow-sm"
                         type="button"
                         onClick={() => {
                           handleModalForm();
                           resetFormStates();
+                          setFocusedInput(null);
                         }}
                       >
                         Cerrar
                       </button>
                     ) : (
-                      // Botones para modo edición/creación
                       <>
                         <button
                           className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -1530,49 +1544,7 @@ export default function ModalFormServicio() {
                           </button>
                         ) : (
                           <div className="flex gap-2">
-                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en_curso */}
-                            {isEditing &&
-                              servicio &&
-                              (servicio.estado === "solicitado" ||
-                                servicio.estado === "planificado" ||
-                                servicio.estado === "en_curso") && (
-                                <button
-                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                  type="button"
-                                  // onClick={async () => {
-                                  //   if (
-                                  //     servicio.id &&
-                                  //     window.confirm(
-                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                  //     )
-                                  //   ) {
-                                  //     try {
-                                  //       await actualizarEstadoServicio(
-                                  //         servicio.id,
-                                  //         "cancelado",
-                                  //       );
-                                  //       addToast({
-                                  //         title: "Éxito",
-                                  //         description:
-                                  //           "Servicio cancelado correctamente",
-                                  //         color: "success",
-                                  //       });
-                                  //       handleModalForm(); // Cerrar modal
-                                  //       resetFormStates();
-                                  //     } catch (error) {
-                                  //       addToast({
-                                  //         title: "Error",
-                                  //         description:
-                                  //           "No se pudo cancelar el servicio",
-                                  //         color: "danger",
-                                  //       });
-                                  //     }
-                                  //   }
-                                  // }}
-                                >
-                                  Cancelar Servicio
-                                </button>
-                              )}
+                            {/* Botón de cancelar y submit */}
                             <button
                               className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                               disabled={loading}
@@ -1588,6 +1560,7 @@ export default function ModalFormServicio() {
                     )}
                   </div>
                 </form>
+                {/* CSS adicional para manejar el viewport */}
                 <style global jsx>{`
                   @keyframes fadeIn {
                     from {
@@ -1601,6 +1574,29 @@ export default function ModalFormServicio() {
                   }
                   .animate-fadeIn {
                     animation: fadeIn 0.5s ease-out forwards;
+                  }
+
+                  /* Estilos para cuando el teclado está visible */
+                  @media (max-width: 768px) {
+                    .react-select__menu {
+                      max-height: ${isKeyboardVisible
+                        ? "120px"
+                        : "200px"} !important;
+                    }
+
+                    /* Asegurar que los menús desplegables no se vayan fuera de vista */
+                    .react-select__menu-list {
+                      max-height: ${isKeyboardVisible
+                        ? "100px"
+                        : "180px"} !important;
+                    }
+                  }
+
+                  /* Prevenir zoom en inputs en iOS */
+                  input,
+                  select,
+                  textarea {
+                    font-size: 16px !important;
                   }
                 `}</style>
               </ModalBody>
