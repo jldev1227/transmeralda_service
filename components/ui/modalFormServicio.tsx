@@ -215,6 +215,8 @@ export default function ModalFormServicio() {
 
   const [loading, setLoading] = useState(false);
 
+  const isLargeScreen = useMediaQuery({ minWidth: 1024 }); // lg breakpoint
+
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
   useEffect(() => {
     // Si el modal se abrió, limpiar inmediatamente el servicio seleccionado
@@ -567,7 +569,7 @@ export default function ModalFormServicio() {
         }}
         isOpen={modalForm}
         scrollBehavior="inside"
-        size={"5xl"}
+        size={isLargeScreen ? "5xl" : "full"}
         onClose={() => {
           // En NextUI/uso-modal.d.ts, isOpen es false cuando se cierra el modal
           // No es necesario verificar !isOpen ya que siempre será false durante onClose
