@@ -1082,12 +1082,10 @@ const EnhancedMapComponent = ({
                     {selectedServicio.origen_especifico &&
                       selectedServicio.destino_especifico && (
                         <p className="text-sm text-gray-600">
-                          <span>Origen específico:&nbsp;</span>
                           <span className="font-medium text-black">
                             {selectedServicio.origen_especifico}
                           </span>
                           <span>&nbsp;→&nbsp;</span>
-                          <span>Destino específico:&nbsp;</span>
                           <span className="font-medium text-black">
                             {selectedServicio.destino_especifico}
                           </span>

@@ -4,11 +4,13 @@ import Image from "next/image";
 
 import RouteAndDetails from "./routeAndDetails";
 
+import { useTicketShare } from "@/components/shareTicketImage"; // Importar el hook
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
+  const { shareTicket } = useTicketShare(); // Usar el hook
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;
@@ -42,14 +44,19 @@ export default function ModalTicket() {
 
   const statusColors = getStatusColor(servicio.estado);
 
+  // Función para manejar el compartir
+  const handleShare = async () => {
+    await shareTicket(servicio, statusColors, getStatusText);
+  };
+
   return (
     <>
       <Modal
+        hideCloseButton
         backdrop="opaque"
         classNames={{
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
-          // Personalizar el tamaño del modal a 6xl (entre 5xl y full)
         }}
         isOpen={modalTicket}
         scrollBehavior="inside"
@@ -67,7 +74,28 @@ export default function ModalTicket() {
                   <div className={`p-4 text-white bg-emerald-600`}>
                     <div className="flex justify-between items-center">
                       <h2 className="text-2xl font-bold">Transmeralda</h2>
-                      <div className="text-right">
+                      <div className="text-right flex items-center gap-3">
+                        {/* Botón de compartir */}
+                        <button
+                          className="bg-white/20 hover:bg-white/30 transition-colors duration-200 rounded-full p-2"
+                          title="Compartir ticket"
+                          onClick={handleShare}
+                        >
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                            />
+                          </svg>
+                        </button>
                         <span className="text-sm font-medium block">
                           Ticket de Servicio
                         </span>
