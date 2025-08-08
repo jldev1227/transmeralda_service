@@ -1,24 +1,20 @@
 import html2canvas from "html2canvas";
 
+import { ServicioConRelaciones } from "@/context/serviceContext";
+
 // Función principal para generar y compartir la imagen
-export const shareTicketImage = async (
-  servicio,
-  statusColors,
-  getStatusText,
-) => {
+export const shareTicketImage = async (servicio: ServicioConRelaciones) => {
+  let canvas: HTMLCanvasElement | null = null;
+
   try {
     // Crear elemento temporal para renderizar
-    const ticketElement = createTicketElement(
-      servicio,
-      statusColors,
-      getStatusText,
-    );
+    const ticketElement = createTicketElement(servicio);
 
     // Agregar al DOM temporalmente
     document.body.appendChild(ticketElement);
 
     // Generar la imagen usando html2canvas
-    const canvas = await html2canvas(ticketElement, {
+    canvas = await html2canvas(ticketElement, {
       backgroundColor: "#ffffff",
       width: 600,
       height: 400,
@@ -31,21 +27,31 @@ export const shareTicketImage = async (
     document.body.removeChild(ticketElement);
 
     // Convertir canvas a blob
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, "image/png", 0.9);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      if (canvas) {
+        canvas.toBlob((b) => resolve(b), "image/png", 0.9);
+      } else {
+        resolve(null);
+      }
     });
+
+    if (!blob) {
+      throw new Error("No se pudo generar la imagen del ticket.");
+    }
 
     // Detectar si estamos en móvil o web y compartir
     await shareImage(blob, servicio);
   } catch (error) {
     console.error("Error al generar/compartir imagen:", error);
     // Fallback: descargar la imagen
-    downloadImage(canvas, servicio);
+    if (canvas) {
+      downloadImage(canvas, servicio);
+    }
   }
 };
 
 // Función para crear el elemento HTML del ticket
-const createTicketElement = (servicio, statusColors, getStatusText) => {
+const createTicketElement = (servicio: ServicioConRelaciones) => {
   const ticketDiv = document.createElement("div");
 
   ticketDiv.style.position = "absolute";
@@ -121,8 +127,10 @@ const createTicketElement = (servicio, statusColors, getStatusText) => {
   return ticketDiv;
 };
 
-// Función para compartir la imagen
-const shareImage = async (blob, servicio) => {
+const shareImage = async (
+  blob: Blob,
+  servicio: ServicioConRelaciones,
+): Promise<void> => {
   const fileName = `ticket-${servicio.id || Date.now()}.png`;
 
   // Verificar si el navegador soporta Web Share API
@@ -139,8 +147,13 @@ const shareImage = async (blob, servicio) => {
         });
 
         return;
-      } catch (error) {
-        if (error.name !== "AbortError") {
+      } catch (error: unknown) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "name" in error &&
+          (error as { name?: string }).name !== "AbortError"
+        ) {
           console.error("Error compartiendo:", error);
         }
       }
@@ -152,7 +165,7 @@ const shareImage = async (blob, servicio) => {
 };
 
 // Función para descargar la imagen como fallback
-const downloadImageFromBlob = (blob, fileName) => {
+const downloadImageFromBlob = (blob: Blob, fileName: string) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -164,8 +177,10 @@ const downloadImageFromBlob = (blob, fileName) => {
   URL.revokeObjectURL(url);
 };
 
-// Función alternativa si html2canvas no está disponible
-const downloadImage = (canvas, servicio) => {
+const downloadImage = (
+  canvas: HTMLCanvasElement,
+  servicio: ServicioConRelaciones,
+): void => {
   const link = document.createElement("a");
 
   link.download = `ticket-${servicio.id || Date.now()}.png`;
@@ -175,14 +190,16 @@ const downloadImage = (canvas, servicio) => {
 
 // Hook personalizado para usar en componentes React
 export const useTicketShare = () => {
-  const shareTicket = async (servicio, statusColors, getStatusText) => {
+  const shareTicket = async (
+    servicio: ServicioConRelaciones,
+  ): Promise<void> => {
     if (!servicio) {
       console.error("No hay información del servicio para compartir");
 
       return;
     }
 
-    await shareTicketImage(servicio, statusColors, getStatusText);
+    await shareTicketImage(servicio);
   };
 
   return { shareTicket };

@@ -46,7 +46,7 @@ export default function ModalTicket() {
 
   // Función para manejar el compartir
   const handleShare = async () => {
-    await shareTicket(servicio, statusColors, getStatusText);
+    await shareTicket(servicio);
   };
 
   return (
