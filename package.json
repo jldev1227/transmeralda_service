@@ -52,6 +52,7 @@
     "clsx": "2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "11.13.1",
+    "html2canvas": "^1.4.1",
     "intl-messageformat": "^10.5.0",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",

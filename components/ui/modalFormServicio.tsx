@@ -127,7 +127,7 @@ export default function ModalFormServicio() {
     setError,
     registrarServicio,
     actualizarServicio,
-    // actualizarEstadoServicio,
+    actualizarEstadoServicio,
     clearSelectedServicio, // Añadimos esta función para limpiar manualmente el servicio seleccionado
     selectedServicio, // Añadimos para verificar si hay un servicio seleccionado
   } = useService();
@@ -1512,77 +1512,119 @@ export default function ModalFormServicio() {
                     ) : (
                       // Botones para modo edición/creación
                       <>
-                        <button
-                          className="border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed"
-                          disabled={currentStep === 1}
-                          type="button"
-                          onClick={prevStep}
-                        >
-                          Anterior
-                        </button>
                         {currentStep < totalSteps ? (
-                          <button
-                            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                            type="button"
-                            onClick={nextStep}
-                          >
-                            Siguiente
-                          </button>
+                          <div className="w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:justify-between lg:items-center">
+                            <button
+                              className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
+                              disabled={currentStep === 1}
+                              type="button"
+                              onClick={prevStep}
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto lg:ml-auto"
+                              type="button"
+                              onClick={nextStep}
+                            >
+                              Siguiente
+                            </button>
+                          </div>
                         ) : (
-                          <div className="flex gap-2">
-                            {/* Botón de Cancelar Servicio para servicios en estado solicitado, planificado o en_curso */}
-                            {isEditing &&
+                          (() => {
+                            const showCancel =
+                              isEditing &&
                               servicio &&
                               (servicio.estado === "solicitado" ||
                                 servicio.estado === "planificado" ||
-                                servicio.estado === "en_curso") && (
-                                <button
-                                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                  type="button"
-                                  // onClick={async () => {
-                                  //   if (
-                                  //     servicio.id &&
-                                  //     window.confirm(
-                                  //       "¿Estás seguro de que deseas cancelar este servicio?",
-                                  //     )
-                                  //   ) {
-                                  //     try {
-                                  //       await actualizarEstadoServicio(
-                                  //         servicio.id,
-                                  //         "cancelado",
-                                  //       );
-                                  //       addToast({
-                                  //         title: "Éxito",
-                                  //         description:
-                                  //           "Servicio cancelado correctamente",
-                                  //         color: "success",
-                                  //       });
-                                  //       handleModalForm(); // Cerrar modal
-                                  //       resetFormStates();
-                                  //     } catch (error) {
-                                  //       addToast({
-                                  //         title: "Error",
-                                  //         description:
-                                  //           "No se pudo cancelar el servicio",
-                                  //         color: "danger",
-                                  //       });
-                                  //     }
-                                  //   }
-                                  // }}
-                                >
-                                  Cancelar Servicio
-                                </button>
-                              )}
-                            <button
-                              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-                              disabled={loading}
-                              type="submit"
-                            >
-                              {isEditing
-                                ? "Actualizar Servicio"
-                                : "Registrar Servicio"}
-                            </button>
-                          </div>
+                                servicio.estado === "en_curso");
+
+                            if (showCancel) {
+                              return (
+                                <div className="w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:justify-between lg:items-center">
+                                  {/* Botón Anterior - Fila completa en mobile, columna 1 en tablet, izquierda en desktop */}
+                                  <button
+                                    className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
+                                    type="button"
+                                    onClick={prevStep}
+                                  >
+                                    Anterior
+                                  </button>
+
+                                  {/* Contenedor para botones de acción - Fila completa en mobile, columna 2 en tablet, derecha en desktop */}
+                                  <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 sm:gap-2 lg:gap-2 lg:ml-auto">
+                                    <button
+                                      className="w-full border-1 py-2 px-4 rounded-md shadow-sm text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors sm:w-auto lg:w-auto"
+                                      type="button"
+                                      onClick={async () => {
+                                        if (
+                                          servicio.id &&
+                                          window.confirm(
+                                            "¿Estás seguro de que deseas cancelar este servicio?",
+                                          )
+                                        ) {
+                                          try {
+                                            await actualizarEstadoServicio(
+                                              servicio.id,
+                                              "cancelado",
+                                            );
+                                            addToast({
+                                              title: "Éxito",
+                                              description:
+                                                "Servicio cancelado correctamente",
+                                              color: "success",
+                                            });
+                                            handleModalForm();
+                                            resetFormStates();
+                                          } catch (error) {
+                                            addToast({
+                                              title: "Error",
+                                              description:
+                                                "No se pudo cancelar el servicio",
+                                              color: "danger",
+                                            });
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      Cancelar Servicio
+                                    </button>
+
+                                    <button
+                                      className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto"
+                                      disabled={loading}
+                                      type="submit"
+                                    >
+                                      {isEditing
+                                        ? "Actualizar Servicio"
+                                        : "Registrar Servicio"}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:justify-between lg:items-center">
+                                  <button
+                                    className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
+                                    type="button"
+                                    onClick={prevStep}
+                                  >
+                                    Anterior
+                                  </button>
+                                  <button
+                                    className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto lg:ml-auto"
+                                    disabled={loading}
+                                    type="submit"
+                                  >
+                                    {isEditing
+                                      ? "Actualizar Servicio"
+                                      : "Registrar Servicio"}
+                                  </button>
+                                </div>
+                              );
+                            }
+                          })()
                         )}
                       </>
                     )}
