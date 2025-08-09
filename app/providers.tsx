@@ -28,7 +28,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
   return (
-    <HeroUIProvider navigate={router.push}>
+    <HeroUIProvider locale="es-ES" navigate={router.push}>
       <ToastProvider maxVisibleToasts={2} placement="bottom-center" />
       <AuthProvider>
         <ServicesProvider>

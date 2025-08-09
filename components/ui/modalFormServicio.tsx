@@ -565,6 +565,7 @@ export default function ModalFormServicio() {
           backdrop:
             "bg-gradient-to-t from-emerald-900 to-emerald-900/10 backdrop-opacity-90",
         }}
+        isDismissable={false} // Esta prop evita que se cierre al hacer click fuera
         isOpen={modalForm}
         scrollBehavior="inside"
         size={"5xl"}
