@@ -4,7 +4,6 @@ import React, { useState, useCallback, useEffect } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
-import { Alert } from "@heroui/alert";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react"; // al inicio del archivo
 import {
@@ -32,6 +31,7 @@ import ModalTicket from "@/components/ui/modalTicket";
 import ModalPlanilla from "@/components/ui/modalPlanilla";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loadingPage";
+import GraphsModal from "@/components/ui/graphsModal";
 
 interface MapboxRoute {
   distance: number;
@@ -499,13 +499,20 @@ const AdvancedDashboard = () => {
       {isPanelOpen && (
         <div
           aria-modal="true"
-          className="absolute lg:relative z-50 w-full lg:max-w-[30rem] animate-bottomToTop"
+          className="absolute lg:relative z-50 w-full lg:max-w-[32rem] 2xl:max-w-[34rem] animate-bottomToTop"
           role="dialog"
         >
           <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
             <div className="w-full space-y-2">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {socketConnected ? (
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  ) : (
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                  <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
+                </div>
                 {isPanelOpen && isMobile && (
                   <Button
                     isIconOnly
@@ -517,28 +524,12 @@ const AdvancedDashboard = () => {
                   </Button>
                 )}
               </div>
-              {socketConnected ? (
-                <Alert
-                  className="py-2"
-                  color="success"
-                  radius="sm"
-                  title="Obteniendo cambios en tiempo real"
-                  variant="faded"
-                />
-              ) : (
-                <Alert
-                  className="py-2"
-                  color="danger"
-                  radius="sm"
-                  title="Desconectado de conexión en tiempo real"
-                  variant="faded"
-                />
-              )}
+              <GraphsModal />
             </div>
           </div>
 
           {/* Panel content with scrolling */}
-          <div className="bg-white h-[calc(100vh-56px)] relative flex flex-col overflow-y-auto">
+          <div className="bg-white h-[calc(98vh-76px)] relative flex flex-col overflow-y-auto">
             {/* Filters */}
             <div className="p-4 md:p-4 border-b">
               <div className="mb-3">
@@ -996,27 +987,6 @@ const AdvancedDashboard = () => {
         <ModalTicket />
         <ModalPlanilla />
       </div>
-
-      {/* Additional styles */}
-      <style global jsx>{`
-        .vehicle-marker {
-          transition: transform 0.2s ease-in-out;
-        }
-        .vehicle-marker:hover {
-          transform: scale(1.1);
-        }
-
-        @media (max-width: 980px) {
-          /* Mobile drag handle appearance */
-          .panel-drag-handle {
-            width: 40px;
-            height: 5px;
-            background-color: #cbd5e0;
-            border-radius: 3px;
-            margin: 10px auto;
-          }
-        }
-      `}</style>
     </div>
   );
 };

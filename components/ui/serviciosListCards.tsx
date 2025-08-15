@@ -401,6 +401,8 @@ const ServiciosListCards = ({
         const isUpdated = animation?.isUpdated || false;
         const eventType = animation?.eventType || "";
 
+        const creador = servicio.es_creador;
+
         // Determinar si mostrar el borde y qué color usar
         const showAnimation = isNew || isUpdated;
 
@@ -501,17 +503,25 @@ const ServiciosListCards = ({
               </div>
 
               <div className="flex justify-between items-start mb-2">
-                <div className="overflow-hidden">
-                  <div className="font-semibold truncate">
-                    {servicio.origen_especifico ||
-                      `${servicio.origen.nombre_municipio} -> ${servicio.destino.nombre_municipio}`}
+                <div className="overflow-hidden flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    {creador && (
+                      <span
+                        className="inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse border border-white shadow-sm flex-shrink-0"
+                        title="Eres el creador"
+                      />
+                    )}
+                    <div className="font-semibold truncate">
+                      {servicio.origen_especifico ||
+                        `${servicio.origen.nombre_municipio} → ${servicio.destino.nombre_municipio}`}
+                    </div>
                   </div>
                   <div className="text-sm text-gray-600 truncate">
-                    {`${servicio.destino_especifico ? "→" : ""} ${servicio.destino_especifico || servicio.observaciones}`}
+                    {`${servicio.destino_especifico ? "→ " : ""}${servicio.destino_especifico || servicio.observaciones || ""}`}
                   </div>
                 </div>
                 <span
-                  className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-1 flex-shrink-0"
+                  className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2 flex-shrink-0"
                   style={{
                     backgroundColor: `${getStatusColor(servicio.estado)}20`,
                     color: getStatusColor(servicio.estado),

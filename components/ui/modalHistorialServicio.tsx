@@ -368,22 +368,22 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                               </p>
                               {item.tipo_operacion === "actualizacion" && (
                                 <div className="text-sm">
-                                  <span className="text-red-500 line-through mr-2">
+                                  <p className="text-red-500 line-through mr-2">
                                     {item.valor_anterior
                                       ? item.valor_anterior.length > 30
                                         ? item.valor_anterior.substring(0, 30) +
                                           "..."
                                         : item.valor_anterior
                                       : "Sin valor"}
-                                  </span>
-                                  <span className="text-green-500">
+                                  </p>
+                                  <p className="text-green-500">
                                     {item.valor_nuevo
                                       ? item.valor_nuevo.length > 30
                                         ? item.valor_nuevo.substring(0, 30) +
                                           "..."
                                         : item.valor_nuevo
                                       : "Sin valor"}
-                                  </span>
+                                  </p>
                                 </div>
                               )}
                             </div>

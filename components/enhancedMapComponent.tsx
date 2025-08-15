@@ -12,7 +12,14 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { ClipboardList, PlusIcon, Truck, UserIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClipboardList,
+  PlusIcon,
+  Truck,
+  UserIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Link } from "@heroui/link";
 
@@ -122,6 +129,14 @@ const EnhancedMapComponent = ({
   >([]);
   const [detallesVisible, setDetallesVisible] = useState(false);
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
+
+  // Agregar este estado al componente principal
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  // Función para alternar la expansión
+  const toggleExpanded = () => {
+    setIsExpanded((prev) => !prev);
+  };
 
   const statusColors = {
     solicitado: "#6a7282",
@@ -1141,15 +1156,31 @@ const EnhancedMapComponent = ({
                 >
                   ✕
                 </button>
+                {/* Botón expandir/contraer - Solo visible en móvil */}
+                <button
+                  className="hidden md:block text-gray-500 hover:text-gray-700 p-1 transition-colors"
+                  onClick={toggleExpanded}
+                >
+                  {isExpanded ? (
+                    <ChevronUpIcon className="w-5 h-5" />
+                  ) : (
+                    <ChevronDownIcon className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Contenido expandible con scroll - solo esta parte hace scroll */}
-          <div className="hidden md:block overflow-hidden transition-all duration-300 ease-in-out flex-1">
+          {/* Contenido expandible con scroll */}
+          <div
+            className={`
+              overflow-hidden transition-all duration-300 ease-in-out flex-1
+              ${isExpanded ? "block" : "hidden"}
+            `}
+          >
             <div className="overflow-y-auto h-full">
               <div className="p-4 md:pt-0 space-y-3">
-                {/* Info completa - oculta en móvil cuando no está expandido, siempre visible en desktop */}
+                {/* Info completa - expandible en móvil, siempre visible en desktop */}
                 <div>
                   <div className="mb-3">
                     <span className="text-sm text-gray-500">Estado</span>
@@ -1417,7 +1448,7 @@ const EnhancedMapComponent = ({
         .popup-realizado {
           background-color: #155dfc;
         }
-        .popup-en-curso {
+        .popup-en_curso {
           background-color: #00d492;
         }
         .popup-planificado {

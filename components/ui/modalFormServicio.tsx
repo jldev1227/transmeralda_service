@@ -343,7 +343,11 @@ export default function ModalFormServicio() {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault(); // ✅ Prevenir comportamiento por defecto
+    e.stopPropagation();
+
+    console.log("click");
     // Validate required fields based on current step
     if (currentStep === 1) {
       // Step 1: Basic Info validation
@@ -416,11 +420,15 @@ export default function ModalFormServicio() {
     setCurrentStep((prev) => (prev < totalSteps ? prev + 1 : prev));
   };
 
-  const prevStep = () => {
+  const prevStep = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault(); // ✅ Prevenir comportamiento por defecto
+    e.stopPropagation();
     setCurrentStep((prev) => (prev > 1 ? prev - 1 : prev));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log("click submit");
+    e.stopPropagation();
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -1518,15 +1526,15 @@ export default function ModalFormServicio() {
                             <button
                               className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
                               disabled={currentStep === 1}
-                              type="button"
-                              onClick={prevStep}
+                              type="button" // ✅ Correcto
+                              onClick={(e) => prevStep(e)}
                             >
                               Anterior
                             </button>
                             <button
                               className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto lg:ml-auto"
-                              type="button"
-                              onClick={nextStep}
+                              type="button" // ✅ ESTA ES LA LÍNEA QUE FALTABA
+                              onClick={(e) => nextStep(e)}
                             >
                               Siguiente
                             </button>
@@ -1543,20 +1551,20 @@ export default function ModalFormServicio() {
                             if (showCancel) {
                               return (
                                 <div className="w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:justify-between lg:items-center">
-                                  {/* Botón Anterior - Fila completa en mobile, columna 1 en tablet, izquierda en desktop */}
+                                  {/* Botón Anterior */}
                                   <button
                                     className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
-                                    type="button"
+                                    type="button" // ✅ Correcto
                                     onClick={prevStep}
                                   >
                                     Anterior
                                   </button>
 
-                                  {/* Contenedor para botones de acción - Fila completa en mobile, columna 2 en tablet, derecha en desktop */}
+                                  {/* Contenedor para botones de acción */}
                                   <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 sm:gap-2 lg:gap-2 lg:ml-auto">
                                     <button
                                       className="w-full border-1 py-2 px-4 rounded-md shadow-sm text-red-600 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors sm:w-auto lg:w-auto"
-                                      type="button"
+                                      type="button" // ✅ Correcto
                                       onClick={async () => {
                                         if (
                                           servicio.id &&
@@ -1594,7 +1602,7 @@ export default function ModalFormServicio() {
                                     <button
                                       className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto"
                                       disabled={loading}
-                                      type="submit"
+                                      type="submit" // ✅ Solo este debe ser submit
                                     >
                                       {isEditing
                                         ? "Actualizar Servicio"
@@ -1608,7 +1616,7 @@ export default function ModalFormServicio() {
                                 <div className="w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:justify-between lg:items-center">
                                   <button
                                     className="w-full border-1 py-2 px-4 rounded-md shadow-sm disabled:text-gray-400 disabled:cursor-not-allowed sm:w-auto lg:w-auto"
-                                    type="button"
+                                    type="button" // ✅ Correcto
                                     onClick={prevStep}
                                   >
                                     Anterior
@@ -1616,7 +1624,7 @@ export default function ModalFormServicio() {
                                   <button
                                     className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors sm:w-auto lg:w-auto lg:ml-auto"
                                     disabled={loading}
-                                    type="submit"
+                                    type="submit" // ✅ Solo este debe ser submit
                                   >
                                     {isEditing
                                       ? "Actualizar Servicio"

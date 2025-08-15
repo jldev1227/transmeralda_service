@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
+import { Skeleton } from "@heroui/skeleton";
 import Image from "next/image";
 
 import RouteAndDetails from "./routeAndDetails";
@@ -7,13 +8,75 @@ import RouteAndDetails from "./routeAndDetails";
 import { useTicketShare } from "@/components/shareTicketImage"; // Importar el hook
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
+import { apiClient } from "@/config/apiClient";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
   const { shareTicket } = useTicketShare(); // Usar el hook
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+
+  // Memoizar la función para evitar re-renders innecesarios
+  const getPresignedUrl = useCallback(async (s3Key: string) => {
+    try {
+      const response = await apiClient.get(`/api/documentos/url-firma`, {
+        params: { key: s3Key },
+      });
+
+      return response.data.url;
+    } catch (error) {
+      console.error("Error al obtener URL firmada:", error);
+
+      return null;
+    }
+  }, []);
 
   // Obtener el servicio real del contexto
   const servicio = servicioTicket?.servicio;
+
+  useEffect(() => {
+    const cargarFotoPerfil = async () => {
+      // Reset de estados
+      setFotoUrl(null);
+      setPhotoError(false);
+
+      const fotoPerfil = servicio?.conductor?.documentos?.find(
+        (doc) => doc.categoria === "FOTO_PERFIL",
+      );
+
+      if (fotoPerfil?.s3_key) {
+        setIsLoadingPhoto(true);
+        try {
+          const url = await getPresignedUrl(fotoPerfil.s3_key);
+
+          if (url) {
+            setFotoUrl(url);
+          } else {
+            setPhotoError(true);
+            console.warn("No se pudo obtener la URL de la foto");
+          }
+        } catch (error) {
+          console.error("Error al cargar foto de perfil:", error);
+          setPhotoError(true);
+        } finally {
+          setIsLoadingPhoto(false);
+        }
+      } else {
+        setIsLoadingPhoto(false);
+      }
+    };
+
+    if (servicio?.conductor) {
+      cargarFotoPerfil();
+    }
+  }, [servicio?.conductor?.id, getPresignedUrl]); // Depender del ID del conductor en lugar del objeto completo
+
+  // Función para manejar errores de carga de imagen
+  const handleImageError = useCallback(() => {
+    setPhotoError(true);
+    setFotoUrl(null);
+  }, []);
 
   // Si no hay servicio, mostrar mensaje o regresar null
   if (!servicio) {
@@ -47,6 +110,56 @@ export default function ModalTicket() {
   // Función para manejar el compartir
   const handleShare = async () => {
     await shareTicket(servicio);
+  };
+
+  // Componente para la foto del conductor
+  const ConductorPhoto = () => {
+    if (!fotoUrl) return null;
+
+    if (isLoadingPhoto) {
+      return (
+        <Skeleton className="w-30 md:w-full h-40 md:h-48 rounded-lg">
+          <div className="h-full w-full bg-gray-200 rounded-lg" />
+        </Skeleton>
+      );
+    }
+
+    return (
+      <div className="border-2 border-gray-300 rounded-lg relative overflow-hidden bg-gray-50">
+        {fotoUrl && (
+          <Image
+            alt="Foto conductor asignado"
+            className="object-cover rounded-lg transition-opacity duration-300"
+            height={192}
+            priority={false} // No es crítica para el LCP
+            src={fotoUrl}
+            width={210}
+            onError={handleImageError}
+          />
+        )}
+        {/* Overlay para estado de loading/error */}
+        {photoError && !isLoadingPhoto && (
+          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <svg
+                className="mx-auto h-8 w-8 mb-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                />
+              </svg>
+              <span className="text-xs">Sin foto</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -107,17 +220,7 @@ export default function ModalTicket() {
                   <div className="flex flex-col md:flex-row">
                     {/* Sección izquierda - espacio para foto del conductor */}
                     <div className="flex flex-row items-center gap-4 md:flex-col w-full md:w-2/6 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
-                      <div className="border-2 border-gray-300 rounded-lg w-30 md:w-full h-40 md:h-48 relative">
-                        <Image
-                          fill
-                          alt="Foto conductor asignado"
-                          className="object-cover rounded-lg"
-                          src={
-                            servicio.conductor.foto_url ??
-                            "/assets/not_user.avif"
-                          }
-                        />
-                      </div>
+                      <ConductorPhoto />
                       <div>
                         <div>
                           <h3 className={`font-bold text-emerald-600`}>

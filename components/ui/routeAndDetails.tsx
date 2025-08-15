@@ -63,17 +63,19 @@ export default function RouteAndDetails({
         <div className="absolute right-0 -top-2 h-4 w-4 rounded-full bg-gray-200" />
       </div>
 
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-10 justify-between mt-4">
-        <div className="flex-1 mb-4 md:mb-0">
+      <div className="mt-4">
+        <div className="flex-1 flex justify-between mb-4 md:mb-0">
           <p className="text-xs md:text-sm text-gray-500">Cliente</p>
-          <p className="font-semibold break-words">
-            {servicio.cliente?.nombre || "Cliente no especificado"}
-          </p>
-          {servicio.cliente?.nit && (
-            <p className="text-xs text-gray-500 break-words">
-              NIT: {servicio.cliente.nit}
+          <div className="flex items-center gap-2">
+            <p className="font-semibold break-words">
+              {servicio.cliente?.nombre || "Cliente no especificado"}
             </p>
-          )}
+            {servicio.cliente?.nit && (
+              <p className="text-xs text-gray-500 break-words">
+                NIT: {servicio.cliente.nit}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex-1 mt-0 md:mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <p className="text-xs md:text-sm text-gray-500 font-medium">

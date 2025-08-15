@@ -26,6 +26,11 @@ export interface Conductor {
   email?: string;
   fecha_nacimiento?: Date;
   foto_url?: string;
+  documentos?: Array<{
+    categoria: string;
+    s3_key: string;
+    url?: string; // URL opcional para la foto
+  }>;
 }
 
 export interface Empresa {
@@ -267,6 +272,7 @@ export interface ServicioConRelaciones extends Servicio {
   conductor: Conductor;
   vehiculo: Vehiculo;
   cliente: Cliente;
+  es_creador: boolean; // Indica si el usuario actual es el creador del servicio
 }
 
 export interface VehicleTracking {
