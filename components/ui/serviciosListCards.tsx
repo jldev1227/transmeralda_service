@@ -70,7 +70,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
     if (servicio.estado === "realizado" || servicio.estado === "cancelado") {
@@ -92,7 +92,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
     if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
@@ -110,7 +110,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
     if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
@@ -128,7 +128,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // Establecer el ID del servicio y abrir el modal
     // Asegurarse de que el ID no sea undefined antes de establecerlo
@@ -143,7 +143,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     // No mostrar botón de edición si el servicio está completado o cancelado
     if (
@@ -340,7 +340,7 @@ const ServiciosListCards = ({
     e: MouseEvent<HTMLButtonElement>,
     id: string | undefined,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onPointerDown del contenedor
+    e.stopPropagation(); // Evita que se active también el onClick del contenedor
 
     if (!id) return;
 
@@ -429,7 +429,7 @@ const ServiciosListCards = ({
                   handleSelectServicio(servicio);
                 }
               }}
-              onPointerDown={() => {
+              onClick={() => {
                 handleClosePanel();
                 handleSelectServicio(servicio);
               }}
@@ -442,7 +442,7 @@ const ServiciosListCards = ({
                   {showFinalizar(servicio.estado) && (
                     <button
                       className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onPointerDown={(e) => handleFinalizar(e, servicio)}
+                      onClick={(e) => handleFinalizar(e, servicio)}
                     >
                       <StampIcon size={16} />
                     </button>
@@ -450,7 +450,7 @@ const ServiciosListCards = ({
                   {showDelete(servicio.estado) && (
                     <button
                       className="bg-red-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onPointerDown={(e) => eliminarServicio(e, servicio.id)}
+                      onClick={(e) => eliminarServicio(e, servicio.id)}
                     >
                       <Trash2Icon size={16} />
                     </button>
@@ -465,7 +465,7 @@ const ServiciosListCards = ({
                   {/* Botón para ver historial - siempre visible */}
                   <button
                     className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                    onPointerDown={(e) => handleViewHistorial(e, servicio)}
+                    onClick={(e) => handleViewHistorial(e, servicio)}
                   >
                     <History size={16} />
                   </button>
@@ -474,7 +474,7 @@ const ServiciosListCards = ({
                   {shouldShowEditButton(servicio.estado) && (
                     <button
                       className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onPointerDown={(e) => handleEdit(e, servicio)}
+                      onClick={(e) => handleEdit(e, servicio)}
                     >
                       <Edit size={16} />
                     </button>
@@ -484,7 +484,7 @@ const ServiciosListCards = ({
                   {shouldGetTicket(servicio.estado) && (
                     <button
                       className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onPointerDown={(e) => handleViewTicket(e, servicio)}
+                      onClick={(e) => handleViewTicket(e, servicio)}
                     >
                       <Ticket size={16} />
                     </button>
@@ -494,7 +494,7 @@ const ServiciosListCards = ({
                   {showPlanillaNumber(servicio.estado) && (
                     <button
                       className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onPointerDown={(e) => handleViewLiquidacion(e, servicio)}
+                      onClick={(e) => handleViewLiquidacion(e, servicio)}
                     >
                       <Hash size={16} />
                     </button>
