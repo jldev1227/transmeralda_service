@@ -424,14 +424,14 @@ const ServiciosListCards = ({
             `}
               role="button"
               tabIndex={0}
+              onClick={() => {
+                handleClosePanel();
+                handleSelectServicio(servicio);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   handleSelectServicio(servicio);
                 }
-              }}
-              onClick={() => {
-                handleClosePanel();
-                handleSelectServicio(servicio);
               }}
             >
               {/* Contenedor para los botones flotantes left */}

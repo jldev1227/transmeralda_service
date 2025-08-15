@@ -409,20 +409,21 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${isOrigin
-        ? `<div class="text-sm">
+          ${
+            isOrigin
+              ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-        : `<div class="text-sm">
+              : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-      }
+          }
         </div>
       </div>
     `;
@@ -1383,30 +1384,30 @@ const EnhancedMapComponent = ({
       <div className="absolute bottom-safe right-5 space-y-2 flex flex-col z-[20]">
         {(user?.permisos.liquidador ||
           ["admin", "liquidador"].includes(user?.role || "")) && (
-            <Tooltip content="Liquidador de servicios" radius="sm">
-              <Button
-                isIconOnly
-                className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
-                radius="sm"
-                onPress={handleButtonPressLiquidar}
-              >
-                <ClipboardList color="#00bc7d" />
-              </Button>
-            </Tooltip>
-          )}
+          <Tooltip content="Liquidador de servicios" radius="sm">
+            <Button
+              isIconOnly
+              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
+              radius="sm"
+              onPress={handleButtonPressLiquidar}
+            >
+              <ClipboardList color="#00bc7d" />
+            </Button>
+          </Tooltip>
+        )}
         {(user?.permisos.gestor_servicio ||
           ["admin", "gestor_servicio"].includes(user?.role || "")) && (
-            <Tooltip content="Agregar servicio" radius="sm">
-              <Button
-                isIconOnly
-                className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
-                radius="sm"
-                onPress={handleButtonPressForm}
-              >
-                <PlusIcon color="#00bc7d" />
-              </Button>
-            </Tooltip>
-          )}
+          <Tooltip content="Agregar servicio" radius="sm">
+            <Button
+              isIconOnly
+              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
+              radius="sm"
+              onPress={handleButtonPressForm}
+            >
+              <PlusIcon color="#00bc7d" />
+            </Button>
+          </Tooltip>
+        )}
       </div>
 
       {selectedServicio?.estado === "en_curso" &&

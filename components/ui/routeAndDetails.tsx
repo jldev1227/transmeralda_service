@@ -12,15 +12,15 @@ export default function RouteAndDetails({
   const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   return (
-    <div className="px-2 md:px-0">
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between mb-6 gap-4 md:gap-0">
-        <div className="w-full md:w-2/5 mb-3 md:mb-0">
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-0">
+        <div className="w-full md:w-2/5 md:mb-0">
           <p className="text-xs md:text-sm text-gray-500">Origen</p>
           <p className="font-semibold text-base md:text-lg break-words">
             {servicio.origen?.nombre_municipio || "No definido"}
           </p>
           <p className="text-xs md:text-sm text-gray-700 break-words">
-            {servicio.origen_especifico}
+            {servicio.origen_especifico || "No especificado"}
           </p>
         </div>
         {!isMobile && (
@@ -36,7 +36,7 @@ export default function RouteAndDetails({
             {servicio.destino?.nombre_municipio || "No definido"}
           </p>
           <p className="text-xs md:text-sm text-gray-700 break-words">
-            {servicio.destino_especifico}
+            {servicio.destino_especifico || "No especificado"}
           </p>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function RouteAndDetails({
       </div>
 
       <div className="mt-4">
-        <div className="flex-1 flex justify-between mb-4 md:mb-0 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex-1 flex flex-col sm:flex-row justify-between mb-4 md:mb-0 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <p className="text-xs md:text-sm text-gray-500 font-medium">
             Cliente:
           </p>
@@ -73,9 +73,7 @@ export default function RouteAndDetails({
               {servicio.cliente?.nombre || "Cliente no especificado"}
             </p>
             {servicio.cliente?.nit && (
-              <p className="text-xs text-gray-500 break-words">
-                NIT: {servicio.cliente.nit}
-              </p>
+              <p className="text-gray-500">NIT: {servicio.cliente.nit}</p>
             )}
           </div>
         </div>
