@@ -409,21 +409,20 @@ const EnhancedMapComponent = ({
 
           <div class="popup-divider"></div>
 
-          ${
-            isOrigin
-              ? `<div class="text-sm">
+          ${isOrigin
+        ? `<div class="text-sm">
               <div>
                 <div class="font-medium">Tipo de servicio:</div>
                 <div class="text-sm text-gray-500 mt-1">${getServiceTypeText(selectedServicio.proposito_servicio || "")}</div>
               </div>
             </div>`
-              : `<div class="text-sm">
+        : `<div class="text-sm">
               <div>
                 <div class="font-medium">Distancia</div>
                 <div>${selectedServicio.routeDistance} km</div>
               </div>
             </div>`
-          }
+      }
         </div>
       </div>
     `;
@@ -1073,9 +1072,9 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute top-28 z-30 left-2 right-2 md:w-80 md:top-2.5 md:right-14 md:left-auto bg-white rounded-lg shadow-lg mt-2">
+        <div className="animate-fade-up absolute top-28 z-30 left-2 right-2 md:w-80 md:top-2.5 md:right-14 md:left-auto bg-white rounded-lg shadow-lg mt-2 max-h-[80dvh] overflow-y-auto">
           {/* Header siempre visible - no hace scroll */}
-          <div className="p-4 border-b md:border-b-0 flex-shrink-0">
+          <div className="sticky top-0 p-4 border-b flex-shrink-0 bg-white">
             <div className="flex justify-between items-center">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold md:mb-3">
@@ -1083,7 +1082,7 @@ const EnhancedMapComponent = ({
                 </h3>
 
                 {/* Info simplificada para móvil/tablet */}
-                <div className="md:hidden mt-2 space-y-1">
+                <div className="mt-2 space-y-1">
                   <div className="flex flex-col gap-1">
                     <p className="text-sm text-gray-600">
                       <span className="font-medium text-black">
@@ -1136,15 +1135,6 @@ const EnhancedMapComponent = ({
                       <span>&nbsp;({selectedServicio.cliente.nit})</span>
                     </div>
                   )}
-
-                  {selectedServicio.observaciones && (
-                    <div className="text-sm text-gray-600">
-                      <span>Observaciones:&nbsp;</span>
-                      <span className="font-medium text-black">
-                        {selectedServicio.observaciones}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1158,7 +1148,7 @@ const EnhancedMapComponent = ({
                 </button>
                 {/* Botón expandir/contraer - Solo visible en móvil */}
                 <button
-                  className="hidden md:block text-gray-500 hover:text-gray-700 p-1 transition-colors"
+                  className="text-gray-500 hover:text-gray-700 p-1 transition-colors"
                   onClick={toggleExpanded}
                 >
                   {isExpanded ? (
@@ -1173,9 +1163,9 @@ const EnhancedMapComponent = ({
 
           {/* Contenido expandible con scroll */}
           <div
-            className={`
+            className={`hidden
               overflow-hidden transition-all duration-300 ease-in-out flex-1
-              ${isExpanded ? "block" : "hidden"}
+              ${isExpanded ? "md:block" : "hidden"}
             `}
           >
             <div className="overflow-y-auto h-full">
@@ -1393,30 +1383,30 @@ const EnhancedMapComponent = ({
       <div className="absolute bottom-safe right-5 space-y-2 flex flex-col z-[20]">
         {(user?.permisos.liquidador ||
           ["admin", "liquidador"].includes(user?.role || "")) && (
-          <Tooltip content="Liquidador de servicios" radius="sm">
-            <Button
-              isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
-              radius="sm"
-              onPress={handleButtonPressLiquidar}
-            >
-              <ClipboardList color="#00bc7d" />
-            </Button>
-          </Tooltip>
-        )}
+            <Tooltip content="Liquidador de servicios" radius="sm">
+              <Button
+                isIconOnly
+                className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
+                radius="sm"
+                onPress={handleButtonPressLiquidar}
+              >
+                <ClipboardList color="#00bc7d" />
+              </Button>
+            </Tooltip>
+          )}
         {(user?.permisos.gestor_servicio ||
           ["admin", "gestor_servicio"].includes(user?.role || "")) && (
-          <Tooltip content="Agregar servicio" radius="sm">
-            <Button
-              isIconOnly
-              className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
-              radius="sm"
-              onPress={handleButtonPressForm}
-            >
-              <PlusIcon color="#00bc7d" />
-            </Button>
-          </Tooltip>
-        )}
+            <Tooltip content="Agregar servicio" radius="sm">
+              <Button
+                isIconOnly
+                className="text-sm font-medium bg-white h-12 w-12 shadow-lg border"
+                radius="sm"
+                onPress={handleButtonPressForm}
+              >
+                <PlusIcon color="#00bc7d" />
+              </Button>
+            </Tooltip>
+          )}
       </div>
 
       {selectedServicio?.estado === "en_curso" &&

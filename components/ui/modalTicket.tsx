@@ -9,6 +9,7 @@ import { useTicketShare } from "@/components/shareTicketImage"; // Importar el h
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
 import { apiClient } from "@/config/apiClient";
+import { useMediaQuery } from "react-responsive";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
@@ -16,6 +17,8 @@ export default function ModalTicket() {
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+
+  const isMobile = useMediaQuery({ maxWidth: 480 });
 
   // Memoizar la función para evitar re-renders innecesarios
   const getPresignedUrl = useCallback(async (s3Key: string) => {
@@ -216,7 +219,9 @@ export default function ModalTicket() {
                   <div className="flex flex-col md:flex-row">
                     {/* Sección izquierda - espacio para foto del conductor */}
                     <div className="flex flex-row items-center gap-4 md:flex-col w-full md:w-2/6 p-4 border-b md:border-b-0 md:border-r border-dashed border-gray-300">
-                      <ConductorPhoto />
+                      {!isMobile && (
+                        <ConductorPhoto />
+                      )}
                       <div>
                         <div>
                           <h3 className={`font-bold text-emerald-600`}>
