@@ -347,7 +347,6 @@ export default function ModalFormServicio() {
     e.preventDefault(); // ✅ Prevenir comportamiento por defecto
     e.stopPropagation();
 
-    console.log("click");
     // Validate required fields based on current step
     if (currentStep === 1) {
       // Step 1: Basic Info validation
@@ -427,7 +426,6 @@ export default function ModalFormServicio() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log("click submit");
     e.stopPropagation();
     e.preventDefault();
     setError(null);

@@ -64,8 +64,10 @@ export default function RouteAndDetails({
       </div>
 
       <div className="mt-4">
-        <div className="flex-1 flex justify-between mb-4 md:mb-0">
-          <p className="text-xs md:text-sm text-gray-500">Cliente</p>
+        <div className="flex-1 flex justify-between mb-4 md:mb-0 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-xs md:text-sm text-gray-500 font-medium">
+            Cliente:
+          </p>
           <div className="flex items-center gap-2">
             <p className="font-semibold break-words">
               {servicio.cliente?.nombre || "Cliente no especificado"}

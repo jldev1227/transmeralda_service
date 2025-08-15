@@ -114,8 +114,6 @@ export default function ModalTicket() {
 
   // Componente para la foto del conductor
   const ConductorPhoto = () => {
-    if (!fotoUrl) return null;
-
     if (isLoadingPhoto) {
       return (
         <Skeleton className="w-30 md:w-full h-40 md:h-48 rounded-lg">
@@ -125,18 +123,16 @@ export default function ModalTicket() {
     }
 
     return (
-      <div className="border-2 border-gray-300 rounded-lg relative overflow-hidden bg-gray-50">
-        {fotoUrl && (
-          <Image
-            alt="Foto conductor asignado"
-            className="object-cover rounded-lg transition-opacity duration-300"
-            height={192}
-            priority={false} // No es crítica para el LCP
-            src={fotoUrl}
-            width={210}
-            onError={handleImageError}
-          />
-        )}
+      <div className="rounded-lg relative overflow-hidden bg-gray-50">
+        <Image
+          alt="Foto conductor asignado"
+          className="object-cover rounded-lg transition-opacity duration-300"
+          height={192}
+          priority={false} // No es crítica para el LCP
+          src={fotoUrl || "/assets/not_user.avif"}
+          width={210}
+          onError={handleImageError}
+        />
         {/* Overlay para estado de loading/error */}
         {photoError && !isLoadingPhoto && (
           <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
