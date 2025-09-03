@@ -5,7 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react"; // al inicio del archivo
+import { MapPinIcon, TruckIcon, UserIcon, X, XIcon } from "lucide-react"; // al inicio del archivo
 import {
   AlertTriangle,
   ArrowDownIcon,
@@ -49,6 +49,8 @@ interface Filters {
   fechaRealizacion: string;
   propositoServicio: string;
   empresa: string;
+  vehiculo: string;
+  conductor: string;
 }
 
 const serviceTypeTextMap: Record<string, string> = {
@@ -76,6 +78,8 @@ const AdvancedDashboard = () => {
     selectedServicio,
     setSelectedServicio,
     empresas,
+    vehiculos,
+    conductores
   } = useService();
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
@@ -92,6 +96,8 @@ const AdvancedDashboard = () => {
     fechaRealizacion: "",
     propositoServicio: "",
     empresa: "",
+    vehiculo: "",
+    conductor: "",
   });
 
   const [sortOptions, setSortOptions] = useState<{
@@ -206,7 +212,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                      servicio.vehiculo.placa.toLowerCase(),
+                    servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -333,62 +339,117 @@ const AdvancedDashboard = () => {
     [fetchRouteGeometry],
   );
 
+  const limpiarFiltros = () => {
+    setFilters({
+      estado: "",
+      origen: "",
+      destino: "",
+      fechaSolicitud: "",
+      fechaRealizacion: "",
+      propositoServicio: "",
+      empresa: "",
+      vehiculo: "",
+      conductor: "",
+    });
+    setDateRange({ from: "", to: "" });
+    setDateFilterType("solicitud");
+    setSortOptions({ field: "fecha_solicitud", direction: "desc" });
+  };
+
+  const contarFiltrosActivos = () => {
+    let count = 0;
+    Object.values(filters).forEach(value => {
+      if (value && value.trim() !== "") count++;
+    });
+    if (dateRange.from || dateRange.to) count++;
+    return count;
+  };
+
   // Filter services
   const filteredServicios = servicios.filter((servicio) => {
     // Filtros existentes
     if (filters.estado && servicio.estado !== filters.estado) return false;
+
     if (
       filters.origen &&
       !servicio.origen_especifico
         .toLowerCase()
         .includes(filters.origen.toLowerCase())
-    )
-      return false;
+    ) return false;
+
     if (
       filters.destino &&
       !servicio.destino_especifico
         .toLowerCase()
         .includes(filters.destino.toLowerCase())
-    )
-      return false;
-    if (
-      filters.empresa &&
-      !servicio.cliente_id.toLowerCase().includes(filters.empresa.toLowerCase())
-    )
-      return false;
+    ) return false;
+
+    // ✅ CORREGIDO: Filtro por empresa con igualdad estricta
+    if (filters.empresa) {
+      const clienteId = servicio.cliente_id?.toString().toLowerCase() || '';
+      const filtroEmpresa = filters.empresa.toString().toLowerCase();
+
+      if (clienteId !== filtroEmpresa && !clienteId.includes(filtroEmpresa)) {
+        return false;
+      }
+    }
+
     if (
       filters.propositoServicio &&
       servicio.proposito_servicio !== filters.propositoServicio
-    )
-      return false;
+    ) return false;
 
-    // Filtrar por rango de fechas
+    // ✅ CORREGIDO: Filtro por vehículo con igualdad estricta
+    if (filters.vehiculo) {
+      const vehiculoId = servicio.vehiculo_id?.toString().toLowerCase() || '';
+      const filtroVehiculo = filters.vehiculo.toString().toLowerCase();
+
+      // Solo buscar en servicios que TIENEN vehiculo_id (no undefined/null/empty)
+      if (!servicio.vehiculo_id) return false;
+
+      // Verificar coincidencia exacta O que contenga el filtro
+      if (vehiculoId !== filtroVehiculo && !vehiculoId.includes(filtroVehiculo)) {
+        return false;
+      }
+    }
+
+    // ✅ CORREGIDO: Filtro por conductor con igualdad estricta
+    if (filters.conductor) {
+      const conductorNombre = `${servicio.conductor?.nombre || ''} ${servicio.conductor?.apellido || ''}`.toLowerCase().trim();
+      const conductorId = servicio.conductor_id?.toString().toLowerCase() || '';
+      const filtroConductor = filters.conductor.toString().toLowerCase();
+
+      // Solo buscar en servicios que TIENEN conductor
+      if (!servicio.conductor_id && !conductorNombre) return false;
+
+      // Verificar coincidencia exacta O que contenga el filtro
+      const nombreMatch = conductorNombre === filtroConductor || conductorNombre.includes(filtroConductor);
+      const idMatch = conductorId === filtroConductor || conductorId.includes(filtroConductor);
+
+      if (!nombreMatch && !idMatch) return false;
+    }
+
+    // Filtrar por rango de fechas (sin cambios)
     if (dateRange.from || dateRange.to) {
-      // Determinar qué campo de fecha usar según el tipo seleccionado
       const dateField =
         dateFilterType === "solicitud"
           ? servicio.fecha_solicitud
           : servicio.fecha_realizacion;
 
-      // Si no hay fecha de realización y ese es el filtro seleccionado, excluir
       if (dateFilterType === "realizacion" && !dateField) {
         return false;
       }
 
-      // Convertir la fecha del servicio a formato YYYY-MM-DD para comparación
       const serviceDate = dateField
         ? new Date(dateField).toISOString().split("T")[0]
         : "";
 
-      // Si no hay fecha válida, excluir
       if (!serviceDate) return false;
 
-      // Comprobar el rango "desde"
       if (dateRange.from && serviceDate < dateRange.from) {
         return false;
       }
 
-      // Comprobar el rango "hasta"
       if (dateRange.to && serviceDate > dateRange.to) {
         return false;
       }
@@ -400,6 +461,16 @@ const AdvancedDashboard = () => {
   const empresaOptions = empresas.map((empresa) => ({
     value: empresa.id,
     label: `${empresa.nombre} (NIT: ${empresa.nit})`,
+  }));
+
+  const vehiculoOptions = vehiculos.map((vehiculo) => ({
+    value: vehiculo.id,
+    label: `${vehiculo.placa} (${vehiculo.marca} ${vehiculo.modelo})`,
+  }));
+
+  const conductorOptions = conductores.map((conductor) => ({
+    value: conductor.id,
+    label: `${conductor.nombre} ${conductor.apellido}  (${conductor.numero_identificacion})`,
   }));
 
   function sortServicios(
@@ -459,6 +530,7 @@ const AdvancedDashboard = () => {
         : String(valueB).localeCompare(String(valueA));
     });
   }
+
   const sortedServices = sortServicios(
     filteredServicios,
     sortOptions.field,
@@ -533,411 +605,634 @@ const AdvancedDashboard = () => {
             {/* Filters */}
             <div className="p-4 md:p-4 border-b">
               <div className="mb-3">
-                <h3 className="font-semibold mb-2">Filtros</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">Filtros</h3>
+                  {/* ✅ Botón limpiador y contador */}  m        
+                  <div className="flex items-center gap-2">
+                    {contarFiltrosActivos() > 0 && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                        {contarFiltrosActivos()} activo{contarFiltrosActivos() !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={limpiarFiltros}
+                      className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors flex items-center gap-1"
+                      disabled={contarFiltrosActivos() === 0}
+                    >
+                      <XIcon className="w-3 h-3" />
+                      Limpiar filtros
+                    </button>
+                  </div>
+                </div>
+
                 <form
                   autoComplete="off"
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"
+                  className="space-y-4"
                   onSubmit={(e) => e.preventDefault()}
                 >
-                  {/* Estado */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      htmlFor="estado"
-                    >
-                      Estado
-                    </label>
-                    <select
-                      className="w-full p-2 border rounded-md text-sm"
-                      id="estado"
-                      value={filters.estado}
-                      onChange={(e) =>
-                        setFilters({ ...filters, estado: e.target.value })
-                      }
-                    >
-                      <option value="">Todos</option>
-                      <option value="solicitado">Solicitado</option>
-                      <option value="planificado">Planificado</option>
-                      <option value="en_curso">En curso</option>
-                      <option value="realizado">Realizado</option>
-                      <option value="planilla_asignada">
-                        Planilla asignada
-                      </option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
-
-                  {/* Tipo de Servicio */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      htmlFor="propositoServicio"
-                    >
-                      Tipo de Servicio
-                    </label>
-                    <select
-                      className="w-full p-2 border rounded-md text-sm"
-                      id="propositoServicio"
-                      value={filters.propositoServicio}
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          propositoServicio: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Todos</option>
-                      <option value="personal">Personal</option>
-                      <option value="herramienta">Herramienta</option>
-                      <option value="vehiculo">Posicionar vehículo</option>
-                    </select>
-                  </div>
-
-                  {/* Origen */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      htmlFor="origen"
-                    >
-                      Origen
-                    </label>
-                    <input
-                      className="w-full p-2 border rounded-md text-sm"
-                      id="origen"
-                      placeholder="Buscar origen..."
-                      type="text"
-                      value={filters.origen}
-                      onChange={(e) =>
-                        setFilters({ ...filters, origen: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  {/* Destino */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      htmlFor="destino"
-                    >
-                      Destino
-                    </label>
-                    <input
-                      className="w-full p-2 border rounded-md text-sm"
-                      id="destino"
-                      placeholder="Buscar destino..."
-                      type="text"
-                      value={filters.destino}
-                      onChange={(e) =>
-                        setFilters({ ...filters, destino: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  {/* Empresa */}
-                  <div className="sm:col-span-2">
-                    <label
-                      className="block text-sm font-medium mb-1 truncate max-w-full"
-                      htmlFor="empresa"
-                    >
-                      Empresa
-                    </label>
-                    <div className="relative shadow-sm rounded-md group transition-all">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <BuildingIcon className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <SelectReact
-                        isClearable
-                        isSearchable
-                        required
-                        className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
-                        classNamePrefix="react-select"
-                        inputId="empresa"
-                        menuPortalTarget={
-                          typeof window !== "undefined"
-                            ? document.body
-                            : undefined
+                  {/* ✅ FILA 1: Filtros principales más usados */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* Estado */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="estado"
+                      >
+                        Estado
+                      </label>
+                      <select
+                        className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        id="estado"
+                        value={filters.estado}
+                        onChange={(e) =>
+                          setFilters({ ...filters, estado: e.target.value })
                         }
-                        name="empresa"
-                        options={empresaOptions}
-                        placeholder="Seleccione una empresa"
-                        styles={{
-                          container: (base) => ({
-                            ...base,
-                            width: "100%",
-                            minWidth: 0,
-                            maxWidth: "100%",
-                          }),
-                          menuPortal: (base) => ({
-                            ...base,
-                            zIndex: 9999,
-                          }),
-                          control: (base) => ({
-                            ...base,
-                            border: "none",
-                            boxShadow: undefined,
-                            "&:hover": { borderColor: "#059669" },
-                            backgroundColor: "white",
-                            transition: "box-shadow 0.2s",
-                            minWidth: 0,
-                            maxWidth: "100%",
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: "#9ca3af",
-                            fontSize: "0.875rem",
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: "#1f2937",
-                            fontSize: "0.875rem",
-                            maxWidth: "calc(100% - 2rem)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            zIndex: 50,
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            color: state.isSelected ? "#059669" : "#1f2937",
-                            backgroundColor: state.isFocused
-                              ? "#f0fdf4"
-                              : "white",
-                            fontSize: "0.875rem",
-                          }),
-                          dropdownIndicator: (base) => ({
-                            ...base,
-                            color: "#374151",
-                            paddingRight: "0rem",
-                          }),
-                          indicatorSeparator: () => ({
-                            display: "none",
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: "#1f2937",
-                            fontSize: "0.875rem",
-                          }),
-                          clearIndicator: (base) => ({
-                            ...base,
-                            color: "#9ca3af",
-                            "&:hover": { color: "#ef4444" },
-                            padding: "0px 8px",
-                          }),
-                        }}
-                        onChange={(option) =>
+                      >
+                        <option value="">Todos</option>
+                        <option value="solicitado">Solicitado</option>
+                        <option value="planificado">Planificado</option>
+                        <option value="en_curso">En curso</option>
+                        <option value="realizado">Realizado</option>
+                        <option value="planilla_asignada">Planilla asignada</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </div>
+
+                    {/* Tipo de Servicio */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="propositoServicio"
+                      >
+                        Tipo de Servicio
+                      </label>
+                      <select
+                        className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        id="propositoServicio"
+                        value={filters.propositoServicio}
+                        onChange={(e) =>
                           setFilters({
                             ...filters,
-                            empresa: option ? option.value : "",
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rango de Fechas */}
-                  <div className="sm:col-span-2">
-                    <p className="block text-sm font-medium mb-1">
-                      Rango de Fechas
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          checked={dateFilterType === "solicitud"}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                          id="fechaSolicitudRadio"
-                          name="tipoFecha"
-                          type="radio"
-                          value="solicitud"
-                          onChange={() => setDateFilterType("solicitud")}
-                        />
-                        <label
-                          className="text-sm text-gray-700"
-                          htmlFor="fechaSolicitudRadio"
-                        >
-                          Fecha de Solicitud
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          checked={dateFilterType === "realizacion"}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                          id="fechaRealizacionRadio"
-                          name="tipoFecha"
-                          type="radio"
-                          value="realizacion"
-                          onChange={() => setDateFilterType("realizacion")}
-                        />
-                        <label
-                          className="text-sm text-gray-700"
-                          htmlFor="fechaRealizacionRadio"
-                        >
-                          Fecha de Realización
-                        </label>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      <div>
-                        <label
-                          className="block text-xs font-medium mb-1"
-                          htmlFor="fechaDesde"
-                        >
-                          Desde
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <CalendarIcon className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                            id="fechaDesde"
-                            type="date"
-                            value={dateRange.from || ""}
-                            onChange={(e) =>
-                              setDateRange({
-                                ...dateRange,
-                                from: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label
-                          className="block text-xs font-medium mb-1"
-                          htmlFor="fechaHasta"
-                        >
-                          Hasta
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <CalendarIcon className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                            id="fechaHasta"
-                            min={dateRange.from || undefined}
-                            type="date"
-                            value={dateRange.to || ""}
-                            onChange={(e) =>
-                              setDateRange({ ...dateRange, to: e.target.value })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Botones de acción rápida para fechas */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <button
-                        className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
-                        type="button"
-                        onClick={() => {
-                          const today = new Date().toISOString().split("T")[0];
-
-                          setDateRange({ from: today, to: today });
-                        }}
-                      >
-                        Hoy
-                      </button>
-                      <button
-                        className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
-                        type="button"
-                        onClick={() => {
-                          const today = new Date();
-                          const lastWeek = new Date();
-
-                          lastWeek.setDate(today.getDate() - 7);
-                          setDateRange({
-                            from: lastWeek.toISOString().split("T")[0],
-                            to: today.toISOString().split("T")[0],
-                          });
-                        }}
-                      >
-                        Última semana
-                      </button>
-                      <button
-                        className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
-                        type="button"
-                        onClick={() => {
-                          const today = new Date();
-                          const lastMonth = new Date();
-
-                          lastMonth.setMonth(today.getMonth() - 1);
-                          setDateRange({
-                            from: lastMonth.toISOString().split("T")[0],
-                            to: today.toISOString().split("T")[0],
-                          });
-                        }}
-                      >
-                        Último mes
-                      </button>
-                      <button
-                        className="px-2 py-1 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100"
-                        type="button"
-                        onClick={() => {
-                          setDateRange({ from: "", to: "" });
-                        }}
-                      >
-                        Limpiar fechas
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Ordenación */}
-                  <div className="sm:col-span-2 flex flex-col gap-2 mt-2">
-                    <label
-                      className="text-sm font-medium whitespace-nowrap"
-                      htmlFor="sortBy"
-                    >
-                      Ordenar por:
-                    </label>
-                    <div className="flex w-full justify-between items-center gap-2">
-                      <select
-                        className="text-sm border w-full rounded-md p-1.5 bg-white"
-                        id="sortBy"
-                        value={sortOptions.field}
-                        onChange={(e) =>
-                          setSortOptions({
-                            ...sortOptions,
-                            field: e.target.value,
+                            propositoServicio: e.target.value,
                           })
                         }
                       >
-                        <option value="fecha_solicitud">
-                          Fecha de Solicitud
-                        </option>
-                        <option value="fecha_realizacion">
-                          Fecha de Realización
-                        </option>
-                        <option value="estado">Estado</option>
-                        <option value="origen_especifico">Origen</option>
-                        <option value="destino_especifico">Destino</option>
-                        <option value="createdAt">Fecha de Creación</option>
+                        <option value="">Todos</option>
+                        <option value="personal">Personal</option>
+                        <option value="herramienta">Herramienta</option>
+                        <option value="vehiculo">Posicionar vehículo</option>
                       </select>
-                      <button
-                        className="p-1.5 rounded-md border hover:bg-gray-50 transition-colors"
-                        title={
-                          sortOptions.direction === "asc"
-                            ? "Ascendente"
-                            : "Descendente"
-                        }
-                        type="button"
-                        onClick={() =>
-                          setSortOptions({
-                            ...sortOptions,
-                            direction:
-                              sortOptions.direction === "asc" ? "desc" : "asc",
-                          })
-                        }
+                    </div>
+
+                    {/* Origen */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="origen"
                       >
-                        {sortOptions.direction === "asc" ? (
-                          <ArrowUpIcon className="w-5 h-5 text-gray-600" />
-                        ) : (
-                          <ArrowDownIcon className="w-5 h-5 text-gray-600" />
-                        )}
-                      </button>
+                        Origen
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPinIcon className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <input
+                          className="pl-10 w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                          id="origen"
+                          placeholder="Buscar origen..."
+                          type="text"
+                          value={filters.origen}
+                          onChange={(e) =>
+                            setFilters({ ...filters, origen: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Destino */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="destino"
+                      >
+                        Destino
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPinIcon className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <input
+                          className="pl-10 w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                          id="destino"
+                          placeholder="Buscar destino..."
+                          type="text"
+                          value={filters.destino}
+                          onChange={(e) =>
+                            setFilters({ ...filters, destino: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ FILA 2: Selects importantes (Empresa, Vehículo, Conductor) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                    {/* Empresa */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="empresa"
+                      >
+                        Empresa
+                      </label>
+                      <div className="relative shadow-sm rounded-md group transition-all">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <BuildingIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <SelectReact
+                          isClearable
+                          isSearchable
+                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
+                          classNamePrefix="react-select"
+                          inputId="empresa"
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : undefined
+                          }
+                          name="empresa"
+                          options={empresaOptions}
+                          placeholder="Seleccione una empresa"
+                          styles={{
+                            container: (base) => ({
+                              ...base,
+                              width: "100%",
+                            }),
+                            menuPortal: (base) => ({
+                              ...base,
+                              zIndex: 9999,
+                            }),
+                            control: (base) => ({
+                              ...base,
+                              border: "1px solid #d1d5db",
+                              boxShadow: "none",
+                              "&:hover": { borderColor: "#059669" },
+                              backgroundColor: "white",
+                              transition: "box-shadow 0.2s",
+                              paddingLeft: "2.5rem",
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              fontSize: "0.875rem",
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              zIndex: 50,
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              color: state.isSelected ? "#059669" : "#1f2937",
+                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
+                              fontSize: "0.875rem",
+                            }),
+                            dropdownIndicator: (base) => ({
+                              ...base,
+                              color: "#374151",
+                            }),
+                            indicatorSeparator: () => ({
+                              display: "none",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            clearIndicator: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              "&:hover": { color: "#ef4444" },
+                            }),
+                          }}
+                          value={empresaOptions.find(option => option.value === filters.empresa) || null}
+                          onChange={(option) =>
+                            setFilters({
+                              ...filters,
+                              empresa: option ? option.value : "",
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Vehículo */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="vehiculo"
+                      >
+                        Vehículo
+                      </label>
+                      <div className="relative shadow-sm rounded-md group transition-all">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <BuildingIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <SelectReact
+                          isClearable
+                          isSearchable
+                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
+                          classNamePrefix="react-select"
+                          inputId="vehiculo"
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : undefined
+                          }
+                          name="vehiculo"
+                          options={vehiculoOptions}
+                          placeholder="Seleccione un vehículo"
+                          styles={{
+                            container: (base) => ({
+                              ...base,
+                              width: "100%",
+                            }),
+                            menuPortal: (base) => ({
+                              ...base,
+                              zIndex: 9999,
+                            }),
+                            control: (base) => ({
+                              ...base,
+                              border: "1px solid #d1d5db",
+                              boxShadow: "none",
+                              "&:hover": { borderColor: "#059669" },
+                              backgroundColor: "white",
+                              transition: "box-shadow 0.2s",
+                              paddingLeft: "2.5rem",
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              fontSize: "0.875rem",
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              zIndex: 50,
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              color: state.isSelected ? "#059669" : "#1f2937",
+                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
+                              fontSize: "0.875rem",
+                            }),
+                            dropdownIndicator: (base) => ({
+                              ...base,
+                              color: "#374151",
+                            }),
+                            indicatorSeparator: () => ({
+                              display: "none",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            clearIndicator: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              "&:hover": { color: "#ef4444" },
+                            }),
+                          }}
+                          value={vehiculoOptions.find(option => option.value === filters.vehiculo) || null}
+                          onChange={(option) =>
+                            setFilters({
+                              ...filters,
+                              vehiculo: option ? option.value : "",
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Conductor */}
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        htmlFor="conductor"
+                      >
+                        Conductor
+                      </label>
+                      <div className="relative shadow-sm rounded-md group transition-all">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                          <BuildingIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <SelectReact
+                          isClearable
+                          isSearchable
+                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
+                          classNamePrefix="react-select"
+                          inputId="conductor"
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : undefined
+                          }
+                          name="conductor"
+                          options={conductorOptions}
+                          placeholder="Seleccione un conductor"
+                          styles={{
+                            container: (base) => ({
+                              ...base,
+                              width: "100%",
+                            }),
+                            menuPortal: (base) => ({
+                              ...base,
+                              zIndex: 9999,
+                            }),
+                            control: (base) => ({
+                              ...base,
+                              border: "1px solid #d1d5db",
+                              boxShadow: "none",
+                              "&:hover": { borderColor: "#059669" },
+                              backgroundColor: "white",
+                              transition: "box-shadow 0.2s",
+                              paddingLeft: "2.5rem",
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              fontSize: "0.875rem",
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              zIndex: 50,
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              color: state.isSelected ? "#059669" : "#1f2937",
+                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
+                              fontSize: "0.875rem",
+                            }),
+                            dropdownIndicator: (base) => ({
+                              ...base,
+                              color: "#374151",
+                            }),
+                            indicatorSeparator: () => ({
+                              display: "none",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              color: "#1f2937",
+                              fontSize: "0.875rem",
+                            }),
+                            clearIndicator: (base) => ({
+                              ...base,
+                              color: "#9ca3af",
+                              "&:hover": { color: "#ef4444" },
+                            }),
+                          }}
+                          value={conductorOptions.find(option => option.value === filters.conductor) || null}
+                          onChange={(option) =>
+                            setFilters({
+                              ...filters,
+                              conductor: option ? option.value : "",
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ FILA 3: Rango de Fechas */}
+                  <div className="border-t pt-4">
+                    <p className="block text-sm font-medium mb-3">
+                      Filtrar por Fechas
+                    </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Tipo de fecha */}
+                      <div>
+                        <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              checked={dateFilterType === "solicitud"}
+                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                              id="fechaSolicitudRadio"
+                              name="tipoFecha"
+                              type="radio"
+                              value="solicitud"
+                              onChange={() => setDateFilterType("solicitud")}
+                            />
+                            <label
+                              className="text-sm text-gray-700"
+                              htmlFor="fechaSolicitudRadio"
+                            >
+                              Fecha de Solicitud
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              checked={dateFilterType === "realizacion"}
+                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                              id="fechaRealizacionRadio"
+                              name="tipoFecha"
+                              type="radio"
+                              value="realizacion"
+                              onChange={() => setDateFilterType("realizacion")}
+                            />
+                            <label
+                              className="text-sm text-gray-700"
+                              htmlFor="fechaRealizacionRadio"
+                            >
+                              Fecha de Realización
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Campos de fecha */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label
+                              className="block text-xs font-medium mb-1"
+                              htmlFor="fechaDesde"
+                            >
+                              Desde
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                              <input
+                                className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                id="fechaDesde"
+                                type="date"
+                                value={dateRange.from || ""}
+                                onChange={(e) =>
+                                  setDateRange({
+                                    ...dateRange,
+                                    from: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label
+                              className="block text-xs font-medium mb-1"
+                              htmlFor="fechaHasta"
+                            >
+                              Hasta
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                              <input
+                                className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                id="fechaHasta"
+                                min={dateRange.from || undefined}
+                                type="date"
+                                value={dateRange.to || ""}
+                                onChange={(e) =>
+                                  setDateRange({ ...dateRange, to: e.target.value })
+                                }
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botones de acción rápida */}
+                      <div>
+                        <label className="block text-xs font-medium mb-1">
+                          Acciones Rápidas
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+                          <button
+                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
+                            type="button"
+                            onClick={() => {
+                              const today = new Date().toISOString().split("T")[0];
+                              setDateRange({ from: today, to: today });
+                            }}
+                          >
+                            Hoy
+                          </button>
+                          <button
+                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
+                            type="button"
+                            onClick={() => {
+                              const today = new Date();
+                              const lastWeek = new Date();
+                              lastWeek.setDate(today.getDate() - 7);
+                              setDateRange({
+                                from: lastWeek.toISOString().split("T")[0],
+                                to: today.toISOString().split("T")[0],
+                              });
+                            }}
+                          >
+                            Última semana
+                          </button>
+                          <button
+                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
+                            type="button"
+                            onClick={() => {
+                              const today = new Date();
+                              const lastMonth = new Date();
+                              lastMonth.setMonth(today.getMonth() - 1);
+                              setDateRange({
+                                from: lastMonth.toISOString().split("T")[0],
+                                to: today.toISOString().split("T")[0],
+                              });
+                            }}
+                          >
+                            Último mes
+                          </button>
+                          <button
+                            className="px-3 py-2 text-xs rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                            type="button"
+                            onClick={() => {
+                              setDateRange({ from: "", to: "" });
+                            }}
+                          >
+                            Limpiar fechas
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ FILA 4: Ordenación */}
+                  <div className="border-t pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+                      <div className="sm:col-span-2 lg:col-span-2">
+                        <label
+                          className="block text-sm font-medium mb-1"
+                          htmlFor="sortBy"
+                        >
+                          Ordenar por
+                        </label>
+                        <select
+                          className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                          id="sortBy"
+                          value={sortOptions.field}
+                          onChange={(e) =>
+                            setSortOptions({
+                              ...sortOptions,
+                              field: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="fecha_solicitud">Fecha de Solicitud</option>
+                          <option value="fecha_realizacion">Fecha de Realización</option>
+                          <option value="estado">Estado</option>
+                          <option value="origen_especifico">Origen</option>
+                          <option value="destino_especifico">Destino</option>
+                          <option value="createdAt">Fecha de Creación</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Dirección
+                        </label>
+                        <button
+                          className="w-full p-2 rounded-md border hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                          title={
+                            sortOptions.direction === "asc"
+                              ? "Ascendente"
+                              : "Descendente"
+                          }
+                          type="button"
+                          onClick={() =>
+                            setSortOptions({
+                              ...sortOptions,
+                              direction:
+                                sortOptions.direction === "asc" ? "desc" : "asc",
+                            })
+                          }
+                        >
+                          {sortOptions.direction === "asc" ? (
+                            <>
+                              <ArrowUpIcon className="w-4 h-4 text-gray-600" />
+                              <span className="text-sm">Ascendente</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowDownIcon className="w-4 h-4 text-gray-600" />
+                              <span className="text-sm">Descendente</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </form>

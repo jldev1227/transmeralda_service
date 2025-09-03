@@ -150,6 +150,9 @@ interface ServiceContextType {
   servicioEditar: ServicioEditar;
   servicioTicket: ServicioTicket;
   servicioPlanilla: ServicioLiquidar;
+  vehiculoCreado: Vehiculo | null;
+  conductorCreado: Conductor | null;
+  empresaCreado: Empresa | null;
 
   // handle Modals
   handleModalForm: (servicio?: ServicioConRelaciones | null) => void;
@@ -426,6 +429,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [servicioPlanilla, setServicioPlanilla] = useState<ServicioTicket>({
     servicio: null,
   });
+  const [vehiculoCreado, setVehiculoCreado] = useState<Vehiculo | null>(null);
+  const [conductorCreado, setConductorCreado] = useState<Conductor | null>(
+    null,
+  );
+  const [empresaCreado, setEmpresaCreado] = useState<Empresa | null>(null);
 
   // Obtener todas las servicios
   const obtenerServicios = useCallback(async (): Promise<void> => {
@@ -1255,7 +1263,14 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         ]);
         const { id, nombre, nit } = data;
 
-        setEmpresas((prev) => [...prev, { id, nombre, nit }]);
+        const empresaCreada = {
+          id,
+          nombre,
+          nit,
+        };
+
+        setEmpresas((prev) => [...prev, empresaCreada]);
+        setEmpresaCreado(empresaCreada);
         addToast({
           title: "Acabas de registrar una nueva Empresa!",
           description: `Has registrado la empresa: "${data.nombre}" con el NIT: "${data.nit}"`,
@@ -1325,17 +1340,17 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           tipo_identificacion,
         } = data;
 
-        setConductores((prev) => [
-          ...prev,
-          {
-            id,
-            nombre,
-            apellido,
-            numero_identificacion,
-            telefono,
-            tipo_identificacion,
-          },
-        ]);
+        const conductorCreado = {
+          id,
+          nombre,
+          apellido,
+          numero_identificacion,
+          telefono,
+          tipo_identificacion,
+        };
+
+        setConductores((prev) => [...prev, conductorCreado]);
+        setConductorCreado(conductorCreado);
 
         addToast({
           title: "Se acaba de realizar el registro de un nuevo Conductor!",
@@ -1357,10 +1372,19 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         const { id, placa, marca, clase_vehiculo, linea, modelo, color } = data;
 
-        setVehiculos((prev) => [
-          ...prev,
-          { id, placa, marca, clase_vehiculo, linea, modelo, color },
-        ]);
+        const vehiculoCreado = {
+          id,
+          placa,
+          marca,
+          clase_vehiculo,
+          linea,
+          modelo,
+          color,
+        };
+
+        setVehiculos((prev) => [...prev, vehiculoCreado]);
+
+        setVehiculoCreado(vehiculoCreado);
 
         addToast({
           title: "Se acaba de realizar el registro de un nuevo Vehículo!",
@@ -1485,6 +1509,9 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicio,
     servicioTicket,
     servicioPlanilla,
+    vehiculoCreado,
+    empresaCreado,
+    conductorCreado,
     municipios,
     conductores,
     vehiculos,

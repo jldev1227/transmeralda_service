@@ -1073,7 +1073,7 @@ const EnhancedMapComponent = ({
       </div>
 
       {selectedServicio && detallesVisible && (
-        <div className="animate-fade-up absolute top-28 z-30 left-2 right-2 md:w-80 md:top-2.5 md:right-14 md:left-auto bg-white rounded-lg shadow-lg mt-2 max-h-[80dvh] overflow-y-auto">
+        <div className="animate-fade-up absolute top-28 z-30 left-2 right-2 md:w-96 md:top-2.5 md:right-14 md:left-auto bg-white rounded-lg shadow-lg mt-2 max-h-[80dvh] overflow-y-auto">
           {/* Header siempre visible - no hace scroll */}
           <div className="sticky top-0 p-4 border-b flex-shrink-0 bg-white">
             <div className="flex justify-between items-center">
@@ -1133,7 +1133,7 @@ const EnhancedMapComponent = ({
                       <span className="font-medium text-black">
                         {selectedServicio.cliente.nombre}
                       </span>
-                      <span>&nbsp;({selectedServicio.cliente.nit})</span>
+                      <span>({selectedServicio.cliente.nit})</span>
                     </div>
                   )}
                 </div>
@@ -1149,7 +1149,7 @@ const EnhancedMapComponent = ({
                 </button>
                 {/* Botón expandir/contraer - Solo visible en móvil */}
                 <button
-                  className="text-gray-500 hover:text-gray-700 p-1 transition-colors"
+                  className="hidden md:block text-gray-500 hover:text-gray-700 p-1 transition-colors"
                   onClick={toggleExpanded}
                 >
                   {isExpanded ? (
@@ -1172,18 +1172,16 @@ const EnhancedMapComponent = ({
             <div className="overflow-y-auto h-full">
               <div className="p-4 md:pt-0 space-y-3">
                 {/* Info completa - expandible en móvil, siempre visible en desktop */}
-                <div>
-                  <div className="mb-3">
-                    <span className="text-sm text-gray-500">Estado</span>
-                    <div
-                      className="inline-block ml-2 px-2 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                        backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
-                        color: getStatusColor(selectedServicio.estado),
-                      }}
-                    >
-                      {getStatusText(selectedServicio.estado)}
-                    </div>
+                <div className="mb-3 mt-5">
+                  <span className="text-sm text-gray-500">Estado</span>
+                  <div
+                    className="inline-block ml-2 px-2 py-1 rounded-full text-xs font-semibold"
+                    style={{
+                      backgroundColor: `${getStatusColor(selectedServicio.estado)}20`,
+                      color: getStatusColor(selectedServicio.estado),
+                    }}
+                  >
+                    {getStatusText(selectedServicio.estado)}
                   </div>
                 </div>
 

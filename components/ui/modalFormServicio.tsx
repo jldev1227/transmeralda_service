@@ -130,6 +130,9 @@ export default function ModalFormServicio() {
     actualizarEstadoServicio,
     clearSelectedServicio, // Añadimos esta función para limpiar manualmente el servicio seleccionado
     selectedServicio, // Añadimos para verificar si hay un servicio seleccionado
+    vehiculoCreado,
+    conductorCreado,
+    empresaCreado,
   } = useService();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -562,6 +565,27 @@ export default function ModalFormServicio() {
       label: `${municipio.nombre_municipio} (DEP: ${municipio.nombre_departamento}) (COD: ${municipio.codigo_municipio})`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
+
+  useEffect(() => {
+    // Si se ha creado un vehículo, auto seleccionar el vehículo en el formulario
+    if (vehiculoCreado && vehicleSelected !== vehiculoCreado.id) {
+      setVehicleSelected(vehiculoCreado.id);
+    }
+  }, [vehiculoCreado]);
+
+  useEffect(() => {
+    // Si se ha creado un vehículo, auto seleccionar el vehículo en el formulario
+    if (empresaCreado && clienteSelected !== empresaCreado.id) {
+      setCliente(empresaCreado.id);
+    }
+  }, [empresaCreado]);
+
+  useEffect(() => {
+    // Si se ha creado un vehículo, auto seleccionar el vehículo en el formulario
+    if (conductorCreado && conductorSelected !== conductorCreado.id) {
+      setConductorSelected(conductorCreado.id);
+    }
+  }, [conductorCreado]);
 
   return (
     <>
