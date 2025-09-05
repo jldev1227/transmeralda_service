@@ -1,24 +1,14 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import axios from "axios";
 import { LatLngExpression, LatLngTuple } from "leaflet";
 import { useRouter } from "next/navigation";
-import { MapPinIcon, TruckIcon, UserIcon, X, XIcon } from "lucide-react"; // al inicio del archivo
-import {
-  AlertTriangle,
-  ArrowDownIcon,
-  ArrowUpIcon,
-  BuildingIcon,
-  CalendarIcon,
-  RefreshCw,
-} from "lucide-react";
-import SelectReact from "react-select";
+import { MapPinIcon, PlusIcon } from "lucide-react"; // al inicio del archivo
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@heroui/button";
-import { useMediaQuery } from "react-responsive";
 
-import EnhancedMapComponent from "@/components/enhancedMapComponent";
 import {
   useService,
   VehicleTracking,
@@ -31,7 +21,7 @@ import ModalTicket from "@/components/ui/modalTicket";
 import ModalPlanilla from "@/components/ui/modalPlanilla";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loadingPage";
-import GraphsModal from "@/components/ui/graphsModal";
+import FiltersDrawer from "@/components/ui/filterDrawer";
 
 interface MapboxRoute {
   distance: number;
@@ -53,40 +43,29 @@ interface Filters {
   conductor: string;
 }
 
-const serviceTypeTextMap: Record<string, string> = {
-  herramienta: "Cargado con herramienta",
-  personal: "Deplazamineto de personal",
-  vehiculo: "Posicionar vehiculo",
-};
-
-const getServiceTypeText = (tipo: string): string => {
-  return serviceTypeTextMap[tipo] || tipo;
-};
-
 // Main Dashboard Component
 const AdvancedDashboard = () => {
   const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
   const [token] = useState(WIALON_API_TOKEN);
 
-  const isMobile = useMediaQuery({ maxWidth: 1024 });
-
   // State
   const {
     servicios,
     socketConnected,
     selectedServicio,
+    handleModalForm,
     setSelectedServicio,
     empresas,
     vehiculos,
-    conductores
+    conductores,
   } = useService();
+  const { modalTicket } = useService();
   const [servicioWithRoutes, setServicioWithRoutes] =
     useState<ServicioConRelaciones | null>(null);
   const [vehicleTracking, setVehicleTracking] =
     useState<VehicleTracking | null>(null);
   const [trackingError, setTrackingError] = useState<string>("");
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   const [filters, setFilters] = useState<Filters>({
     estado: "",
@@ -212,7 +191,7 @@ const AdvancedDashboard = () => {
                   (v: any) =>
                     v.nm.includes(servicio.vehiculo.placa) ||
                     v.nm.toLowerCase() ===
-                    servicio.vehiculo.placa.toLowerCase(),
+                      servicio.vehiculo.placa.toLowerCase(),
                 );
 
                 // If vehicle found and has position data
@@ -358,10 +337,12 @@ const AdvancedDashboard = () => {
 
   const contarFiltrosActivos = () => {
     let count = 0;
-    Object.values(filters).forEach(value => {
+
+    Object.values(filters).forEach((value) => {
       if (value && value.trim() !== "") count++;
     });
     if (dateRange.from || dateRange.to) count++;
+
     return count;
   };
 
@@ -375,18 +356,20 @@ const AdvancedDashboard = () => {
       !servicio.origen_especifico
         .toLowerCase()
         .includes(filters.origen.toLowerCase())
-    ) return false;
+    )
+      return false;
 
     if (
       filters.destino &&
       !servicio.destino_especifico
         .toLowerCase()
         .includes(filters.destino.toLowerCase())
-    ) return false;
+    )
+      return false;
 
     // ✅ CORREGIDO: Filtro por empresa con igualdad estricta
     if (filters.empresa) {
-      const clienteId = servicio.cliente_id?.toString().toLowerCase() || '';
+      const clienteId = servicio.cliente_id?.toString().toLowerCase() || "";
       const filtroEmpresa = filters.empresa.toString().toLowerCase();
 
       if (clienteId !== filtroEmpresa && !clienteId.includes(filtroEmpresa)) {
@@ -397,34 +380,45 @@ const AdvancedDashboard = () => {
     if (
       filters.propositoServicio &&
       servicio.proposito_servicio !== filters.propositoServicio
-    ) return false;
+    )
+      return false;
 
     // ✅ CORREGIDO: Filtro por vehículo con igualdad estricta
     if (filters.vehiculo) {
-      const vehiculoId = servicio.vehiculo_id?.toString().toLowerCase() || '';
+      const vehiculoId = servicio.vehiculo_id?.toString().toLowerCase() || "";
       const filtroVehiculo = filters.vehiculo.toString().toLowerCase();
 
       // Solo buscar en servicios que TIENEN vehiculo_id (no undefined/null/empty)
       if (!servicio.vehiculo_id) return false;
 
       // Verificar coincidencia exacta O que contenga el filtro
-      if (vehiculoId !== filtroVehiculo && !vehiculoId.includes(filtroVehiculo)) {
+      if (
+        vehiculoId !== filtroVehiculo &&
+        !vehiculoId.includes(filtroVehiculo)
+      ) {
         return false;
       }
     }
 
     // ✅ CORREGIDO: Filtro por conductor con igualdad estricta
     if (filters.conductor) {
-      const conductorNombre = `${servicio.conductor?.nombre || ''} ${servicio.conductor?.apellido || ''}`.toLowerCase().trim();
-      const conductorId = servicio.conductor_id?.toString().toLowerCase() || '';
+      const conductorNombre =
+        `${servicio.conductor?.nombre || ""} ${servicio.conductor?.apellido || ""}`
+          .toLowerCase()
+          .trim();
+      const conductorId = servicio.conductor_id?.toString().toLowerCase() || "";
       const filtroConductor = filters.conductor.toString().toLowerCase();
 
       // Solo buscar en servicios que TIENEN conductor
       if (!servicio.conductor_id && !conductorNombre) return false;
 
       // Verificar coincidencia exacta O que contenga el filtro
-      const nombreMatch = conductorNombre === filtroConductor || conductorNombre.includes(filtroConductor);
-      const idMatch = conductorId === filtroConductor || conductorId.includes(filtroConductor);
+      const nombreMatch =
+        conductorNombre === filtroConductor ||
+        conductorNombre.includes(filtroConductor);
+      const idMatch =
+        conductorId === filtroConductor ||
+        conductorId.includes(filtroConductor);
 
       if (!nombreMatch && !idMatch) return false;
     }
@@ -537,750 +531,211 @@ const AdvancedDashboard = () => {
     sortOptions.direction,
   );
 
-  const handleClosePanel = useCallback(() => {
-    if (isPanelOpen && isMobile) {
-      const panel = document.querySelector(".animate-bottomToTop");
-
-      if (panel) {
-        panel.classList.remove("animate-bottomToTop");
-        panel.classList.add("animate-topToBottom");
-        // Espera la duración de la animación antes de cerrar el panel
-        setTimeout(() => {
-          setIsPanelOpen(false);
-          // Limpia la clase de animación para futuras aperturas
-          panel.classList.remove("animate-topToBottom");
-          panel.classList.add("animate-bottomToTop");
-        }, 400); // Ajusta este valor si cambias la duración de la animación en CSS
-      } else {
-        setIsPanelOpen(false);
-      }
-    } else {
-      setIsPanelOpen(true);
-    }
-  }, [isPanelOpen, isMobile]);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setIsPanelOpen(true);
-    }
-  }, [isMobile]);
+  const handleButtonPressForm = () => {
+    // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
+    setTimeout(() => {
+      // Abrir el modal de agregar servicio
+      handleModalForm();
+    }, 50);
+  };
 
   return (
-    <div className="flex h-dvh relative overflow-hidden">
-      {/* Sidebar/floating panel */}
-      {isPanelOpen && (
-        <div
-          aria-modal="true"
-          className="absolute lg:relative z-50 w-full lg:max-w-[32rem] 2xl:max-w-[34rem] animate-bottomToTop"
-          role="dialog"
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Header Principal */}
+        <header
+          className="
+          rounded-b-xl
+          mb-8 bg-white border border-gray-200 px-4 py-6 
+          sticky top-0 z-40 backdrop-blur-sm bg-white/95
+          transition-all duration-300 ease-in-out
+        "
         >
-          <div className="bg-white p-3 md:p-4 border-b flex items-center justify-between sticky top-0">
-            <div className="w-full space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Título y Estado de Conexión */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
                   {socketConnected ? (
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <>
+                      <div className="w-4 h-4 bg-emerald-500 rounded-full" />
+                      <div className="absolute inset-0 w-4 h-4 bg-emerald-500 rounded-full animate-ping opacity-75" />
+                    </>
                   ) : (
-                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    <div className="w-4 h-4 bg-red-500 rounded-full relative">
+                      <div className="absolute inset-1 w-2 h-2 bg-white rounded-full" />
+                    </div>
                   )}
-                  <h2 className="text-lg md:text-xl font-bold">Servicios</h2>
                 </div>
-                {isPanelOpen && isMobile && (
-                  <Button
-                    isIconOnly
-                    color="danger"
-                    size="sm"
-                    onPress={handleClosePanel}
-                  >
-                    <X className="w-6 h-6" />
-                  </Button>
-                )}
-              </div>
-              <GraphsModal />
-            </div>
-          </div>
 
-          {/* Panel content with scrolling */}
-          <div className="bg-white h-[calc(98vh-76px)] relative flex flex-col overflow-y-auto">
-            {/* Filters */}
-            <div className="p-4 md:p-4 border-b">
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold">Filtros</h3>
-                  {/* ✅ Botón limpiador y contador */}  m        
-                  <div className="flex items-center gap-2">
-                    {contarFiltrosActivos() > 0 && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                        {contarFiltrosActivos()} activo{contarFiltrosActivos() !== 1 ? 's' : ''}
+                <div>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                    Gestión de Servicios
+                  </h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {socketConnected ? (
+                      <span className="flex flex-col xs:flex-row items-start xs:items-center gap-2 text-sm">
+                        <span className="text-emerald-600 font-medium whitespace-nowrap">
+                          Conectado en tiempo real
+                        </span>
+                        <span className="hidden xs:block w-1 h-1 bg-gray-400 rounded-full flex-shrink-0" />
+                        <span className="text-gray-600 leading-relaxed break-words">
+                          {new Date().toLocaleDateString("es-ES", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="text-red-600 font-medium">
+                          Desconectado
+                        </span>
+                        <span className="w-1 h-1 bg-gray-400 rounded-full" />
+                        <span>Reintentando conexión...</span>
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={limpiarFiltros}
-                      className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors flex items-center gap-1"
-                      disabled={contarFiltrosActivos() === 0}
-                    >
-                      <XIcon className="w-3 h-3" />
-                      Limpiar filtros
-                    </button>
-                  </div>
+                  </p>
                 </div>
-
-                <form
-                  autoComplete="off"
-                  className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  {/* ✅ FILA 1: Filtros principales más usados */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {/* Estado */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="estado"
-                      >
-                        Estado
-                      </label>
-                      <select
-                        className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                        id="estado"
-                        value={filters.estado}
-                        onChange={(e) =>
-                          setFilters({ ...filters, estado: e.target.value })
-                        }
-                      >
-                        <option value="">Todos</option>
-                        <option value="solicitado">Solicitado</option>
-                        <option value="planificado">Planificado</option>
-                        <option value="en_curso">En curso</option>
-                        <option value="realizado">Realizado</option>
-                        <option value="planilla_asignada">Planilla asignada</option>
-                        <option value="cancelado">Cancelado</option>
-                      </select>
-                    </div>
-
-                    {/* Tipo de Servicio */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="propositoServicio"
-                      >
-                        Tipo de Servicio
-                      </label>
-                      <select
-                        className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                        id="propositoServicio"
-                        value={filters.propositoServicio}
-                        onChange={(e) =>
-                          setFilters({
-                            ...filters,
-                            propositoServicio: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="">Todos</option>
-                        <option value="personal">Personal</option>
-                        <option value="herramienta">Herramienta</option>
-                        <option value="vehiculo">Posicionar vehículo</option>
-                      </select>
-                    </div>
-
-                    {/* Origen */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="origen"
-                      >
-                        Origen
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPinIcon className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <input
-                          className="pl-10 w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                          id="origen"
-                          placeholder="Buscar origen..."
-                          type="text"
-                          value={filters.origen}
-                          onChange={(e) =>
-                            setFilters({ ...filters, origen: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* Destino */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="destino"
-                      >
-                        Destino
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPinIcon className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <input
-                          className="pl-10 w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                          id="destino"
-                          placeholder="Buscar destino..."
-                          type="text"
-                          value={filters.destino}
-                          onChange={(e) =>
-                            setFilters({ ...filters, destino: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ✅ FILA 2: Selects importantes (Empresa, Vehículo, Conductor) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                    {/* Empresa */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="empresa"
-                      >
-                        Empresa
-                      </label>
-                      <div className="relative shadow-sm rounded-md group transition-all">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                          <BuildingIcon className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <SelectReact
-                          isClearable
-                          isSearchable
-                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
-                          classNamePrefix="react-select"
-                          inputId="empresa"
-                          menuPortalTarget={
-                            typeof window !== "undefined" ? document.body : undefined
-                          }
-                          name="empresa"
-                          options={empresaOptions}
-                          placeholder="Seleccione una empresa"
-                          styles={{
-                            container: (base) => ({
-                              ...base,
-                              width: "100%",
-                            }),
-                            menuPortal: (base) => ({
-                              ...base,
-                              zIndex: 9999,
-                            }),
-                            control: (base) => ({
-                              ...base,
-                              border: "1px solid #d1d5db",
-                              boxShadow: "none",
-                              "&:hover": { borderColor: "#059669" },
-                              backgroundColor: "white",
-                              transition: "box-shadow 0.2s",
-                              paddingLeft: "2.5rem",
-                            }),
-                            placeholder: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              fontSize: "0.875rem",
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              zIndex: 50,
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              color: state.isSelected ? "#059669" : "#1f2937",
-                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
-                              fontSize: "0.875rem",
-                            }),
-                            dropdownIndicator: (base) => ({
-                              ...base,
-                              color: "#374151",
-                            }),
-                            indicatorSeparator: () => ({
-                              display: "none",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            clearIndicator: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              "&:hover": { color: "#ef4444" },
-                            }),
-                          }}
-                          value={empresaOptions.find(option => option.value === filters.empresa) || null}
-                          onChange={(option) =>
-                            setFilters({
-                              ...filters,
-                              empresa: option ? option.value : "",
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* Vehículo */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="vehiculo"
-                      >
-                        Vehículo
-                      </label>
-                      <div className="relative shadow-sm rounded-md group transition-all">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                          <BuildingIcon className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <SelectReact
-                          isClearable
-                          isSearchable
-                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
-                          classNamePrefix="react-select"
-                          inputId="vehiculo"
-                          menuPortalTarget={
-                            typeof window !== "undefined" ? document.body : undefined
-                          }
-                          name="vehiculo"
-                          options={vehiculoOptions}
-                          placeholder="Seleccione un vehículo"
-                          styles={{
-                            container: (base) => ({
-                              ...base,
-                              width: "100%",
-                            }),
-                            menuPortal: (base) => ({
-                              ...base,
-                              zIndex: 9999,
-                            }),
-                            control: (base) => ({
-                              ...base,
-                              border: "1px solid #d1d5db",
-                              boxShadow: "none",
-                              "&:hover": { borderColor: "#059669" },
-                              backgroundColor: "white",
-                              transition: "box-shadow 0.2s",
-                              paddingLeft: "2.5rem",
-                            }),
-                            placeholder: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              fontSize: "0.875rem",
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              zIndex: 50,
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              color: state.isSelected ? "#059669" : "#1f2937",
-                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
-                              fontSize: "0.875rem",
-                            }),
-                            dropdownIndicator: (base) => ({
-                              ...base,
-                              color: "#374151",
-                            }),
-                            indicatorSeparator: () => ({
-                              display: "none",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            clearIndicator: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              "&:hover": { color: "#ef4444" },
-                            }),
-                          }}
-                          value={vehiculoOptions.find(option => option.value === filters.vehiculo) || null}
-                          onChange={(option) =>
-                            setFilters({
-                              ...filters,
-                              vehiculo: option ? option.value : "",
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* Conductor */}
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1"
-                        htmlFor="conductor"
-                      >
-                        Conductor
-                      </label>
-                      <div className="relative shadow-sm rounded-md group transition-all">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                          <BuildingIcon className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <SelectReact
-                          isClearable
-                          isSearchable
-                          className="pl-10 border-1 pr-3 block w-full rounded-md sm:text-sm appearance-none text-gray-800 focus:outline-none"
-                          classNamePrefix="react-select"
-                          inputId="conductor"
-                          menuPortalTarget={
-                            typeof window !== "undefined" ? document.body : undefined
-                          }
-                          name="conductor"
-                          options={conductorOptions}
-                          placeholder="Seleccione un conductor"
-                          styles={{
-                            container: (base) => ({
-                              ...base,
-                              width: "100%",
-                            }),
-                            menuPortal: (base) => ({
-                              ...base,
-                              zIndex: 9999,
-                            }),
-                            control: (base) => ({
-                              ...base,
-                              border: "1px solid #d1d5db",
-                              boxShadow: "none",
-                              "&:hover": { borderColor: "#059669" },
-                              backgroundColor: "white",
-                              transition: "box-shadow 0.2s",
-                              paddingLeft: "2.5rem",
-                            }),
-                            placeholder: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              fontSize: "0.875rem",
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              zIndex: 50,
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              color: state.isSelected ? "#059669" : "#1f2937",
-                              backgroundColor: state.isFocused ? "#f0fdf4" : "white",
-                              fontSize: "0.875rem",
-                            }),
-                            dropdownIndicator: (base) => ({
-                              ...base,
-                              color: "#374151",
-                            }),
-                            indicatorSeparator: () => ({
-                              display: "none",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: "#1f2937",
-                              fontSize: "0.875rem",
-                            }),
-                            clearIndicator: (base) => ({
-                              ...base,
-                              color: "#9ca3af",
-                              "&:hover": { color: "#ef4444" },
-                            }),
-                          }}
-                          value={conductorOptions.find(option => option.value === filters.conductor) || null}
-                          onChange={(option) =>
-                            setFilters({
-                              ...filters,
-                              conductor: option ? option.value : "",
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ✅ FILA 3: Rango de Fechas */}
-                  <div className="border-t pt-4">
-                    <p className="block text-sm font-medium mb-3">
-                      Filtrar por Fechas
-                    </p>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Tipo de fecha */}
-                      <div>
-                        <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              checked={dateFilterType === "solicitud"}
-                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                              id="fechaSolicitudRadio"
-                              name="tipoFecha"
-                              type="radio"
-                              value="solicitud"
-                              onChange={() => setDateFilterType("solicitud")}
-                            />
-                            <label
-                              className="text-sm text-gray-700"
-                              htmlFor="fechaSolicitudRadio"
-                            >
-                              Fecha de Solicitud
-                            </label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              checked={dateFilterType === "realizacion"}
-                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                              id="fechaRealizacionRadio"
-                              name="tipoFecha"
-                              type="radio"
-                              value="realizacion"
-                              onChange={() => setDateFilterType("realizacion")}
-                            />
-                            <label
-                              className="text-sm text-gray-700"
-                              htmlFor="fechaRealizacionRadio"
-                            >
-                              Fecha de Realización
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Campos de fecha */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label
-                              className="block text-xs font-medium mb-1"
-                              htmlFor="fechaDesde"
-                            >
-                              Desde
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <CalendarIcon className="h-5 w-5 text-gray-400" />
-                              </div>
-                              <input
-                                className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                                id="fechaDesde"
-                                type="date"
-                                value={dateRange.from || ""}
-                                onChange={(e) =>
-                                  setDateRange({
-                                    ...dateRange,
-                                    from: e.target.value,
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label
-                              className="block text-xs font-medium mb-1"
-                              htmlFor="fechaHasta"
-                            >
-                              Hasta
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <CalendarIcon className="h-5 w-5 text-gray-400" />
-                              </div>
-                              <input
-                                className="pl-10 block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                                id="fechaHasta"
-                                min={dateRange.from || undefined}
-                                type="date"
-                                value={dateRange.to || ""}
-                                onChange={(e) =>
-                                  setDateRange({ ...dateRange, to: e.target.value })
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Botones de acción rápida */}
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          Acciones Rápidas
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-                          <button
-                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
-                            type="button"
-                            onClick={() => {
-                              const today = new Date().toISOString().split("T")[0];
-                              setDateRange({ from: today, to: today });
-                            }}
-                          >
-                            Hoy
-                          </button>
-                          <button
-                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
-                            type="button"
-                            onClick={() => {
-                              const today = new Date();
-                              const lastWeek = new Date();
-                              lastWeek.setDate(today.getDate() - 7);
-                              setDateRange({
-                                from: lastWeek.toISOString().split("T")[0],
-                                to: today.toISOString().split("T")[0],
-                              });
-                            }}
-                          >
-                            Última semana
-                          </button>
-                          <button
-                            className="px-3 py-2 text-xs rounded-md bg-gray-50 text-gray-700 border hover:bg-gray-100 transition-colors"
-                            type="button"
-                            onClick={() => {
-                              const today = new Date();
-                              const lastMonth = new Date();
-                              lastMonth.setMonth(today.getMonth() - 1);
-                              setDateRange({
-                                from: lastMonth.toISOString().split("T")[0],
-                                to: today.toISOString().split("T")[0],
-                              });
-                            }}
-                          >
-                            Último mes
-                          </button>
-                          <button
-                            className="px-3 py-2 text-xs rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
-                            type="button"
-                            onClick={() => {
-                              setDateRange({ from: "", to: "" });
-                            }}
-                          >
-                            Limpiar fechas
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ✅ FILA 4: Ordenación */}
-                  <div className="border-t pt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-                      <div className="sm:col-span-2 lg:col-span-2">
-                        <label
-                          className="block text-sm font-medium mb-1"
-                          htmlFor="sortBy"
-                        >
-                          Ordenar por
-                        </label>
-                        <select
-                          className="w-full p-2 border rounded-md text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                          id="sortBy"
-                          value={sortOptions.field}
-                          onChange={(e) =>
-                            setSortOptions({
-                              ...sortOptions,
-                              field: e.target.value,
-                            })
-                          }
-                        >
-                          <option value="fecha_solicitud">Fecha de Solicitud</option>
-                          <option value="fecha_realizacion">Fecha de Realización</option>
-                          <option value="estado">Estado</option>
-                          <option value="origen_especifico">Origen</option>
-                          <option value="destino_especifico">Destino</option>
-                          <option value="createdAt">Fecha de Creación</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Dirección
-                        </label>
-                        <button
-                          className="w-full p-2 rounded-md border hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                          title={
-                            sortOptions.direction === "asc"
-                              ? "Ascendente"
-                              : "Descendente"
-                          }
-                          type="button"
-                          onClick={() =>
-                            setSortOptions({
-                              ...sortOptions,
-                              direction:
-                                sortOptions.direction === "asc" ? "desc" : "asc",
-                            })
-                          }
-                        >
-                          {sortOptions.direction === "asc" ? (
-                            <>
-                              <ArrowUpIcon className="w-4 h-4 text-gray-600" />
-                              <span className="text-sm">Ascendente</span>
-                            </>
-                          ) : (
-                            <>
-                              <ArrowDownIcon className="w-4 h-4 text-gray-600" />
-                              <span className="text-sm">Descendente</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
               </div>
             </div>
 
-            {/* Service list */}
-            <div className="p-3 md:p-4 mb-14 flex-1">
-              {sortedServices.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No se encontraron servicios
+            {/* Estadísticas Rápidas y Acciones */}
+            <div className="flex items-center gap-4">
+              {/* Contador de Servicios */}
+              <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-lg border">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Total
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {sortedServices?.length || 0}
+                  </p>
                 </div>
-              ) : (
-                <div className="h-dvh">
-                  <ServiciosListCards
-                    filteredServicios={sortedServices}
-                    formatearFecha={formatearFecha}
-                    handleClosePanel={handleClosePanel}
-                    handleSelectServicio={handleSelectServicio}
-                    selectedServicio={selectedServicio}
-                  />
+
+                <div className="w-px h-8 bg-gray-300" />
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Activos
+                  </p>
+                  <p className="text-lg font-bold text-emerald-600">
+                    {sortedServices?.filter((s) => s.estado === "en_curso")
+                      .length || 0}
+                  </p>
                 </div>
-              )}
+
+                <div className="w-px h-8 bg-gray-300" />
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Pendientes
+                  </p>
+                  <p className="text-lg font-bold text-amber-600">
+                    {sortedServices?.filter((s) =>
+                      ["solicitado", "planificado"].includes(s.estado),
+                    ).length || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botón de Estadísticas */}
+              {/* <GraphsModal /> */}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Main map panel - takes full width/height when sidebar is closed */}
-      <div className="h-full w-full transition-all duration-300">
-        <EnhancedMapComponent
-          getServiceTypeText={getServiceTypeText}
-          handleClosePanel={handleClosePanel}
-          handleSelectServicio={handleSelectServicio}
-          isPanelOpen={isPanelOpen}
-          mapboxToken={MAPBOX_ACCESS_TOKEN}
-          selectedServicio={servicioWithRoutes}
-          servicios={servicios}
-          setSelectedServicio={setSelectedServicio}
-          setServicioWithRoutes={setServicioWithRoutes}
-          trackingError={trackingError}
-          vehicleTracking={vehicleTracking}
-          wialonToken={WIALON_API_TOKEN}
-          onWialonRequest={callWialonApi}
-        />
-        <ModalFormServicio />
-        <ModalTicket />
-        <ModalPlanilla />
+          {/* Barra de Progreso de Conexión (solo cuando está desconectado) */}
+          {!socketConnected && (
+            <div className="mt-4">
+              <div className="w-full bg-red-100 rounded-full h-1">
+                <div
+                  className="bg-red-500 h-1 rounded-full animate-pulse"
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </div>
+          )}
+        </header>
+
+        {/* Main Content Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {/* Results Section */}
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Servicios Encontrados
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({sortedServices.length} resultado
+                  {sortedServices.length !== 1 ? "s" : ""})
+                </span>
+              </h2>
+
+              <div className="flex gap-3">
+                <Button
+                  color="success"
+                  variant="flat"
+                  onPress={handleButtonPressForm}
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Nuevo servicio
+                </Button>
+
+                <FiltersDrawer
+                  conductorOptions={conductorOptions}
+                  contarFiltrosActivos={contarFiltrosActivos}
+                  dateFilterType={dateFilterType}
+                  dateRange={dateRange}
+                  empresaOptions={empresaOptions}
+                  filters={filters}
+                  limpiarFiltros={limpiarFiltros}
+                  setDateFilterType={setDateFilterType}
+                  setDateRange={setDateRange}
+                  setFilters={setFilters}
+                  setSortOptions={setSortOptions}
+                  sortOptions={sortOptions}
+                  vehiculoOptions={vehiculoOptions}
+                />
+              </div>
+            </div>
+
+            {/* Services List */}
+            {sortedServices.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <MapPinIcon className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No se encontraron servicios
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Intenta ajustar los filtros para encontrar más resultados.
+                </p>
+                <button
+                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+                  onClick={limpiarFiltros}
+                >
+                  Limpiar todos los filtros
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <ServiciosListCards
+                  filteredServicios={sortedServices}
+                  formatearFecha={formatearFecha}
+                  handleSelectServicio={handleSelectServicio}
+                  selectedServicio={selectedServicio}
+                />
+              </div>
+            )}
+          </div>
+          <ModalFormServicio />
+
+          <React.Suspense>{modalTicket && <ModalTicket />}</React.Suspense>
+
+          <ModalPlanilla />
+        </div>
       </div>
     </div>
   );

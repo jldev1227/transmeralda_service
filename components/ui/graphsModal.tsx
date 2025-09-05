@@ -64,15 +64,7 @@ const ResponsiveContainer = dynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false },
 );
-const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), {
-  ssr: false,
-});
-const Pie = dynamic(() => import("recharts").then((mod) => mod.Pie), {
-  ssr: false,
-});
-const Cell = dynamic(() => import("recharts").then((mod) => mod.Cell), {
-  ssr: false,
-});
+
 const LineChart = dynamic(
   () => import("recharts").then((mod) => mod.LineChart),
   { ssr: false },

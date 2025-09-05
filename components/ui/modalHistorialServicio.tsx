@@ -9,13 +9,11 @@ import {
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
 import {
   UserIcon,
   ClipboardListIcon,
   HistoryIcon,
   SearchIcon,
-  DownloadIcon,
   InfoIcon,
   CalendarIcon,
   MapPinIcon,
@@ -77,6 +75,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [expandedValues, setExpandedValues] = useState<Set<string>>(new Set());
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Cargar datos del historial cuando cambia el ID
   useEffect(() => {
@@ -569,7 +568,6 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
   const JSONViewer = ({
     jsonString,
     recordId,
-    className = "",
   }: {
     jsonString: string;
     recordId: string;
@@ -579,8 +577,6 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
     if (recordId.includes("creacion")) {
       return null; // El ValorExpandible ya maneja este caso
     }
-
-    const [isExpanded, setIsExpanded] = useState(false);
 
     try {
       const obj = JSON.parse(jsonString);
@@ -669,39 +665,6 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
     }
   };
 
-  // Exportar historial a CSV
-  const exportarHistorial = () => {
-    const csvHeaders = [
-      "Fecha",
-      "Tipo",
-      "Campo",
-      "Valor Anterior",
-      "Valor Nuevo",
-      "Usuario",
-    ];
-    const csvData = historicoFiltrado.map((registro) => [
-      formatearFecha(registro.fecha_modificacion, true),
-      registro.tipo_operacion,
-      getCampoLegible(registro.campo_modificado),
-      registro.valor_anterior || "Sin valor",
-      registro.valor_nuevo || "Sin valor",
-      `${registro.usuario.nombre} ${registro.usuario.apellido}`,
-    ]);
-
-    const csvContent = [csvHeaders, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `historial_servicio_${servicioId}_${new Date().getTime()}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
   // Estadísticas del historial
   const estadisticas = useMemo(() => {
     const tipos = historico.reduce(
@@ -720,6 +683,7 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
 
   return (
     <Modal
+      hideCloseButton
       backdrop="opaque"
       classNames={{
         backdrop:
@@ -844,101 +808,6 @@ const ModalHistorialServicio: React.FC<ModalHistorialServicioProps> = ({
                 </div>
               ) : historico.length > 0 ? (
                 <div className="space-y-6">
-                  {/* Controles de filtrado y búsqueda */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <Input
-                          classNames={{
-                            input: "text-sm",
-                            inputWrapper:
-                              "border-gray-300 hover:border-emerald-500 focus-within:border-emerald-600",
-                          }}
-                          placeholder="Buscar en el historial..."
-                          startContent={
-                            <SearchIcon className="h-4 w-4 text-gray-400" />
-                          }
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="flex gap-2 flex-shrink-0">
-                        {/* Filtro por tipo */}
-                        <div className="flex gap-2">
-                          <Button
-                            color={filtroTipo === null ? "primary" : "default"}
-                            size="sm"
-                            variant={filtroTipo === null ? "solid" : "bordered"}
-                            onPress={() => setFiltroTipo(null)}
-                          >
-                            Todos
-                          </Button>
-                          <Button
-                            color={
-                              filtroTipo === "creacion" ? "success" : "default"
-                            }
-                            size="sm"
-                            variant={
-                              filtroTipo === "creacion" ? "solid" : "bordered"
-                            }
-                            onPress={() => setFiltroTipo("creacion")}
-                          >
-                            Creación
-                          </Button>
-                          <Button
-                            color={
-                              filtroTipo === "actualizacion"
-                                ? "warning"
-                                : "default"
-                            }
-                            size="sm"
-                            variant={
-                              filtroTipo === "actualizacion"
-                                ? "solid"
-                                : "bordered"
-                            }
-                            onPress={() => setFiltroTipo("actualizacion")}
-                          >
-                            Actualización
-                          </Button>
-                          <Button
-                            color={
-                              filtroTipo === "eliminacion"
-                                ? "danger"
-                                : "default"
-                            }
-                            size="sm"
-                            variant={
-                              filtroTipo === "eliminacion"
-                                ? "solid"
-                                : "bordered"
-                            }
-                            onPress={() => setFiltroTipo("eliminacion")}
-                          >
-                            Eliminación
-                          </Button>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          startContent={<DownloadIcon className="h-4 w-4" />}
-                          variant="bordered"
-                          onPress={exportarHistorial}
-                        >
-                          Exportar
-                        </Button>
-                      </div>
-                    </div>
-
-                    {(searchTerm || filtroTipo) && (
-                      <div className="mt-3 text-sm text-gray-600">
-                        Mostrando {historicoFiltrado.length} de{" "}
-                        {historico.length} registros
-                      </div>
-                    )}
-                  </div>
-
                   {/* Tabla de historial */}
                   <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                     <CustomTable

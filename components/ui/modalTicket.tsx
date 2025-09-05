@@ -1,19 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
-import { Skeleton } from "@heroui/skeleton";
 import Image from "next/image";
 import { useMediaQuery } from "react-responsive";
 
 import RouteAndDetails from "./routeAndDetails";
 
-import { useTicketShare } from "@/components/shareTicketImage"; // Importar el hook
+import { useTicketShare } from "@/components/shareTicketImage";
 import { useService } from "@/context/serviceContext";
 import { getStatusColor, getStatusText } from "@/utils/indext";
 import { apiClient } from "@/config/apiClient";
 
 export default function ModalTicket() {
   const { servicioTicket, modalTicket, handleModalTicket } = useService();
-  const { shareTicket } = useTicketShare(); // Usar el hook
+  const { shareTicket } = useTicketShare();
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(false);
@@ -73,7 +72,7 @@ export default function ModalTicket() {
     if (servicio?.conductor) {
       cargarFotoPerfil();
     }
-  }, [servicio?.conductor?.id, getPresignedUrl]); // Depender del ID del conductor en lugar del objeto completo
+  }, [servicio?.conductor?.id, getPresignedUrl]);
 
   // Función para manejar errores de carga de imagen
   const handleImageError = useCallback(() => {
@@ -111,54 +110,123 @@ export default function ModalTicket() {
     await shareTicket(servicio);
   };
 
-  // Componente para la foto del conductor
+  // Componente mejorado para la foto del conductor
   const ConductorPhoto = () => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageLoad = () => {
+      setImageLoaded(true);
+    };
+
+    const handleLocalImageError = () => {
+      setImageError(true);
+      setImageLoaded(true);
+      handleImageError();
+    };
+
+    // Mostrar skeleton mientras carga la URL o la imagen
     if (isLoadingPhoto) {
       return (
-        <Skeleton className="w-30 md:w-full h-40 md:h-48 rounded-lg">
-          <div className="h-full w-full bg-gray-200 rounded-lg" />
-        </Skeleton>
+        <div className="w-30 md:w-full h-40 md:h-48 rounded-lg relative overflow-hidden">
+          {/* Skeleton con animación mejorada */}
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse">
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              style={{
+                animation: "shimmer 1.5s ease-in-out infinite",
+                transform: "translateX(-100%)",
+              }}
+            />
+          </div>
+
+          {/* Indicador visual de carga */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-white/90 rounded-full p-3 shadow-lg">
+              <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          </div>
+
+          {/* Texto de carga */}
+          <div className="absolute bottom-2 left-2 right-2">
+            <div className="bg-black/20 backdrop-blur-sm rounded px-2 py-1">
+              <div className="text-xs text-white text-center font-medium">
+                Cargando foto...
+              </div>
+            </div>
+          </div>
+        </div>
       );
     }
 
     return (
-      <div className="rounded-lg relative overflow-hidden bg-gray-50">
-        <Image
-          alt="Foto conductor asignado"
-          className="object-cover rounded-lg transition-opacity duration-300"
-          height={192}
-          priority={false} // No es crítica para el LCP
-          src={fotoUrl || "/assets/not_user.avif"}
-          width={210}
-          onError={handleImageError}
-        />
-        {/* Overlay para estado de loading/error */}
-        {photoError && !isLoadingPhoto && (
-          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <svg
-                className="mx-auto h-8 w-8 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                />
-              </svg>
-              <span className="text-xs">Sin foto</span>
+      <div className="w-30 md:w-5/6 h-40 md:h-52 rounded-lg relative overflow-hidden bg-gray-50 group">
+        {/* Placeholder mientras carga la imagen */}
+        {!imageLoaded && fotoUrl && !imageError && (
+          <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Imagen principal con transición suave */}
+        <div
+          className={`relative w-full h-full transition-all duration-500 ${imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+        >
+          <Image
+            alt="Foto conductor asignado"
+            className="object-cover rounded-lg transition-opacity duration-300"
+            height={215}
+            priority={false}
+            src={fotoUrl || "/assets/not_user.avif"}
+            width={300}
+            onError={handleLocalImageError}
+            onLoad={handleImageLoad}
+          />
+        </div>
+
+        {/* Overlay para estado de error o sin foto */}
+        {(imageError || photoError || !fotoUrl) && imageLoaded && (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-center text-gray-500 p-4">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gray-300 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                  />
+                </svg>
+              </div>
+              <span className="text-xs font-medium">Sin foto disponible</span>
             </div>
           </div>
         )}
+
+        {/* Efecto de brillo en hover */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </div>
     );
   };
 
   return (
     <>
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(200%);
+          }
+        }
+      `}</style>
+
       <Modal
         hideCloseButton
         backdrop="opaque"

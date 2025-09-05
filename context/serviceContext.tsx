@@ -131,9 +131,9 @@ interface ServiceContextType {
   vehicleTracking?: VehicleTracking | null;
   trackingError?: string;
   selectedServicio?: ServicioConRelaciones | null;
-  serviciosWithRoutes?: ServicioConRelaciones[];
-  setServiciosWithRoutes?: React.Dispatch<
-    React.SetStateAction<ServicioConRelaciones[]>
+  servicioWithRoutes: ServicioConRelaciones | null;
+  setServicioWithRoutes: React.Dispatch<
+    React.SetStateAction<ServicioConRelaciones | null>
   >;
   selectServicio?: (servicio: ServicioConRelaciones) => void;
   setLiquidaciones: (liquidaciones: Liquidacion[]) => void;
@@ -819,9 +819,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   const [trackingError, setTrackingError] = useState<string>("");
   const [selectedServicio, setSelectedServicio] =
     useState<ServicioConRelaciones | null>(null);
-  const [serviciosWithRoutes, setServiciosWithRoutes] = useState<
-    ServicioConRelaciones[]
-  >([]);
+  const [servicioWithRoutes, setServicioWithRoutes] =
+    useState<ServicioConRelaciones | null>(null);
 
   // Estado para Socket.IO
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -902,9 +901,9 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         // Añadir a la lista principal de servicios
         setServicios((prevServicios) => [data, ...prevServicios]);
 
-        // Añadir a serviciosWithRoutes si existe
-        if (serviciosWithRoutes) {
-          setServiciosWithRoutes((prevServicios) => [data, ...prevServicios]);
+        // Añadir a servicioWithRoutes si existe
+        if (servicioWithRoutes) {
+          setServicioWithRoutes(data);
         }
 
         addToast({
@@ -934,11 +933,9 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           setSelectedServicio(data);
         }
 
-        // Actualizar en serviciosWithRoutes si existe
-        if (serviciosWithRoutes) {
-          setServiciosWithRoutes((prevServicios) =>
-            prevServicios.map((s) => (s.id === data.id ? data : s)),
-          );
+        // Actualizar en servicioWithRoutes si existe
+        if (servicioWithRoutes) {
+          setServicioWithRoutes(data);
         }
 
         addToast({
@@ -1017,13 +1014,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           clearSelectedServicio();
         }
 
-        // Eliminar de serviciosWithRoutes si existe
-        if (serviciosWithRoutes) {
-          setServiciosWithRoutes((prevServicios) =>
-            prevServicios.filter((s) => s.id !== data.id),
-          );
-        }
-
         // Notificación específica para el conductor si aplica
         if (data.conductorId && user.id === data.conductorId) {
           addToast({
@@ -1063,15 +1053,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         // Si es el servicio seleccionado actualmente, actualizarlo
         if (selectedServicio?.id === data.servicio.id) {
           setSelectedServicio(data.servicio);
-        }
-
-        // Actualizar en serviciosWithRoutes si existe
-        if (serviciosWithRoutes) {
-          setServiciosWithRoutes((prevServicios) =>
-            prevServicios.map((s) =>
-              s.id === data.servicio.id ? data.servicio : s,
-            ),
-          );
         }
 
         // Mensaje personalizado según el estado
@@ -1520,12 +1501,13 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     registrarServicio,
     obtenerServicio,
     setError,
+
     // Añadir estados y métodos de tracking
     vehicleTracking,
     trackingError,
     selectedServicio,
-    serviciosWithRoutes,
-    setServiciosWithRoutes,
+    servicioWithRoutes,
+    setServicioWithRoutes,
     selectServicio,
     setLiquidaciones,
     clearSelectedServicio,

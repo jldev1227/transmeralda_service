@@ -4,12 +4,23 @@ import {
   Edit,
   Ticket,
   History,
-  StampIcon,
-  Trash2Icon,
+  CheckCircle,
+  Trash2,
+  User,
+  Car,
+  Building2,
+  Phone,
+  IdCard,
+  MapPin,
+  Calendar,
+  Clock,
+  AlertCircle,
+  Map,
 } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 
 import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
+import ModalMap from "./modalMap";
 
 import {
   EstadoServicio,
@@ -24,23 +35,18 @@ interface ServiciosListCardsProps {
   filteredServicios: ServicioConRelaciones[];
   selectedServicio: ServicioConRelaciones | null | undefined;
   handleSelectServicio: (servicio: ServicioConRelaciones) => void;
-  handleClosePanel: () => void;
   formatearFecha: (fechaISOString: Date | string | undefined) => string;
 }
 
 const ServiciosListCards = ({
   filteredServicios,
-  selectedServicio,
-  handleSelectServicio,
   formatearFecha,
-  handleClosePanel,
 }: ServiciosListCardsProps) => {
   const { user } = useAuth();
 
-  // Variable de estado para controlar la apertura/cierre del modal de historial
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
   const [modalFinalizarOpen, setModalFinalizarServicio] = useState(false);
-  // Variable de estado para almacenar el ID del servicio del cual mostrar el historial
+  const [modalMapOpen, setModalMapOpen] = useState(false);
   const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(
     null,
   );
@@ -49,6 +55,7 @@ const ServiciosListCards = ({
   );
 
   const {
+    setServicioWithRoutes,
     handleModalForm,
     handleModalTicket,
     handleModalPlanilla,
@@ -62,90 +69,68 @@ const ServiciosListCards = ({
     setLoading: setConfirmLoading,
   } = useConfirmDialogWithTextarea();
 
-  // Estado para animaciones de servicios
   const [rowAnimations, setRowAnimations] = useState<RowAnimationState>({});
 
-  // Función para manejar el evento de edición
+  interface RowAnimationState {
+    [key: string]: {
+      isNew: boolean;
+      isUpdated: boolean;
+      eventType: string;
+      timestamp: number;
+    };
+  }
+
+  // Event handlers
   const handleEdit = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    // No mostrar botón de edición si el servicio está completado o cancelado
-    if (servicio.estado === "realizado" || servicio.estado === "cancelado") {
+    e.stopPropagation();
+    if (servicio.estado === "realizado" || servicio.estado === "cancelado")
       return;
-    }
 
-    // Primero limpiar forzosamente el servicio seleccionado antes de abrir el modal
-    // Esto asegura que el mapa se limpie completamente
     clearSelectedServicio();
-
-    // Después de limpiar, abrimos el modal con el servicio a editar
-    setTimeout(() => {
-      handleModalForm(servicio);
-    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+    setTimeout(() => handleModalForm(servicio), 50);
   };
 
-  // Función para manejar el evento de edición
   const handleViewTicket = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    // No mostrar botón de edición si el servicio está completado o cancelado
-    if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
+    e.stopPropagation();
+    if (servicio.estado === "solicitado" || servicio.estado === "cancelado")
       return;
-    }
 
-    // Después de limpiar, abrimos el modal con el servicio a editar
-    setTimeout(() => {
-      handleModalTicket(servicio);
-    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+    setTimeout(() => handleModalTicket(servicio), 50);
   };
 
-  // Función para manejar el evento de edición
   const handleViewLiquidacion = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    // No mostrar botón de edición si el servicio está completado o cancelado
-    if (servicio.estado === "solicitado" || servicio.estado === "cancelado") {
+    e.stopPropagation();
+    if (servicio.estado === "solicitado" || servicio.estado === "cancelado")
       return;
-    }
 
-    // Después de limpiar, abrimos el modal con el servicio a editar
-    setTimeout(() => {
-      handleModalPlanilla(servicio);
-    }, 50); // Pequeño retraso para asegurar que la limpieza se complete
+    setTimeout(() => handleModalPlanilla(servicio), 50);
   };
 
-  // Función para manejar la apertura del modal de historial
   const handleViewHistorial = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    // Establecer el ID del servicio y abrir el modal
-    // Asegurarse de que el ID no sea undefined antes de establecerlo
+    e.stopPropagation();
     if (servicio.id) {
       setServicioHistorialId(servicio.id);
       setModalHistorialOpen(true);
     }
   };
 
-  // Función para manejar la apertura del modal de finalizar servicio
   const handleFinalizar = (
     e: MouseEvent<HTMLButtonElement>,
     servicio: ServicioConRelaciones,
   ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    // No mostrar botón de edición si el servicio está completado o cancelado
+    e.stopPropagation();
     if (
       servicio.id &&
       (servicio.estado === "en_curso" || servicio.estado === "realizado")
@@ -155,7 +140,43 @@ const ServiciosListCards = ({
     }
   };
 
-  // Determinar si se debe mostrar el botón de edición
+  const handleMap = (
+    e: MouseEvent<HTMLButtonElement>,
+    servicio: ServicioConRelaciones,
+  ) => {
+    e.stopPropagation();
+    setModalMapOpen(true);
+    setServicioWithRoutes(servicio);
+  };
+
+  const eliminarServicio = async (
+    e: MouseEvent<HTMLButtonElement>,
+    id: string | undefined,
+  ) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    const { confirmed } = await confirm({
+      title: "Eliminar Servicio",
+      message:
+        "¿Estás seguro de que deseas eliminar este servicio? Esta acción puede requerir aprobación adicional.",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      confirmVariant: "danger",
+      textareaRequired: false,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+    try {
+      await apiClient.delete<ServicioConRelaciones>(`/api/servicios/${id}`);
+    } catch (err) {
+      console.error("Error al eliminar el servicio:", err);
+    }
+  };
+
+  // Permission checks
   const shouldShowEditButton = (estado: EstadoServicio) => {
     return (
       estado === "solicitado" ||
@@ -164,12 +185,10 @@ const ServiciosListCards = ({
     );
   };
 
-  // Determinar si se debe mostrar el botón de ticket
   const shouldGetTicket = (estado: EstadoServicio) => {
     return estado !== "solicitado" && estado !== "cancelado";
   };
 
-  // Determinar si se debe mostrar el botón de proceder a liquidar
   const showPlanillaNumber = (estado: EstadoServicio) => {
     if (
       user?.permisos.gestor_planillas ||
@@ -179,7 +198,6 @@ const ServiciosListCards = ({
     }
   };
 
-  // Determinar si se debe mostrar el botón de proceder a finalizar servicio
   const showFinalizar = (estado: EstadoServicio) => {
     if (
       user?.permisos.gestor_planillas ||
@@ -189,7 +207,6 @@ const ServiciosListCards = ({
     }
   };
 
-  // Determinar si se debe mostrar el botón para eliminar servicio
   const showDelete = (estado: EstadoServicio) => {
     if (
       user?.permisos.gestor_planillas ||
@@ -203,71 +220,18 @@ const ServiciosListCards = ({
     }
   };
 
-  // Determinar el color de la tarjeta según el estado del servicio
-  const getColorCard = (estado: EstadoServicio) => {
-    switch (estado) {
-      case "planilla_asignada":
-        return "border-purple-500 bg-purple-50";
-      case "en_curso":
-        return "border-emerald-500 bg-emerald-50";
-      case "planificado":
-        return "border-amber-500 bg-amber-50";
-      case "cancelado":
-        return "border-red-500 bg-red-50";
-      case "realizado":
-        return "border-primary-500 bg-primary-50";
-      case "solicitado":
-        return "border-gray-400 bg-gray-50";
-      default:
-        return "";
-    }
-  };
-
-  const getBorderLeftColorByEvent = (eventType: string) => {
-    switch (eventType) {
-      case "servicio:creado":
-        return "border-l-4 border-l-green-500"; // Success para creación
-      case "servicio:actualizado":
-      case "servicio:estado-actualizado":
-        return "border-l-4 border-l-blue-500"; // Primary para actualizaciones
-      case "servicio:numero-planilla-actualizado":
-        return "border-l-4 border-l-purple-500"; // Purple para asignación de planilla
-      case "servicio:eliminado":
-      case "servicio:cancelado":
-        return "border-l-4 border-l-red-500"; // Red para eliminaciones/cancelaciones
-      case "servicio:asignado":
-        return "border-l-4 border-l-amber-500"; // Amber para asignaciones
-      case "servicio:desasignado":
-        return "border-l-4 border-l-gray-500"; // Gray para desasignaciones
-      default:
-        return "border-l-4 border-l-gray-300";
-    }
-  };
-
-  // Modifica la interfaz RowAnimationState para incluir el tipo de evento
-  interface RowAnimationState {
-    [key: string]: {
-      isNew: boolean;
-      isUpdated: boolean;
-      eventType: string; // Añadir el tipo de evento
-      timestamp: number;
-    };
-  }
-
-  // Actualiza el useEffect donde procesas los eventos de socket
+  // Socket animations effect
   useEffect(() => {
     if (!socketEventLogs || socketEventLogs.length === 0) return;
 
-    // Obtener el evento más reciente
     const latestEvents = [...socketEventLogs]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 5); // Solo procesar los 5 eventos más recientes
+      .slice(0, 5);
 
     const now = Date.now();
     const newAnimations: RowAnimationState = { ...rowAnimations };
 
     latestEvents.forEach((event) => {
-      // Obtener ID del servicio según el tipo de evento
       let servicioId = "";
 
       if (event.data.servicio) {
@@ -286,7 +250,6 @@ const ServiciosListCards = ({
           timestamp: now,
         };
       } else {
-        // Para cualquier otro evento, marcar como actualizado
         newAnimations[servicioId] = {
           isNew: false,
           isUpdated: true,
@@ -294,27 +257,14 @@ const ServiciosListCards = ({
           timestamp: now,
         };
       }
-
-      // Scroll al servicio si es nuevo
-      if (event.eventName === "servicio:creado") {
-        setTimeout(() => {
-          const row = document.getElementById(`servicio-row-${servicioId}`);
-
-          if (row) {
-            row.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }, 100);
-      }
     });
 
     setRowAnimations(newAnimations);
 
-    // Limpiar animaciones después de 5 segundos
     const timer = setTimeout(() => {
       setRowAnimations((prev) => {
         const updated: RowAnimationState = {};
 
-        // Solo mantener animaciones que sean más recientes que 5 segundos
         Object.entries(prev).forEach(([id, state]) => {
           if (now - state.timestamp < 5000) {
             updated[id] = state;
@@ -328,49 +278,24 @@ const ServiciosListCards = ({
     return () => clearTimeout(timer);
   }, [socketEventLogs]);
 
-  // Importar el componente modal de historial
+  // Lazy load modals
   const ModalHistorialServicio = React.lazy(
     () => import("./modalHistorialServicio"),
   );
-
-  // Importar el componente modal de historial
   const ModalFinalizarServicio = React.lazy(() => import("./modalFinalizar"));
 
-  const eliminarServicio = async (
-    e: MouseEvent<HTMLButtonElement>,
-    id: string | undefined,
-  ) => {
-    e.stopPropagation(); // Evita que se active también el onClick del contenedor
-
-    if (!id) return;
-
-    // Mostrar diálogo de confirmación con textarea obligatorio
-    const { confirmed } = await confirm({
-      title: "Eliminar Servicio",
-      message:
-        "¿Estás seguro de que deseas eliminar este servcicio? Esta acción puede requerir aprobación adicional.",
-      confirmText: "Eliminar",
-      cancelText: "Cancelar",
-      confirmVariant: "danger",
-      textareaRequired: false,
-    });
-
-    if (!confirmed) return;
-
-    setConfirmLoading(true);
-
-    try {
-      await apiClient.delete<ServicioConRelaciones>(`/api/servicios/${id}`);
-    } catch (err) {
-      console.error("Error al eliminar el servicio:", err);
-    }
-  };
-
   return (
-    <div className="space-y-3 px-3 py-3">
-      {/* Modal de Historial de Servicio */}
-
+    <div className="space-y-3">
       {DialogComponent}
+
+      <React.Suspense>
+        {modalMapOpen && (
+          <ModalMap
+            isOpen={modalMapOpen}
+            onClose={() => setModalMapOpen(false)}
+          />
+        )}
+      </React.Suspense>
 
       <React.Suspense>
         {modalHistorialOpen && (
@@ -382,7 +307,6 @@ const ServiciosListCards = ({
         )}
       </React.Suspense>
 
-      {/* Modal de finalización de Servicio */}
       <React.Suspense>
         {modalFinalizarOpen && (
           <ModalFinalizarServicio
@@ -394,148 +318,250 @@ const ServiciosListCards = ({
       </React.Suspense>
 
       {filteredServicios.map((servicio: ServicioConRelaciones) => {
-        // Usar una verificación de nulidad para garantizar que id no sea undefined
         const serviceId = servicio.id || "";
         const animation = rowAnimations[serviceId];
         const isNew = animation?.isNew || false;
         const isUpdated = animation?.isUpdated || false;
-        const eventType = animation?.eventType || "";
-
-        const creador = servicio.es_creador;
-
-        // Determinar si mostrar el borde y qué color usar
-        const showAnimation = isNew || isUpdated;
 
         return (
           <div
             key={servicio.id}
-            className="px-1 relative group"
-            id={`servicio-${servicio.id}`}
-            style={{ width: "auto" }}
-          >
-            <div
-              className={`
-              select-none p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md relative
-              ${showAnimation ? getBorderLeftColorByEvent(eventType) : "border-l"}
-              ${isNew ? "animate-pulse" : ""}
-              ${isUpdated ? "animate-fadeIn" : ""}
-              ${selectedServicio?.id === servicio.id ? getColorCard(servicio.estado) : ""}
-              w-auto lg:w-[30rem] max-w-full
+            className={`
+              bg-white border rounded-lg transition-all duration-200 cursor-pointer
+              ${isNew ? "animate-pulse border-green-400" : ""}
+              ${isUpdated ? "border-blue-400" : ""}
             `}
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                handleClosePanel();
-                handleSelectServicio(servicio);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleSelectServicio(servicio);
-                }
-              }}
-            >
-              {/* Contenedor para los botones flotantes left */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
-                {/* Botones con posición fija y manejo simplificado */}
-                <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {/* Botón de finalizar */}
-                  {showFinalizar(servicio.estado) && (
-                    <button
-                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => handleFinalizar(e, servicio)}
-                    >
-                      <StampIcon size={16} />
-                    </button>
-                  )}
-                  {showDelete(servicio.estado) && (
-                    <button
-                      className="bg-red-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => eliminarServicio(e, servicio.id)}
-                    >
-                      <Trash2Icon size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Contenedor para los botones flotantes right */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
-                {/* Botones con posición fija y manejo simplificado */}
-                <div className="flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {/* Botón para ver historial - siempre visible */}
-                  <button
-                    className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                    onClick={(e) => handleViewHistorial(e, servicio)}
-                  >
-                    <History size={16} />
-                  </button>
-
-                  {/* Botón de editar */}
-                  {shouldShowEditButton(servicio.estado) && (
-                    <button
-                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => handleEdit(e, servicio)}
-                    >
-                      <Edit size={16} />
-                    </button>
-                  )}
-
-                  {/* Botón de ticket */}
-                  {shouldGetTicket(servicio.estado) && (
-                    <button
-                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => handleViewTicket(e, servicio)}
-                    >
-                      <Ticket size={16} />
-                    </button>
-                  )}
-
-                  {/* Botón de planilla */}
-                  {showPlanillaNumber(servicio.estado) && (
-                    <button
-                      className="bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer"
-                      onClick={(e) => handleViewLiquidacion(e, servicio)}
-                    >
-                      <Hash size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-start mb-2">
-                <div className="overflow-hidden flex-1 min-w-0">
+          >
+            {/* Header Section */}
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    {creador && (
-                      <span
-                        className="inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse border border-white shadow-sm flex-shrink-0"
+                    {servicio.es_creador && (
+                      <div
+                        className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
                         title="Eres el creador"
                       />
                     )}
-                    <div className="font-semibold truncate">
+                    <h3 className="font-semibold text-gray-900 truncate">
                       {servicio.origen_especifico ||
                         `${servicio.origen.nombre_municipio} → ${servicio.destino.nombre_municipio}`}
+                    </h3>
+                  </div>
+
+                  {servicio.destino_especifico && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">
+                        {servicio.destino_especifico}
+                      </span>
                     </div>
-                  </div>
-                  <div className="text-sm text-gray-600 truncate">
-                    {`${servicio.destino_especifico ? "→ " : ""}${servicio.destino_especifico || servicio.observaciones || ""}`}
-                  </div>
+                  )}
+
+                  {servicio.observaciones && (
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                      {servicio.observaciones}
+                    </p>
+                  )}
                 </div>
+
+                {/* Status Badge */}
                 <span
-                  className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ml-2 flex-shrink-0"
+                  className="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0"
                   style={{
-                    backgroundColor: `${getStatusColor(servicio.estado)}20`,
+                    backgroundColor: `${getStatusColor(servicio.estado)}15`,
                     color: getStatusColor(servicio.estado),
+                    border: `1px solid ${getStatusColor(servicio.estado)}30`,
                   }}
                 >
                   {getStatusText(servicio.estado)}
                 </span>
               </div>
-              <div className="text-xs sm:text-sm text-gray-500">
-                <div className="truncate">
-                  Solicitado: {formatearFecha(servicio.fecha_solicitud)}
+            </div>
+
+            {/* Content Section */}
+            <div className="p-4">
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3 mb-4 p-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-gray-500 text-xs">Solicitado</p>
+                    <p className="font-medium text-gray-900">
+                      {formatearFecha(servicio.fecha_solicitud)}
+                    </p>
+                  </div>
                 </div>
-                <div className="truncate">
-                  Realización: {formatearFecha(servicio.fecha_realizacion)}
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-gray-500 text-xs">Realización</p>
+                    <p className="font-medium text-gray-900">
+                      {formatearFecha(servicio.fecha_realizacion)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Entity Information */}
+              <div className="space-y-3">
+                {/* Client */}
+                {servicio.cliente && (
+                  <div className="flex items-center gap-3 p-2 bg-blue-25 rounded-md">
+                    <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate">
+                        {servicio.cliente.nombre}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {servicio.cliente.nit && (
+                          <span>NIT: {servicio.cliente.nit}</span>
+                        )}
+                        {servicio.cliente.representante && (
+                          <span className="truncate">
+                            • {servicio.cliente.representante}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Driver and Vehicle Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Driver */}
+                  {servicio.conductor ? (
+                    <div className="flex items-center gap-3 p-2 bg-green-25 rounded-md">
+                      <User className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate">
+                          {servicio.conductor.nombre}{" "}
+                          {servicio.conductor.apellido}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {servicio.conductor.numero_identificacion && (
+                            <span className="flex items-center gap-1">
+                              <IdCard className="w-3 h-3" />
+                              {servicio.conductor.numero_identificacion}
+                            </span>
+                          )}
+                          {servicio.conductor.telefono && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {servicio.conductor.telefono}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-2 bg-amber-25 rounded-md">
+                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-sm text-amber-700">
+                        Conductor pendiente
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Vehicle */}
+                  {servicio.vehiculo ? (
+                    <div className="flex items-center gap-3 p-2 bg-orange-25 rounded-md">
+                      <Car className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900">
+                          {servicio.vehiculo.placa}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {servicio.vehiculo.marca}
+                          {servicio.vehiculo.modelo &&
+                            ` (${servicio.vehiculo.modelo})`}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-2 bg-amber-25 rounded-md">
+                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-sm text-amber-700">
+                        Vehículo pendiente
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1">
+                  {/* Always visible actions */}
+                  <button
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Ver historial"
+                    onClick={(e) => handleViewHistorial(e, servicio)}
+                  >
+                    <History className="w-4 h-4" />
+                  </button>
+
+                  {shouldShowEditButton(servicio.estado) && (
+                    <button
+                      className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                      title="Editar"
+                      onClick={(e) => handleEdit(e, servicio)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {shouldGetTicket(servicio.estado) && (
+                    <button
+                      className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-md transition-colors"
+                      title="Ver ticket"
+                      onClick={(e) => handleViewTicket(e, servicio)}
+                    >
+                      <Ticket className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {showPlanillaNumber(servicio.estado) && (
+                    <button
+                      className="p-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-colors"
+                      title="Ver planilla"
+                      onClick={(e) => handleViewLiquidacion(e, servicio)}
+                    >
+                      <Hash className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <button
+                    className="p-2 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
+                    title="Ver mapa"
+                    onClick={(e) => handleMap(e, servicio)}
+                  >
+                    <Map className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {showFinalizar(servicio.estado) && (
+                    <button
+                      className="p-2 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
+                      title="Finalizar"
+                      onClick={(e) => handleFinalizar(e, servicio)}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {showDelete(servicio.estado) && (
+                    <button
+                      className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                      title="Eliminar"
+                      onClick={(e) => eliminarServicio(e, servicio.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -497,7 +497,7 @@ export default function ModalFormServicio() {
 
       handleModalForm();
       resetFormStates();
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
       console.error(
         isEditing
@@ -507,8 +507,8 @@ export default function ModalFormServicio() {
       );
 
       setError(
-        error instanceof Error
-          ? error.message
+        error
+          ? error.response.data.message
           : isEditing
             ? "Error desconocido al actualizar el servicio"
             : "Error desconocido al registrar el servicio",
@@ -516,10 +516,9 @@ export default function ModalFormServicio() {
 
       addToast({
         title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Error al procesar el servicio",
+        description: error
+          ? error.response.data.message
+          : "Error al procesar el servicio",
         color: "danger",
       });
     } finally {
@@ -1608,6 +1607,7 @@ export default function ModalFormServicio() {
                                             handleModalForm();
                                             resetFormStates();
                                           } catch (error) {
+                                            console.log(error);
                                             addToast({
                                               title: "Error",
                                               description:
