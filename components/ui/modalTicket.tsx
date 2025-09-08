@@ -160,7 +160,7 @@ export default function ModalTicket() {
     }
 
     return (
-      <div className="w-30 md:w-5/6 h-40 md:h-52 rounded-lg relative overflow-hidden bg-gray-50 group">
+      <div className="w-30 md:w-5/6 h-40 md:h-64 rounded-lg relative overflow-hidden bg-gray-50 group">
         {/* Placeholder mientras carga la imagen */}
         {!imageLoaded && fotoUrl && !imageError && (
           <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
