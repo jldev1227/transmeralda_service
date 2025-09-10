@@ -545,8 +545,7 @@ const AdvancedDashboard = () => {
         {/* Header Principal */}
         <header
           className="
-          rounded-b-xl
-          mb-8 bg-white border border-gray-200 px-4 py-6 
+          mb-8 bg-white border border-gray-200 p-6 
           sticky top-0 z-40 backdrop-blur-sm bg-white/95
           transition-all duration-300 ease-in-out
         "
@@ -554,7 +553,7 @@ const AdvancedDashboard = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Título y Estado de Conexión */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-5">
                 <div className="relative">
                   {socketConnected ? (
                     <>
@@ -570,7 +569,7 @@ const AdvancedDashboard = () => {
 
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                    Gestión de Servicios
+                    Planificación de Servicios
                   </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     {socketConnected ? (
@@ -631,11 +630,50 @@ const AdvancedDashboard = () => {
 
                 <div className="text-center">
                   <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Realizados
+                  </p>
+                  <p className="text-lg font-bold text-primary-600">
+                    {sortedServices?.filter((s) =>
+                      ["realizado"].includes(s.estado),
+                    ).length || 0}
+                  </p>
+                </div>
+
+                <div className="w-px h-8 bg-gray-300" />
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Solicitados
+                  </p>
+                  <p className="text-lg font-bold text-gray-600">
+                    {sortedServices?.filter((s) =>
+                      ["solicitado"].includes(s.estado),
+                    ).length || 0}
+                  </p>
+                </div>
+
+                <div className="w-px h-8 bg-gray-300" />
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
                     Pendientes
                   </p>
                   <p className="text-lg font-bold text-amber-600">
                     {sortedServices?.filter((s) =>
-                      ["solicitado", "planificado"].includes(s.estado),
+                      ["planificado"].includes(s.estado),
+                    ).length || 0}
+                  </p>
+                </div>
+
+                <div className="w-px h-8 bg-gray-300" />
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    Cancelados
+                  </p>
+                  <p className="text-lg font-bold text-danger-600">
+                    {sortedServices?.filter((s) =>
+                      ["cancelado"].includes(s.estado),
                     ).length || 0}
                   </p>
                 </div>
