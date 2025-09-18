@@ -1146,283 +1146,288 @@ export default function ServicioViewCliente() {
                             )}
                         </div>
 
-                        {/* Main Content - Mapa más grande */}
-                        <div className="xl:col-span-2">
-                            <div className="bg-white rounded-lg shadow-sm border overflow-hidden h-full">
-                                {mapError && (
-                                    <div className="p-3 bg-red-100 text-red-800 text-sm border-b border-red-200">
-                                        <span className="font-medium">Error:</span> {mapError}
-                                    </div>
-                                )}
-
-                                <div className="relative h-full">
-                                    <div ref={mapContainer} className="h-full w-full" />
-
-                                    {!isMapLoaded && !mapError && (
-                                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                                            <div className="text-center">
-                                                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                                <p className="text-gray-600 text-sm">
-                                                    Cargando mapa...
-                                                </p>
-                                            </div>
+                        <div className="xl:col-span-3 flex flex-col">
+                            {/* Main Content - Mapa más grande */}
+                            <div className="h-full mb-6">
+                                <div className="bg-white rounded-lg shadow-sm border overflow-hidden h-full">
+                                    {mapError && (
+                                        <div className="p-3 bg-red-100 text-red-800 text-sm border-b border-red-200">
+                                            <span className="font-medium">Error:</span> {mapError}
                                         </div>
                                     )}
 
-                                    {isMapLoaded && servicio && (
-                                        <div className="absolute top-3 left-3 bg-white/95 p-2 rounded-lg text-xs shadow-sm">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                                    A
+                                    <div className="relative h-full">
+                                        <div ref={mapContainer} className="h-full w-full" />
+
+                                        {!isMapLoaded && !mapError && (
+                                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                                    <p className="text-gray-600 text-sm">
+                                                        Cargando mapa...
+                                                    </p>
                                                 </div>
-                                                <span>Origen</span>
                                             </div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                                    B
-                                                </div>
-                                                <span>Destino</span>
-                                            </div>
-                                            {vehicleTracking && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-5 h-5 bg-[#0077b6] rounded-full flex items-center justify-center text-white text-xs">
-                                                        🚗
+                                        )}
+
+                                        {isMapLoaded && servicio && (
+                                            <div className="absolute top-3 left-3 bg-white/95 p-2 rounded-lg text-xs shadow-sm">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                                        A
                                                     </div>
-                                                    <span>Vehículo</span>
+                                                    <span>Origen</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                                        B
+                                                    </div>
+                                                    <span>Destino</span>
+                                                </div>
+                                                {vehicleTracking && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-5 h-5 bg-[#0077b6] rounded-full flex items-center justify-center text-white text-xs">
+                                                            🚗
+                                                        </div>
+                                                        <span>Vehículo</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Panel - Información del Servicio con diseño minimalista */}
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    {/* Cronograma minimalista */}
+                                    <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                                                <Calendar className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900">
+                                                Cronograma
+                                            </h3>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-sm text-gray-500 mb-1">
+                                                    Fecha de solicitud
+                                                </p>
+                                                <p className="text-base font-medium text-gray-900">
+                                                    {formatearFecha(servicio.fecha_solicitud)}
+                                                </p>
+                                            </div>
+
+                                            {servicio.fecha_realizacion && (
+                                                <div>
+                                                    <p className="text-sm text-gray-500 mb-1">
+                                                        Fecha de realización
+                                                    </p>
+                                                    <p className="text-base font-medium text-gray-900">
+                                                        {formatearFecha(servicio.fecha_realizacion)}
+                                                    </p>
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Panel - Información del Servicio con diseño minimalista */}
-                        <div className="xl:col-span-1 space-y-6">
-                            {/* Cronograma minimalista */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                                        <Calendar className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                        Cronograma
-                                    </h3>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-1">
-                                            Fecha de solicitud
-                                        </p>
-                                        <p className="text-base font-medium text-gray-900">
-                                            {formatearFecha(servicio.fecha_solicitud)}
-                                        </p>
                                     </div>
 
-                                    {servicio.fecha_realizacion && (
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">
-                                                Fecha de realización
-                                            </p>
-                                            <p className="text-base font-medium text-gray-900">
-                                                {formatearFecha(servicio.fecha_realizacion)}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Información del Recorrido minimalista */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                                        <Route className="w-4 h-4 text-emerald-600" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                        Recorrido
-                                    </h3>
-                                </div>
-
-                                <div className="space-y-6">
-                                    {/* Ruta principal */}
-                                    <div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">
-                                                        A
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Origen</p>
-                                                    <p className="text-base font-medium text-gray-900">
-                                                        {servicio.origen?.nombre_municipio ||
-                                                            "No especificado"}
-                                                    </p>
-                                                    {servicio.origen_especifico && (
-                                                        <p className="text-xs text-gray-400 italic">
-                                                            ({servicio.origen_especifico})
-                                                        </p>
-                                                    )}
-                                                </div>
+                                    {/* Información del Recorrido minimalista */}
+                                    <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                                <Route className="w-4 h-4 text-emerald-600" />
                                             </div>
+                                            <h3 className="text-lg font-semibold text-gray-900">
+                                                Recorrido
+                                            </h3>
                                         </div>
 
-                                        <div className="px-2">
-                                            <div className="w-px h-8 bg-gray-200" />
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">
-                                                        B
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Destino</p>
-                                                    <p className="text-base font-medium text-gray-900">
-                                                        {servicio.destino?.nombre_municipio ||
-                                                            "No especificado"}
-                                                    </p>
-                                                    {servicio.destino_especifico && (
-                                                        <p className="text-xs text-gray-400 italic">
-                                                            ({servicio.destino_especifico})
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Métricas del viaje */}
-                                    <div className="border-t border-gray-100 pt-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                                                <p className="text-sm text-gray-500 mb-1">Distancia</p>
-                                                <p className="text-lg font-semibold text-gray-900">
-                                                    {distancia} km
-                                                </p>
-                                            </div>
-                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                                                <p className="text-sm text-gray-500 mb-1">Duración</p>
-                                                <p className="text-lg font-semibold text-gray-900">
-                                                    {formatDuration(duracion)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Propósito del servicio */}
-                                    {servicio.proposito_servicio && (
-                                        <div className="border-t border-gray-100 pt-4">
-                                            <p className="text-sm text-gray-500 mb-1">
-                                                Propósito del servicio
-                                            </p>
-                                            <p className="text-base text-gray-900 capitalize">
-                                                Transporte de {servicio.proposito_servicio}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Observaciones */}
-                            {servicio.observaciones ? (
-                                <div className="bg-amber-50 rounded-xl border border-amber-100 p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                                            <Info className="w-4 h-4 text-amber-600" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            Observaciones
-                                        </h3>
-                                    </div>
-                                    <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                                        {servicio.observaciones}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="bg-gray-50 rounded-xl border border-gray-100 p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                            <Info className="w-4 h-4 text-gray-400" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            Observaciones
-                                        </h3>
-                                    </div>
-                                    <p className="text-sm text-gray-400 italic">
-                                        No hay observaciones para este servicio.
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Coordenadas técnicas */}
-                            {(servicio.origen_latitud || servicio.destino_latitud) && (
-                                <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                                            <MapPin className="w-4 h-4 text-gray-600" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            Coordenadas
-                                        </h3>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {servicio.origen_latitud && servicio.origen_longitud && (
+                                        <div className="space-y-6">
+                                            {/* Ruta principal */}
                                             <div>
-                                                <p className="text-sm text-gray-500 mb-1">Origen</p>
-                                                <p className="text-sm font-mono text-gray-900">
-                                                    {servicio.origen_latitud.toFixed(6)},{" "}
-                                                    {servicio.origen_longitud.toFixed(6)}
-                                                </p>
-                                            </div>
-                                        )}
-                                        {servicio.destino_latitud && servicio.destino_longitud && (
-                                            <div>
-                                                <p className="text-sm text-gray-500 mb-1">Destino</p>
-                                                <p className="text-sm font-mono text-gray-900">
-                                                    {servicio.destino_latitud.toFixed(6)},{" "}
-                                                    {servicio.destino_longitud.toFixed(6)}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+                                                            <span className="text-white text-xs font-bold">
+                                                                A
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Origen</p>
+                                                            <p className="text-base font-medium text-gray-900">
+                                                                {servicio.origen?.nombre_municipio ||
+                                                                    "No especificado"}
+                                                            </p>
+                                                            {servicio.origen_especifico && (
+                                                                <p className="text-xs text-gray-400 italic">
+                                                                    ({servicio.origen_especifico})
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                            {/* Auditoría */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                                        <Clock className="w-4 h-4 text-gray-600" />
+                                                <div className="px-2">
+                                                    <div className="w-px h-8 bg-gray-200" />
+                                                </div>
+
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+                                                            <span className="text-white text-xs font-bold">
+                                                                B
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Destino</p>
+                                                            <p className="text-base font-medium text-gray-900">
+                                                                {servicio.destino?.nombre_municipio ||
+                                                                    "No especificado"}
+                                                            </p>
+                                                            {servicio.destino_especifico && (
+                                                                <p className="text-xs text-gray-400 italic">
+                                                                    ({servicio.destino_especifico})
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Métricas del viaje */}
+                                            <div className="border-t border-gray-100 pt-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                        <p className="text-sm text-gray-500 mb-1">Distancia</p>
+                                                        <p className="text-lg font-semibold text-gray-900">
+                                                            {distancia} km
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                        <p className="text-sm text-gray-500 mb-1">Duración</p>
+                                                        <p className="text-lg font-semibold text-gray-900">
+                                                            {formatDuration(duracion)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Propósito del servicio */}
+                                            {servicio.proposito_servicio && (
+                                                <div className="border-t border-gray-100 pt-4">
+                                                    <p className="text-sm text-gray-500 mb-1">
+                                                        Propósito del servicio
+                                                    </p>
+                                                    <p className="text-base text-gray-900 capitalize">
+                                                        Transporte de {servicio.proposito_servicio}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                        Auditoría
-                                    </h3>
                                 </div>
-                                <div className="space-y-3">
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-1">
-                                            Fecha de creación
-                                        </p>
-                                        <p className="text-sm text-gray-900">
-                                            {new Date(
-                                                servicio.created_at || servicio.createdAt,
-                                            ).toLocaleString()}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-1">
-                                            Última actualización
-                                        </p>
-                                        <p className="text-sm text-gray-900">
-                                            {new Date(
-                                                servicio.updated_at || servicio.updatedAt,
-                                            ).toLocaleString()}
-                                        </p>
+                                <div className="space-y-2">
+                                    {/* Observaciones */}
+                                    {servicio.observaciones ? (
+                                        <div className="bg-amber-50 rounded-xl border border-amber-100 p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                    <Info className="w-4 h-4 text-amber-600" />
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    Observaciones
+                                                </h3>
+                                            </div>
+                                            <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                                                {servicio.observaciones}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                    <Info className="w-4 h-4 text-gray-400" />
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    Observaciones
+                                                </h3>
+                                            </div>
+                                            <p className="text-sm text-gray-400 italic">
+                                                No hay observaciones para este servicio.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Coordenadas técnicas */}
+                                    {(servicio.origen_latitud || servicio.destino_latitud) && (
+                                        <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                                                    <MapPin className="w-4 h-4 text-gray-600" />
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    Coordenadas
+                                                </h3>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {servicio.origen_latitud && servicio.origen_longitud && (
+                                                    <div>
+                                                        <p className="text-sm text-gray-500 mb-1">Origen</p>
+                                                        <p className="text-sm font-mono text-gray-900">
+                                                            {servicio.origen_latitud.toFixed(6)},{" "}
+                                                            {servicio.origen_longitud.toFixed(6)}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {servicio.destino_latitud && servicio.destino_longitud && (
+                                                    <div>
+                                                        <p className="text-sm text-gray-500 mb-1">Destino</p>
+                                                        <p className="text-sm font-mono text-gray-900">
+                                                            {servicio.destino_latitud.toFixed(6)},{" "}
+                                                            {servicio.destino_longitud.toFixed(6)}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Procesamiento */}
+                                    <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                                                <Clock className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900">
+                                                Procesamiento
+                                            </h3>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <p className="text-sm text-gray-500 mb-1">
+                                                    Fecha de creación
+                                                </p>
+                                                <p className="text-sm text-gray-900">
+                                                    {new Date(
+                                                        servicio.created_at || servicio.createdAt,
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500 mb-1">
+                                                    Última actualización
+                                                </p>
+                                                <p className="text-sm text-gray-900">
+                                                    {new Date(
+                                                        servicio.updated_at || servicio.updatedAt,
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
