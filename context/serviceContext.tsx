@@ -443,7 +443,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       const response = await apiClient.get("/api/servicios");
 
       if (response.data.success) {
-        console.log(response);
         setServicios(response.data.data);
       } else {
         throw new Error(

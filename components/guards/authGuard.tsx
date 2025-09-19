@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loadingPage";
@@ -9,24 +9,37 @@ import LoadingPage from "@/components/loadingPage";
 type AuthGuardProps = {
   children: React.ReactNode;
   requiredPermissions?: string[];
+  allowPublicAccess?: boolean; // Nueva prop
 };
 
 export function AuthGuard({
   children,
   requiredPermissions = [],
+  allowPublicAccess = false,
 }: AuthGuardProps) {
   const { user, loading, isAuthenticated, error } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Verificar si es acceso público válido
+  const hasPublicToken = searchParams.has("token");
+  const isPublicRoute = pathname.startsWith("/servicio/") && hasPublicToken;
+
+  console.log(hasPublicToken, isPublicRoute);
 
   useEffect(() => {
-    // Si no está cargando y no está autenticado, redirigir al login
-    if (!loading && !isAuthenticated) {
-      router.push(
-        process.env.NEXT_PUBLIC_AUTH_SYSTEM ||
-          `http://auth.midominio.local:3001`,
-      );
+    // Si es ruta pública con token, permitir acceso
+    if (allowPublicAccess && isPublicRoute) {
+      return;
+    }
 
+    // Resto de tu lógica de autenticación existente
+    if (!loading && !isAuthenticated) {
+      // router.push(
+      //   process.env.NEXT_PUBLIC_AUTH_SYSTEM ||
+      //     `http://auth.midominio.local:3001`,
+      // );
       return;
     }
 
@@ -56,21 +69,23 @@ export function AuthGuard({
     }
   }, [loading, isAuthenticated, user, router, pathname, requiredPermissions]);
 
-  // Mostrar pantalla de carga mientras verificamos
+  // Si es acceso público válido, mostrar contenido directamente
+  if (allowPublicAccess && isPublicRoute) {
+    return <>{children}</>;
+  }
+
+  // Resto de tu lógica normal
   if (loading) {
     return <LoadingPage>Verificando acceso</LoadingPage>;
   }
 
-  // Si no está autenticado, mostrar mensaje de redirección
   if (!isAuthenticated) {
     return <LoadingPage>Redirigiendo al ingreso</LoadingPage>;
   }
 
-  // Si hay un error, mostrar el error
   if (error) {
     return <LoadingPage>Error: {error}</LoadingPage>;
   }
 
-  // Si todo está bien, mostrar el contenido
   return <>{children}</>;
 }

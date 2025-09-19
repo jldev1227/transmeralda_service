@@ -302,14 +302,15 @@ const ServiciosListCards = ({
   );
   const ModalFinalizarServicio = React.lazy(() => import("./modalFinalizar"));
 
-  if (navigatingToId) return (
-    <div className="flex items-center justify-center rounded-lg h-32">
-      <div className="flex items-center gap-2 text-emerald-600">
-        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm font-medium">Redirigiendo...</span>
+  if (navigatingToId)
+    return (
+      <div className="flex items-center justify-center rounded-lg h-32">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-medium">Redirigiendo...</span>
+        </div>
       </div>
-    </div>
-  )
+    );
 
   return (
     <div className="space-y-3">

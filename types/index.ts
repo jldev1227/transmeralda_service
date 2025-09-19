@@ -21,3 +21,30 @@ export interface Prediction {
   }>;
   types?: string[];
 }
+
+export interface Documento {
+  id: string;
+  conductor_id: string;
+  categoria: string;
+  nombre_original: string;
+  nombre_archivo: string;
+  ruta_archivo: string;
+  s3_key: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  fecha_vigencia: string;
+  estado: string;
+  upload_date: string;
+  metadata: {
+    size: number;
+    bucket: string;
+    s3Location: string;
+    processedAt: string;
+    originalPath: string;
+    fileExtension: string;
+    uploadSession: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
