@@ -8,7 +8,7 @@ import { ClientLayout } from "./client-layout"; // Componente cliente que creare
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { AuthGuard } from "@/components/authGuard";
+import { AuthGuard } from "@/components/guards/authGuard";
 
 export const metadata: Metadata = {
   title: {

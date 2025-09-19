@@ -72,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState<boolean>(true);
+  const [isPublicRoute, setIsPublicRoute] = useState<boolean>(false);
 
   // Función para obtener el perfil del usuario
   const fetchUserProfile = async (): Promise<void> => {
@@ -131,20 +132,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Cargar perfil al inicializar
   useEffect(() => {
+    // Detectar si es ruta pública
+    const publicRoute =
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/servicio/") &&
+      new URLSearchParams(window.location.search).has("token");
+
+    setIsPublicRoute(publicRoute);
+
+    if (publicRoute) {
+      console.log(
+        "[AuthProvider] Ruta pública detectada, saltando autenticación",
+      );
+      setLoading(false);
+      setInitializing(false);
+
+      return;
+    }
+
     fetchUserProfile();
 
-    // Establecer un tiempo máximo para la inicialización
     const timeoutId = setTimeout(() => {
       if (initializing) {
         setInitializing(false);
       }
-    }, 5000); // 5 segundos máximo de espera
+    }, 5000);
 
     return () => clearTimeout(timeoutId);
   }, []);
 
   // Determinar si el usuario está autenticado
-  const isAuthenticated = !!user;
+  const isAuthenticated = isPublicRoute ? true : !!user;
 
   // Contexto que será proporcionado
   const authContext: AuthContextType = {

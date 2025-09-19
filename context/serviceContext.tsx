@@ -105,7 +105,7 @@ interface ServiceContextType {
   // Datos
   servicios: ServicioConRelaciones[];
   liquidaciones: Liquidacion[];
-  servicio: Servicio | null;
+  servicio: ServicioConRelaciones | null;
   municipios: Municipio[];
   conductores: Conductor[];
   vehiculos: Vehiculo[];
@@ -408,7 +408,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 }) => {
   const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
-  const [servicio, setServicio] = useState<Servicio | null>(null);
+  const [servicio, setServicio] = useState<ServicioConRelaciones | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [conductores, setConductores] = useState<Conductor[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
@@ -556,7 +556,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
   // Dentro de tu hook/context useService
   const obtenerServicio = useCallback(
-    async (id: string): Promise<Servicio | null> => {
+    async (id: string): Promise<ServicioConRelaciones | null> => {
       try {
         setLoading(true);
         setError(null);

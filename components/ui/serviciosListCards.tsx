@@ -18,6 +18,7 @@ import {
   Map,
 } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
 import ModalMap from "./modalMap";
@@ -42,6 +43,23 @@ const ServiciosListCards = ({
   filteredServicios,
   formatearFecha,
 }: ServiciosListCardsProps) => {
+  const navigation = useRouter();
+  const [navigatingToId, setNavigatingToId] = useState<string | null>(null);
+
+  const handleNavigateToService = async (servicioId: string | undefined) => {
+    if (!servicioId) return;
+
+    setNavigatingToId(servicioId);
+
+    // Pequeño delay para mostrar el loading
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    navigation.push(`/servicio/${servicioId}`);
+
+    // El loading se limpiará cuando el componente se desmonte
+    // o puedes limpiarlo después de un timeout
+    setTimeout(() => setNavigatingToId(null), 2000);
+  };
   const { user } = useAuth();
 
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
@@ -284,6 +302,16 @@ const ServiciosListCards = ({
   );
   const ModalFinalizarServicio = React.lazy(() => import("./modalFinalizar"));
 
+  if (navigatingToId)
+    return (
+      <div className="flex items-center justify-center rounded-lg h-32">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-medium">Redirigiendo...</span>
+        </div>
+      </div>
+    );
+
   return (
     <div className="space-y-3">
       {DialogComponent}
@@ -331,6 +359,8 @@ const ServiciosListCards = ({
               ${isNew ? "animate-pulse border-green-400" : ""}
               ${isUpdated ? "border-blue-400" : ""}
             `}
+            role="button"
+            onClick={() => handleNavigateToService(servicio.id)}
           >
             {/* Header Section */}
             <div className="p-4 border-b border-gray-100">

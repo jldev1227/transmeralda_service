@@ -32,6 +32,14 @@ export async function middleware(request: NextRequest) {
 
   console.log(`[Middleware] Procesando ruta: ${path}`);
 
+  // ✨ NUEVO: Verificar si es una ruta pública con token
+  if (path.startsWith("/servicio/") && url.searchParams.has("token")) {
+    console.log(`[Middleware] Ruta pública detectada: ${path}?token=...`);
+
+    // Permitir acceso sin verificar autenticación
+    return NextResponse.next();
+  }
+
   // Verificar si la ruta requiere permisos específicos
   const permissionConfig = getRequiredPermissions(path);
 
@@ -116,24 +124,11 @@ export async function middleware(request: NextRequest) {
 // Configurar las rutas donde se aplica el middleware
 export const config = {
   matcher: [
-    /*
-     * Match specific protected routes:
-     * - Root path /
-     * - /liquidaciones
-     * - /planillas
-     * And exclude:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public directory files
-     * - api routes
-     * - login page
-     * - error page
-     */
     "/",
     "/liquidaciones/:path*",
     "/planillas/:path*",
-    "/((?!_next/static|_next/image|favicon\\.ico|public/|api/|login|error).*)",
+    // Excluir rutas de servicio público con token
+    "/((?!_next/static|_next/image|favicon\\.ico|public/|api/|login|error|servicio/).*)",
   ],
 };
 

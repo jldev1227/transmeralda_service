@@ -17,7 +17,7 @@ export default function ModalTicket() {
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(false);
 
-  const isMobile = useMediaQuery({ maxWidth: 480 });
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   // Memoizar la función para evitar re-renders innecesarios
   const getPresignedUrl = useCallback(async (s3Key: string) => {
@@ -173,12 +173,11 @@ export default function ModalTicket() {
           className={`relative w-full h-full transition-all duration-500 ${imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
         >
           <Image
+            fill
             alt="Foto conductor asignado"
             className="object-cover rounded-lg transition-opacity duration-300"
-            height={215}
             priority={false}
             src={fotoUrl || "/assets/not_user.avif"}
-            width={300}
             onError={handleLocalImageError}
             onLoad={handleImageLoad}
           />
