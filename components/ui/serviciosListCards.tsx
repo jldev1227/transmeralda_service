@@ -54,6 +54,8 @@ const ServiciosListCards = ({
     // Pequeño delay para mostrar el loading
     await new Promise((resolve) => setTimeout(resolve, 100));
 
+    console.log(servicioId);
+
     navigation.push(`/servicio/${servicioId}`);
 
     // El loading se limpiará cuando el componente se desmonte
@@ -191,6 +193,8 @@ const ServiciosListCards = ({
       await apiClient.delete<ServicioConRelaciones>(`/api/servicios/${id}`);
     } catch (err) {
       console.error("Error al eliminar el servicio:", err);
+    } finally {
+      setConfirmLoading(false);
     }
   };
 

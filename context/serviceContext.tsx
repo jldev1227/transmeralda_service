@@ -124,7 +124,7 @@ interface ServiceContextType {
     servicioId: string,
     numeroPlanilla: string,
   ) => Promise<ServicioConRelaciones>;
-  obtenerServicio: (id: string) => void;
+  obtenerServicio: (id: string) => Promise<ServicioConRelaciones | null>; // ✅ Agregar Promise
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 
   // Tracking de vehículos y servicios seleccionados
@@ -561,6 +561,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         setLoading(true);
         setError(null);
 
+        console.log(id);
+
         const response = await apiClient.get(`/api/servicios/${id}`);
 
         if (response.data.success) {
@@ -908,7 +910,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         addToast({
           title: "Nuevo servicio",
-          description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico}`,
+          description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico || data.destino.nombre_municipio}`,
           color: "success",
         });
       };
@@ -1003,6 +1005,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
+
+        console.log(data);
 
         // Eliminar de la lista principal de servicios
         setServicios((prevServicios) =>
