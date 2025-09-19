@@ -28,6 +28,8 @@ import { apiClient } from "@/config/apiClient";
 import { formatearFecha } from "@/helpers";
 import { PublicTokenGuard } from "@/components/guards/publicTokenGuard";
 import { Documento } from "@/types";
+import { useService } from "@/context/serviceContext";
+import ModalShareServicio from "@/components/ui/modalShareServicio";
 
 // Hook personalizado para servicios públicos
 const usePublicService = (servicioId: string, token: string | null) => {
@@ -80,21 +82,50 @@ const usePublicService = (servicioId: string, token: string | null) => {
 };
 
 function ServicioContent({ params }: { params: { id: string } }) {
-  return (
-    <PublicTokenGuard servicioId={params.id}>
-      <ServicioViewCliente servicioId={params.id} />
-    </PublicTokenGuard>
-  );
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
+  // Only use PublicTokenGuard if there's a token
+  if (token) {
+    return (
+      <PublicTokenGuard servicioId={params.id}>
+        <ServicioViewCliente servicioId={params.id} />
+      </PublicTokenGuard>
+    );
+  }
+
+  // For authenticated users, render directly
+  return <ServicioViewCliente servicioId={params.id} />;
 }
 
 function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const { servicio, loading, error } = usePublicService(servicioId, token);
+
+  // Use different hooks based on whether token is present
+  const publicService = usePublicService(servicioId, token);
+  const { servicio, obtenerServicio, loading: authLoading } = useService();
+
+  // Determine which service data to use
+  const isPublicAccess = !!token;
+
+  const currentServicio = isPublicAccess ? publicService.servicio : servicio; // servicio from useService should be the current service
+
+  const loading = isPublicAccess ? publicService.loading : authLoading;
+
   const { shareTicket } = useTicketShare();
 
-  console.log(servicio, loading, error);
+  // Fetch service if authenticated and servicioId is provided
+  useEffect(() => {
+    const fetchServicio = async () => {
+      if (!isPublicAccess && servicioId) {
+        await obtenerServicio(servicioId);
+      }
+    };
+
+    fetchServicio();
+  }, [isPublicAccess, servicioId]);
 
   // Estados para la navegación
   const [isNavigating, setIsNavigating] = useState(false);
@@ -136,8 +167,9 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
 
   // Función para manejar el compartir
   const handleShare = async () => {
-    if (servicio) {
-      await shareTicket(servicio);
+    // Abrir modal de share
+    if (currentServicio) {
+      await shareTicket(currentServicio);
     }
   };
 
@@ -333,7 +365,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
 
   // Función para crear popups
   const createPopupHTML = (type: "origen" | "destino") => {
-    if (!servicio) return "";
+    if (!currentServicio) return "";
 
     const isOrigin = type === "origen";
 
@@ -346,11 +378,11 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
           <div class="font-medium" style="font-weight: 600; margin-bottom: 4px;">
             ${
               isOrigin
-                ? servicio.origen_especifico ||
-                  servicio.origen?.nombre_municipio ||
+                ? currentServicio.origen_especifico ||
+                  currentServicio.origen?.nombre_municipio ||
                   "Origen"
-                : servicio.destino_especifico ||
-                  servicio.destino?.nombre_municipio ||
+                : currentServicio.destino_especifico ||
+                  currentServicio.destino?.nombre_municipio ||
                   "Destino"
             }
           </div>
@@ -361,7 +393,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 ? `
                 <div>
                   <div class="font-medium" style="font-weight: 500;">Tipo de servicio:</div>
-                  <div style="color: #6b7280;">${servicio.proposito_servicio || "No especificado"}</div>
+                  <div style="color: #6b7280;">${currentServicio.proposito_servicio || "No especificado"}</div>
                 </div>
               `
                 : `
@@ -600,7 +632,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       setPhotoError(false);
       setImageLoaded(false);
 
-      const fotoPerfil = servicio?.conductor?.documentos?.find(
+      const fotoPerfil = currentServicio?.conductor?.documentos?.find(
         (doc: Documento) => doc.categoria === "FOTO_PERFIL",
       );
 
@@ -608,12 +640,10 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         setIsLoadingPhoto(true);
         try {
           const url = await getPresignedUrl(fotoPerfil.s3_key);
-
           if (url) {
             setFotoUrl(url);
           } else {
             setPhotoError(true);
-            console.warn("No se pudo obtener la URL de la foto");
           }
         } catch (error) {
           console.error("Error al cargar foto de perfil:", error);
@@ -626,10 +656,10 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       }
     };
 
-    if (servicio?.conductor) {
+    if (currentServicio?.conductor) {
       cargarFotoPerfil();
     }
-  }, [servicio?.conductor?.id, getPresignedUrl]);
+  }, [currentServicio?.conductor?.id, getPresignedUrl]);
 
   // Efecto para inicializar Mapbox
   useEffect(() => {
@@ -672,7 +702,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       !MAPBOX_ACCESS_TOKEN ||
       !mapContainer.current ||
       map.current ||
-      !servicio
+      !currentServicio
     ) {
       return;
     }
@@ -707,21 +737,28 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         setIsMapLoaded(false);
       }
     };
-  }, [MAPBOX_ACCESS_TOKEN, servicio]);
+  }, [MAPBOX_ACCESS_TOKEN, currentServicio]);
 
   // Efecto para crear/actualizar ruta cuando cambie el servicio
   useEffect(() => {
-    if (!isMapLoaded || !map.current || !servicio) return;
+    if (!isMapLoaded || !map.current || !currentServicio) return;
 
     clearMapObjects();
 
-    const origenLat = servicio.origen_latitud || servicio.origen?.latitud;
-    const origenLng = servicio.origen_longitud || servicio.origen?.longitud;
-    const destinoLat = servicio.destino_latitud || servicio.destino?.latitud;
-    const destinoLng = servicio.destino_longitud || servicio.destino?.longitud;
+    const origenLat =
+      currentServicio.origen_latitud || currentServicio.origen?.latitud;
+    const origenLng =
+      currentServicio.origen_longitud || currentServicio.origen?.longitud;
+    const destinoLat =
+      currentServicio.destino_latitud || currentServicio.destino?.latitud;
+    const destinoLng =
+      currentServicio.destino_longitud || currentServicio.destino?.longitud;
 
     if (!origenLat || !origenLng || !destinoLat || !destinoLng) {
-      console.warn("Coordenadas incompletas para el servicio:", servicio);
+      console.warn(
+        "Coordenadas incompletas para el servicio:",
+        currentServicio,
+      );
 
       return;
     }
@@ -760,13 +797,13 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       let routeColor = "#059669";
 
       if (
-        servicio.estado === "en_curso" &&
-        servicio.vehiculo?.placa &&
+        currentServicio.estado === "en_curso" &&
+        currentServicio.vehiculo?.placa &&
         wialonSessionId
       ) {
         try {
           const trackingData = await fetchVehicleTracking(
-            servicio.vehiculo.placa,
+            currentServicio.vehiculo.placa,
           );
 
           if (trackingData?.position) {
@@ -863,13 +900,18 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         maxZoom: 14,
       });
     }
-  }, [isMapLoaded, servicio?.id, servicio?.estado, wialonSessionId]);
+  }, [
+    isMapLoaded,
+    currentServicio?.id,
+    currentServicio?.estado,
+    wialonSessionId,
+  ]);
 
   if (loading) {
     return <LoadingPage>Cargando servicio</LoadingPage>;
   }
 
-  if (!servicio) {
+  if (!currentServicio) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -920,7 +962,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
     );
   }
 
-  const statusColors = getStatusColor(servicio.estado);
+  const statusColors = getStatusColor(currentServicio.estado);
 
   return (
     <>
@@ -955,7 +997,6 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                                 }
                             `}
                       disabled={isNavigating}
-                      title="Volver"
                       onClick={handleGoBack}
                     >
                       {isNavigating ? (
@@ -998,7 +1039,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                           Servicio de Transporte
                         </h1>
                         <p className="text-sm text-gray-500 font-medium hidden sm:block">
-                          ID: {servicio.id}
+                          ID: {currentServicio.id}
                         </p>
                       </div>
                     </div>
@@ -1019,7 +1060,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         color: statusColors,
                       }}
                     >
-                      {getStatusText(servicio.estado)}
+                      {getStatusText(currentServicio.estado)}
                     </span>
                   </div>
 
@@ -1032,6 +1073,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
                             }
                         `}
+                    title="compartir"
                     disabled={isNavigating}
                     onClick={handleShare}
                   >
@@ -1055,7 +1097,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 {/* Mobile ID display */}
                 <div className="block sm:hidden mt-3 pt-3 border-t border-gray-100">
                   <p className="text-xs text-gray-400 font-medium">
-                    ID: {servicio.id}
+                    ID: {currentServicio.id}
                   </p>
                 </div>
               </div>
@@ -1116,7 +1158,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         Servicio de Transporte
                       </h1>
                       <p className="text-base text-gray-500 font-medium">
-                        ID: {servicio.id}
+                        ID: {currentServicio.id}
                       </p>
                     </div>
                   </div>
@@ -1135,39 +1177,17 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         color: statusColors,
                       }}
                     >
-                      {getStatusText(servicio.estado)}
+                      {getStatusText(currentServicio.estado)}
                     </span>
                   </div>
 
                   <div className="h-8 w-px bg-gray-200" />
 
-                  <button
-                    className={`
-                            px-6 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 font-medium
-                            ${
-                              isNavigating
-                                ? "bg-gray-100 cursor-not-allowed opacity-50 text-gray-400"
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
-                            }
-                        `}
-                    disabled={isNavigating}
-                    onClick={handleShare}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                      />
-                    </svg>
-                    Compartir
-                  </button>
+                  <ModalShareServicio
+                    isNavigating={isNavigating}
+                    servicioId={servicioId}
+                    handleShareBasicTicket={handleShare}
+                  />
                 </div>
               </div>
             </div>
@@ -1200,8 +1220,8 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Nombre</p>
                       <p className="text-base font-medium text-gray-900">
-                        {servicio.conductor?.nombre}{" "}
-                        {servicio.conductor?.apellido}
+                        {currentServicio.conductor?.nombre}{" "}
+                        {currentServicio.conductor?.apellido}
                       </p>
                     </div>
 
@@ -1210,17 +1230,17 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         Identificación
                       </p>
                       <p className="text-sm text-gray-700">
-                        {servicio.conductor?.tipo_identificacion}:{" "}
-                        {servicio.conductor?.numero_identificacion ||
+                        {currentServicio.conductor?.tipo_identificacion}:{" "}
+                        {currentServicio.conductor?.numero_identificacion ||
                           "No especificado"}
                       </p>
                     </div>
 
-                    {servicio.conductor?.telefono && (
+                    {currentServicio.conductor?.telefono && (
                       <div>
                         <p className="text-sm text-gray-500 mb-1">Teléfono</p>
                         <p className="text-sm text-gray-700">
-                          {servicio.conductor.telefono}
+                          {currentServicio.conductor.telefono}
                         </p>
                       </div>
                     )}
@@ -1240,98 +1260,101 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 </div>
               </div>
 
-              {/* Información del Vehículo */}
-              {servicio.vehiculo && (
-                <div className="bg-white rounded-xl border border-gray-100 p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <Truck className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Vehículo
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Placa</p>
-                      <p className="text-base font-medium text-gray-900">
-                        {servicio.vehiculo.placa}
-                      </p>
+              <div className="grid sm:grid-cols-2 xl:grid-cols-1 gap-2">
+                {/* Información del Vehículo */}
+                {currentServicio.vehiculo && (
+                  <div className="bg-white rounded-xl border border-gray-100 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <Truck className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Vehículo
+                      </h3>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">
-                        Clase Vehículo
-                      </p>
-                      <p className="text-base font-medium text-gray-900">
-                        {servicio.vehiculo.clase_vehiculo}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Vehículo</p>
-                      <p className="text-sm text-gray-700">
-                        {servicio.vehiculo.marca} {servicio.vehiculo.linea}{" "}
-                        {servicio.vehiculo.modelo}
-                      </p>
-                    </div>
-
-                    {servicio.vehiculo.color && (
+                    <div className="space-y-3">
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">Color</p>
-                        <p className="text-sm text-gray-700">
-                          {servicio.vehiculo.color}
+                        <p className="text-sm text-gray-500 mb-1">Placa</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {currentServicio.vehiculo.placa}
                         </p>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="border-t border-gray-100 pt-4 mt-4">
-                    <Button
-                      fullWidth
-                      color="primary"
-                      radius="sm"
-                      startContent={<FileText className="w-4 h-4" />}
-                      variant="flat"
-                    >
-                      Ver documentación
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Información del Cliente */}
-              {servicio.cliente && (
-                <div className="bg-white rounded-xl border border-gray-100 p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
-                      <Building className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Cliente
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Nombre</p>
-                      <p className="text-base font-medium text-gray-900">
-                        {servicio.cliente.nombre}
-                      </p>
-                    </div>
-
-                    {servicio.cliente.nit && (
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">NIT</p>
-                        <p className="text-sm text-gray-700">
-                          {servicio.cliente.nit}
+                        <p className="text-sm text-gray-500 mb-1">
+                          Clase Vehículo
+                        </p>
+                        <p className="text-base font-medium text-gray-900">
+                          {currentServicio.vehiculo.clase_vehiculo}
                         </p>
                       </div>
-                    )}
+
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Vehículo</p>
+                        <p className="text-sm text-gray-700">
+                          {currentServicio.vehiculo.marca}{" "}
+                          {currentServicio.vehiculo.linea}{" "}
+                          {currentServicio.vehiculo.modelo}
+                        </p>
+                      </div>
+
+                      {currentServicio.vehiculo.color && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Color</p>
+                          <p className="text-sm text-gray-700">
+                            {currentServicio.vehiculo.color}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-4 mt-4">
+                      <Button
+                        fullWidth
+                        color="primary"
+                        radius="sm"
+                        startContent={<FileText className="w-4 h-4" />}
+                        variant="flat"
+                      >
+                        Ver documentación
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Información del Cliente */}
+                {currentServicio.cliente && (
+                  <div className="bg-white rounded-xl border border-gray-100 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                        <Building className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Cliente
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Nombre</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {currentServicio.cliente.nombre}
+                        </p>
+                      </div>
+
+                      {currentServicio.cliente.nit && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">NIT</p>
+                          <p className="text-sm text-gray-700">
+                            {currentServicio.cliente.nit}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="xl:col-span-3 flex flex-col">
@@ -1358,7 +1381,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                       </div>
                     )}
 
-                    {isMapLoaded && servicio && (
+                    {isMapLoaded && currentServicio && (
                       <div className="absolute top-3 left-3 bg-white/95 p-2 rounded-lg text-xs shadow-sm">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -1406,17 +1429,17 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                           Fecha de solicitud
                         </p>
                         <p className="text-base font-medium text-gray-900">
-                          {formatearFecha(servicio.fecha_solicitud)}
+                          {formatearFecha(currentServicio.fecha_solicitud)}
                         </p>
                       </div>
 
-                      {servicio.fecha_realizacion && (
+                      {currentServicio.fecha_realizacion && (
                         <div>
                           <p className="text-sm text-gray-500 mb-1">
                             Fecha de realización
                           </p>
                           <p className="text-base font-medium text-gray-900">
-                            {formatearFecha(servicio.fecha_realizacion)}
+                            {formatearFecha(currentServicio.fecha_realizacion)}
                           </p>
                         </div>
                       )}
@@ -1447,12 +1470,12 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                             <div>
                               <p className="text-sm text-gray-500">Origen</p>
                               <p className="text-base font-medium text-gray-900">
-                                {servicio.origen?.nombre_municipio ||
+                                {currentServicio.origen?.nombre_municipio ||
                                   "No especificado"}
                               </p>
-                              {servicio.origen_especifico && (
+                              {currentServicio.origen_especifico && (
                                 <p className="text-xs text-gray-400 italic">
-                                  ({servicio.origen_especifico})
+                                  ({currentServicio.origen_especifico})
                                 </p>
                               )}
                             </div>
@@ -1473,12 +1496,12 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                             <div>
                               <p className="text-sm text-gray-500">Destino</p>
                               <p className="text-base font-medium text-gray-900">
-                                {servicio.destino?.nombre_municipio ||
+                                {currentServicio.destino?.nombre_municipio ||
                                   "No especificado"}
                               </p>
-                              {servicio.destino_especifico && (
+                              {currentServicio.destino_especifico && (
                                 <p className="text-xs text-gray-400 italic">
-                                  ({servicio.destino_especifico})
+                                  ({currentServicio.destino_especifico})
                                 </p>
                               )}
                             </div>
@@ -1509,13 +1532,13 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                       </div>
 
                       {/* Propósito del servicio */}
-                      {servicio.proposito_servicio && (
+                      {currentServicio.proposito_servicio && (
                         <div className="border-t border-gray-100 pt-4">
                           <p className="text-sm text-gray-500 mb-1">
                             Propósito del servicio
                           </p>
                           <p className="text-base text-gray-900 capitalize">
-                            Transporte de {servicio.proposito_servicio}
+                            Transporte de {currentServicio.proposito_servicio}
                           </p>
                         </div>
                       )}
@@ -1524,7 +1547,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 </div>
                 <div className="space-y-2">
                   {/* Observaciones */}
-                  {servicio.observaciones ? (
+                  {currentServicio.observaciones ? (
                     <div className="bg-amber-50 rounded-xl border border-amber-100 p-6">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -1535,7 +1558,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         </h3>
                       </div>
                       <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                        {servicio.observaciones}
+                        {currentServicio.observaciones}
                       </p>
                     </div>
                   ) : (
@@ -1549,13 +1572,14 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         </h3>
                       </div>
                       <p className="text-sm text-gray-400 italic">
-                        No hay observaciones para este servicio.
+                        No hay observaciones para este currentServicio.
                       </p>
                     </div>
                   )}
 
                   {/* Coordenadas técnicas */}
-                  {(servicio.origen_latitud || servicio.destino_latitud) && (
+                  {(currentServicio.origen_latitud ||
+                    currentServicio.destino_latitud) && (
                     <div className="bg-white rounded-xl border border-gray-100 p-6">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
@@ -1566,27 +1590,27 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         </h3>
                       </div>
                       <div className="space-y-3">
-                        {servicio.origen_latitud &&
-                          servicio.origen_longitud && (
+                        {currentServicio.origen_latitud &&
+                          currentServicio.origen_longitud && (
                             <div>
                               <p className="text-sm text-gray-500 mb-1">
                                 Origen
                               </p>
                               <p className="text-sm font-mono text-gray-900">
-                                {servicio.origen_latitud.toFixed(6)},{" "}
-                                {servicio.origen_longitud.toFixed(6)}
+                                {currentServicio.origen_latitud.toFixed(6)},{" "}
+                                {currentServicio.origen_longitud.toFixed(6)}
                               </p>
                             </div>
                           )}
-                        {servicio.destino_latitud &&
-                          servicio.destino_longitud && (
+                        {currentServicio.destino_latitud &&
+                          currentServicio.destino_longitud && (
                             <div>
                               <p className="text-sm text-gray-500 mb-1">
                                 Destino
                               </p>
                               <p className="text-sm font-mono text-gray-900">
-                                {servicio.destino_latitud.toFixed(6)},{" "}
-                                {servicio.destino_longitud.toFixed(6)}
+                                {currentServicio.destino_latitud.toFixed(6)},{" "}
+                                {currentServicio.destino_longitud.toFixed(6)}
                               </p>
                             </div>
                           )}
@@ -1611,7 +1635,8 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         </p>
                         <p className="text-sm text-gray-900">
                           {new Date(
-                            servicio.created_at || servicio.createdAt,
+                            currentServicio.created_at ||
+                              currentServicio.createdAt,
                           ).toLocaleString()}
                         </p>
                       </div>
@@ -1621,7 +1646,8 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                         </p>
                         <p className="text-sm text-gray-900">
                           {new Date(
-                            servicio.updated_at || servicio.updatedAt,
+                            currentServicio.updated_at ||
+                              currentServicio.updatedAt,
                           ).toLocaleString()}
                         </p>
                       </div>
@@ -1637,12 +1663,12 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   );
 }
 
-export default async function ServicioPublicoPage({
+export default function ServicioPublicoPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const resolvedParams = await params;
+  const resolvedParams = React.use(params); // ✅ Usar React.use() en lugar de await
 
   return (
     <Suspense fallback={<LoadingPage>Cargando servicio...</LoadingPage>}>

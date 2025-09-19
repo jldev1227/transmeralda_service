@@ -132,33 +132,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Cargar perfil al inicializar
   useEffect(() => {
-    // Detectar si es ruta pública
-    const publicRoute =
+    // Detectar si es ruta pública (servicio con token)
+    const isServiceRoute =
       typeof window !== "undefined" &&
-      window.location.pathname.startsWith("/servicio/") &&
+      window.location.pathname.startsWith("/servicio/");
+
+    const hasToken =
+      typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).has("token");
+
+    const publicRoute = isServiceRoute && hasToken;
 
     setIsPublicRoute(publicRoute);
 
     if (publicRoute) {
-      console.log(
-        "[AuthProvider] Ruta pública detectada, saltando autenticación",
-      );
+      console.log("[AuthProvider] Ruta pública detectada (servicio con token)");
       setLoading(false);
       setInitializing(false);
-
+      setUser(null);
+      setError(null);
       return;
     }
 
+    // Si es ruta de servicio SIN token, o cualquier otra ruta, requiere autenticación
+    console.log(
+      "[AuthProvider] Ruta privada detectada, verificando autenticación",
+    );
     fetchUserProfile();
-
-    const timeoutId = setTimeout(() => {
-      if (initializing) {
-        setInitializing(false);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timeoutId);
   }, []);
 
   // Determinar si el usuario está autenticado
