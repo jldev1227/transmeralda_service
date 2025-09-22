@@ -217,7 +217,7 @@ const ServiciosListCards = ({
                 Consecuencias de la cancelación:
               </h4>
               <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                <li>El servicio cambiará a estado "Cancelado"</li>
+                <li>El servicio cambiará a estado &quot;Cancelado&quot;</li>
                 <li>Se registrará en el historial del servicio</li>
               </ul>
             </div>
