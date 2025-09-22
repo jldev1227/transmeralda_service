@@ -8,14 +8,23 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { DateInput } from "@heroui/date-input";
 import { useDisclosure } from "@heroui/use-disclosure";
+import { parseZonedDateTime, ZonedDateTime } from "@internationalized/date";
+import { DEFAULT_MOTIVOS } from "@/utils/indext";
+import { MotivoCancelacion } from "@/types";
 
 interface ConfirmDialogWithTextareaProps {
   title?: string;
   message: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
-  onConfirm: (observaciones: string) => void;
+  onConfirm: (data: {
+    observaciones: string;
+    motivo?: string;
+    fechaCancelacion?: ZonedDateTime;
+  }) => void;
   onCancel?: () => void;
   confirmVariant?: "primary" | "danger" | "warning" | "success" | "default";
   isOpen: boolean;
@@ -25,10 +34,19 @@ interface ConfirmDialogWithTextareaProps {
   textareaPlaceholder?: string;
   textareaRequired?: boolean;
   textareaHelperText?: string;
+  // Nuevas props para selector de motivo
+  showMotivoSelector?: boolean;
+  motivoLabel?: string;
+  motivoOptions?: MotivoCancelacion[];
+  motivoRequired?: boolean;
+  // Nuevas props para selector de fecha
+  showFechaCancelacion?: boolean;
+  fechaCancelacionLabel?: string;
+  fechaCancelacionRequired?: boolean;
 }
 
 /**
- * Componente de diálogo de confirmación con textarea utilizando HeroUI
+ * Componente de diálogo de confirmación con textarea, selector de motivo y DatePicker
  */
 const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
   title = "Confirmar acción",
@@ -44,22 +62,59 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
   textareaLabel = "Observaciones",
   textareaPlaceholder = "Ingrese sus observaciones aquí...",
   textareaRequired = false,
+  showMotivoSelector = false,
+  motivoLabel = "Motivo",
+  motivoOptions = DEFAULT_MOTIVOS,
+  motivoRequired = false,
+  showFechaCancelacion = false,
+  fechaCancelacionLabel = "Fecha de cancelación",
+  fechaCancelacionRequired = false,
 }) => {
-  // Estado para el contenido del textarea
+  // Estados para el formulario
   const [observaciones, setObservaciones] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [motivoSeleccionado, setMotivoSeleccionado] = useState<string>(
+    motivoOptions.length > 0 ? motivoOptions[0].value : "",
+  );
+  const [fechaCancelacion, setFechaCancelacion] = useState<ZonedDateTime>(
+    parseZonedDateTime(
+      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+    ),
+  );
+  const [errors, setErrors] = useState<{
+    observaciones?: string;
+    motivo?: string;
+    fechaCancelacion?: string;
+  }>({});
+
+  // Validar formulario
+  const validateForm = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (textareaRequired && !observaciones.trim()) {
+      newErrors.observaciones = "Este campo es requerido";
+    }
+
+    if (showMotivoSelector && motivoRequired && !motivoSeleccionado) {
+      newErrors.motivo = "Debe seleccionar un motivo";
+    }
+
+    if (showFechaCancelacion && fechaCancelacionRequired && !fechaCancelacion) {
+      newErrors.fechaCancelacion = "Debe seleccionar una fecha";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Manejadores de eventos
   const handleConfirm = () => {
-    // Validar si el textarea es requerido
-    if (textareaRequired && !observaciones.trim()) {
-      setError("Este campo es requerido");
+    if (!validateForm()) return;
 
-      return;
-    }
-
-    onConfirm(observaciones);
-    // No cerramos automáticamente por si hay que mostrar un loading state
+    onConfirm({
+      observaciones: observaciones.trim(),
+      motivo: showMotivoSelector ? motivoSeleccionado : undefined,
+      fechaCancelacion: showFechaCancelacion ? fechaCancelacion : undefined,
+    });
   };
 
   const handleCancel = () => {
@@ -72,7 +127,15 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
 
   const resetForm = () => {
     setObservaciones("");
-    setError(null);
+    setMotivoSeleccionado(
+      motivoOptions.length > 0 ? motivoOptions[0].value : "",
+    );
+    setFechaCancelacion(
+      parseZonedDateTime(
+        `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+      ),
+    );
+    setErrors({});
   };
 
   const handleCloseModal = () => {
@@ -112,35 +175,142 @@ const ConfirmDialogWithTextarea: React.FC<ConfirmDialogWithTextareaProps> = ({
               </h3>
             </ModalHeader>
             <ModalBody>
-              <div className="mb-4">
+              {/* Mensaje dinámico - puede ser string o JSX */}
+              <div className="mb-6">
                 {typeof message === "string" ? (
-                  <p className="text-sm text-gray-500">{message}</p>
+                  <p className="text-sm text-gray-600">{message}</p>
                 ) : (
-                  message
+                  <div className="text-sm text-gray-600">{message}</div>
                 )}
               </div>
 
-              {textareaRequired && (
-                <div className="space-y-2">
-                  <label htmlFor="observaciones">{textareaLabel}</label>
-                  <Textarea
-                    className="w-full"
-                    id="observaciones"
-                    isDisabled={isLoading}
-                    isRequired={textareaRequired}
-                    placeholder={textareaPlaceholder}
-                    radius="sm"
-                    rows={4}
-                    value={observaciones}
-                    onChange={(e) => {
-                      setObservaciones(e.target.value);
-                      if (error && e.target.value.trim()) {
-                        setError(null);
+              {/* Selector de motivo (opcional) */}
+              {showMotivoSelector && (
+                <div className="mb-4 space-y-2">
+                  <label
+                    htmlFor="motivo-selector"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    {motivoLabel}
+                    {motivoRequired && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  <Select
+                    id="motivo-selector"
+                    placeholder="Seleccione un motivo"
+                    selectedKeys={
+                      motivoSeleccionado ? [motivoSeleccionado] : []
+                    }
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] as string;
+                      setMotivoSeleccionado(selected);
+                      if (errors.motivo && selected) {
+                        setErrors({ ...errors, motivo: undefined });
                       }
                     }}
-                  />
+                    isDisabled={isLoading}
+                    isInvalid={!!errors.motivo}
+                    errorMessage={errors.motivo}
+                    className="w-full"
+                  >
+                    {motivoOptions.map((motivo) => (
+                      <SelectItem key={motivo.value}>{motivo.label}</SelectItem>
+                    ))}
+                  </Select>
                 </div>
               )}
+
+              {/* DateInput para fecha de cancelación (opcional) */}
+              {showFechaCancelacion && (
+                <div className="mb-4 space-y-2">
+                  <label
+                    htmlFor="fecha-cancelacion"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    {fechaCancelacionLabel}
+                    {fechaCancelacionRequired && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  <DateInput
+                    hideTimeZone
+                    classNames={{
+                      inputWrapper: [
+                        "!bg-transparent",
+                        "data-[hover=true]:!bg-transparent",
+                        "border-1",
+                        "py-7",
+                        "group-data-[focus=true]:!bg-transparent",
+                        "rounded-md",
+                        errors.fechaCancelacion
+                          ? "border-red-300"
+                          : "border-gray-300",
+                      ],
+                    }}
+                    defaultValue={parseZonedDateTime(
+                      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                    )}
+                    granularity="minute"
+                    value={fechaCancelacion}
+                    onChange={(value) => {
+                      if (value) {
+                        setFechaCancelacion(value);
+                        if (errors.fechaCancelacion) {
+                          setErrors({ ...errors, fechaCancelacion: undefined });
+                        }
+                      }
+                    }}
+                    isDisabled={isLoading}
+                  />
+                  {errors.fechaCancelacion && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.fechaCancelacion}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {fechaCancelacionRequired
+                      ? "Seleccione la fecha y hora efectiva de cancelación"
+                      : "Si no se especifica, se usará la fecha y hora actual"}
+                  </p>
+                </div>
+              )}
+
+              {/* Textarea para observaciones */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="observaciones"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {textareaLabel}
+                  {textareaRequired && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </label>
+                <Textarea
+                  className="w-full"
+                  id="observaciones"
+                  isDisabled={isLoading}
+                  isRequired={textareaRequired}
+                  placeholder={textareaPlaceholder}
+                  radius="sm"
+                  rows={4}
+                  value={observaciones}
+                  onChange={(e) => {
+                    setObservaciones(e.target.value);
+                    if (errors.observaciones && e.target.value.trim()) {
+                      setErrors({ ...errors, observaciones: undefined });
+                    }
+                  }}
+                  isInvalid={!!errors.observaciones}
+                  errorMessage={errors.observaciones}
+                />
+                {textareaRequired && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Por favor, proporcione detalles sobre esta acción.
+                  </p>
+                )}
+              </div>
             </ModalBody>
             <ModalFooter>
               <div className="flex justify-end gap-3 mt-4">
@@ -174,7 +344,6 @@ export default ConfirmDialogWithTextarea;
 
 /**
  * Hook personalizado para usar un diálogo de confirmación con textarea
- * @returns Objeto con funciones y propiedades para controlar el diálogo
  */
 export const useConfirmDialogWithTextarea = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -191,7 +360,13 @@ export const useConfirmDialogWithTextarea = () => {
     textareaLabel: "Observaciones",
     textareaPlaceholder: "Ingrese sus observaciones aquí...",
     textareaRequired: false,
-    textareaHelperText: "Por favor, indique el motivo.",
+    showMotivoSelector: false,
+    motivoLabel: "Motivo",
+    motivoOptions: DEFAULT_MOTIVOS,
+    motivoRequired: false,
+    showFechaCancelacion: false,
+    fechaCancelacionLabel: "Fecha de cancelación",
+    fechaCancelacionRequired: false,
   });
 
   const confirm = (
@@ -202,29 +377,46 @@ export const useConfirmDialogWithTextarea = () => {
     setConfig({ ...config, ...options });
     onOpen();
 
-    // Devuelve una promesa que se resolverá cuando el usuario confirme o cancele
-    return new Promise<{ confirmed: boolean; observaciones: string }>(
-      (resolve) => {
-        setConfig({
-          ...config,
-          ...options,
-          onConfirm: (observaciones: string) => {
-            if (options.onConfirm) {
-              options.onConfirm(observaciones);
-            }
-            resolve({ confirmed: true, observaciones });
-            onClose();
-          },
-          onCancel: () => {
-            if (options.onCancel) {
-              options.onCancel();
-            }
-            resolve({ confirmed: false, observaciones: "" });
-            onClose();
-          },
-        });
-      },
-    );
+    // Promesa que se resolverá cuando el usuario confirme o cancele
+    return new Promise<{
+      confirmed: boolean;
+      observaciones: string;
+      motivo?: string;
+      fechaCancelacion?: ZonedDateTime;
+    }>((resolve) => {
+      setConfig({
+        ...config,
+        ...options,
+        onConfirm: (data: {
+          observaciones: string;
+          motivo?: string;
+          fechaCancelacion?: ZonedDateTime;
+        }) => {
+          if (options.onConfirm) {
+            options.onConfirm(data);
+          }
+          resolve({
+            confirmed: true,
+            observaciones: data.observaciones,
+            motivo: data.motivo,
+            fechaCancelacion: data.fechaCancelacion,
+          });
+          onClose();
+        },
+        onCancel: () => {
+          if (options.onCancel) {
+            options.onCancel();
+          }
+          resolve({
+            confirmed: false,
+            observaciones: "",
+            motivo: undefined,
+            fechaCancelacion: undefined,
+          });
+          onClose();
+        },
+      });
+    });
   };
 
   const setLoading = (isLoading: boolean) => {

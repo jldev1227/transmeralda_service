@@ -23,17 +23,22 @@ import {
   Info,
   Building,
   User,
+  Ban,
 } from "lucide-react";
 import { Button } from "@heroui/button";
 
 import LoadingPage from "@/components/loadingPage";
 import { useTicketShare } from "@/components/shareTicketImage";
-import { getStatusColor, getStatusText } from "@/utils/indext";
+import { DEFAULT_MOTIVOS, getStatusColor, getStatusText } from "@/utils/indext";
 import { apiClient } from "@/config/apiClient";
 import { formatearFecha } from "@/helpers";
 import { PublicTokenGuard } from "@/components/guards/publicTokenGuard";
 import { Documento } from "@/types";
-import { useService } from "@/context/serviceContext";
+import {
+  Cancelacion,
+  ServicioConRelaciones,
+  useService,
+} from "@/context/serviceContext";
 import ModalShareServicio from "@/components/ui/modalShareServicio";
 import { useAuth } from "@/context/AuthContext";
 import ModalDocumentosConductor from "@/components/ui/modalDocumentosConductor";
@@ -161,6 +166,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
   const [distancia, setDistancia] = useState<number>(0);
   const [duracion, setDuracion] = useState<number>(0);
+  console.log(currentServicio);
 
   // Tokens desde variables de entorno
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
@@ -1395,271 +1401,29 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
               {/* Right Panel - Información del Servicio con diseño minimalista */}
               <div className="grid sm:grid-cols-2 gap-2">
                 <div className="space-y-2">
-                  {/* Cronograma minimalista */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-2">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Cronograma
-                      </h3>
-                    </div>
-
-                    <div className="space-y-6">
-                      {currentServicio.fecha_finalizacion && (
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">
-                            Fecha de solicitud
-                          </p>
-                          <p className="text-base font-medium text-gray-900">
-                            {formatearFecha(currentServicio.fecha_solicitud)}
-                          </p>
-                        </div>
-                      )}
-
-                      {currentServicio.fecha_finalizacion && (
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">
-                            Fecha de realización
-                          </p>
-                          <p className="text-base font-medium text-gray-900">
-                            {formatearFecha(currentServicio.fecha_realizacion)}
-                          </p>
-                        </div>
-                      )}
-
-                      {currentServicio.fecha_realizacion && (
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">
-                            Fecha de realización
-                          </p>
-                          <p className="text-base font-medium text-gray-900">
-                            {formatearFecha(currentServicio.fecha_realizacion)}
-                          </p>
-                        </div>
-                      )}
-
-                      {currentServicio.fecha_finalizacion && (
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">
-                            Fecha de finalización
-                          </p>
-                          <p className="text-base font-medium text-gray-900">
-                            {formatearFecha(currentServicio.fecha_realizacion)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Observaciones */}
-                  {currentServicio.observaciones ? (
-                    <div className="bg-amber-50 rounded-xl border border-amber-100 p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                          <Info className="w-4 h-4 text-amber-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Observaciones
-                        </h3>
-                      </div>
-                      <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                        {currentServicio.observaciones}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-xl border border-gray-100 p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <Info className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Observaciones
-                        </h3>
-                      </div>
-                      <p className="text-sm text-gray-400 italic">
-                        No hay observaciones para este currentServicio.
-                      </p>
-                    </div>
+                  <CronogramaCard
+                    servicio={currentServicio}
+                    formatearFecha={formatearFecha}
+                  />
+                  <ObservacionesCard
+                    observaciones={currentServicio.observaciones}
+                  />
+                  <CoordenadasCard servicio={currentServicio} />
+                  {currentServicio.cancelacion && (
+                    <CancelacionCard
+                      cancelacion={currentServicio.cancelacion}
+                    />
                   )}
-
-                  {/* Coordenadas técnicas */}
-                  {(currentServicio.origen_latitud ||
-                    currentServicio.destino_latitud) && (
-                    <div className="bg-white rounded-xl border border-gray-100 p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-gray-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Coordenadas
-                        </h3>
-                      </div>
-                      <div className="space-y-3">
-                        {currentServicio.origen_latitud &&
-                          currentServicio.origen_longitud && (
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">
-                                Origen
-                              </p>
-                              <p className="text-sm font-mono text-gray-900">
-                                {currentServicio.origen_latitud.toFixed(6)},{" "}
-                                {currentServicio.origen_longitud.toFixed(6)}
-                              </p>
-                            </div>
-                          )}
-                        {currentServicio.destino_latitud &&
-                          currentServicio.destino_longitud && (
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">
-                                Destino
-                              </p>
-                              <p className="text-sm font-mono text-gray-900">
-                                {currentServicio.destino_latitud.toFixed(6)},{" "}
-                                {currentServicio.destino_longitud.toFixed(6)}
-                              </p>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Procesamiento */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Procesamiento
-                      </h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">
-                          Fecha de creación
-                        </p>
-                        <p className="text-sm text-gray-900">
-                          {new Date(
-                            currentServicio.created_at ||
-                              currentServicio.createdAt,
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">
-                          Última actualización
-                        </p>
-                        <p className="text-sm text-gray-900">
-                          {new Date(
-                            currentServicio.updated_at ||
-                              currentServicio.updatedAt,
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  {/* Información del Recorrido minimalista */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                        <Route className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Recorrido
-                      </h3>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Ruta principal */}
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                A
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Origen</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {currentServicio.origen?.nombre_municipio ||
-                                  "No especificado"}
-                              </p>
-                              {currentServicio.origen_especifico && (
-                                <p className="text-xs text-gray-400 italic">
-                                  ({currentServicio.origen_especifico})
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-2">
-                          <div className="w-px h-8 bg-gray-200" />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                B
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Destino</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {currentServicio.destino?.nombre_municipio ||
-                                  "No especificado"}
-                              </p>
-                              {currentServicio.destino_especifico && (
-                                <p className="text-xs text-gray-400 italic">
-                                  ({currentServicio.destino_especifico})
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Métricas del viaje */}
-                      <div className="border-t border-gray-100 pt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500 mb-1">
-                              Distancia
-                            </p>
-                            <p className="text-lg font-semibold text-gray-900">
-                              {distancia} km
-                            </p>
-                          </div>
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500 mb-1">
-                              Duración
-                            </p>
-                            <p className="text-lg font-semibold text-gray-900">
-                              {formatDuration(duracion)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Propósito del servicio */}
-                      {currentServicio.proposito_servicio && (
-                        <div className="border-t border-gray-100 pt-4">
-                          <p className="text-sm text-gray-500 mb-1">
-                            Propósito del servicio
-                          </p>
-                          <p className="text-base text-gray-900 capitalize">
-                            Transporte de {currentServicio.proposito_servicio}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <RecorridoCard
+                    servicio={currentServicio}
+                    distancia={distancia}
+                    duracion={duracion}
+                    formatDuration={formatDuration}
+                  />
+                  <ProcesamientoCard servicio={currentServicio} />
                 </div>
               </div>
             </div>
@@ -1683,3 +1447,347 @@ export default function ServicioPublicoPage({
     </Suspense>
   );
 }
+
+// Componentes separados
+const CronogramaCard = ({
+  servicio,
+  formatearFecha,
+}: {
+  servicio: ServicioConRelaciones;
+  formatearFecha: (fechaISOString: Date | string | undefined) => string;
+}) => (
+  <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-2">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+        <Calendar className="w-4 h-4 text-blue-600" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">Cronograma</h3>
+    </div>
+    <div className="space-y-6">
+      {/* Fecha de solicitud - siempre mostrar */}
+      <div>
+        <p className="text-sm text-gray-500 mb-1">Fecha de solicitud</p>
+        <p className="text-base font-medium text-gray-900">
+          {formatearFecha(servicio.fecha_solicitud)}
+        </p>
+      </div>
+
+      {/* Fecha de realización - solo si existe */}
+      {servicio.fecha_realizacion && (
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Fecha de realización</p>
+          <p className="text-base font-medium text-gray-900">
+            {formatearFecha(servicio.fecha_realizacion)}
+          </p>
+        </div>
+      )}
+
+      {/* Fecha de finalización - solo si existe */}
+      {servicio.fecha_finalizacion && (
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Fecha de finalización</p>
+          <p className="text-base font-medium text-gray-900">
+            {formatearFecha(servicio.fecha_finalizacion)}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const ObservacionesCard = ({ observaciones }: { observaciones: string }) => (
+  <div
+    className={`rounded-xl border p-6 ${
+      observaciones
+        ? "bg-amber-50 border-amber-100"
+        : "bg-white border-gray-100"
+    }`}
+  >
+    <div className="flex items-center gap-3 mb-4">
+      <div
+        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+          observaciones ? "bg-amber-100" : "bg-gray-100"
+        }`}
+      >
+        <Info
+          className={`w-4 h-4 ${
+            observaciones ? "text-amber-600" : "text-gray-400"
+          }`}
+        />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">Observaciones</h3>
+    </div>
+    {observaciones ? (
+      <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+        {observaciones}
+      </p>
+    ) : (
+      <p className="text-sm text-gray-400 italic">
+        No hay observaciones para este servicio.
+      </p>
+    )}
+  </div>
+);
+
+const CoordenadasCard = ({ servicio }: { servicio: ServicioConRelaciones }) => {
+  const origenLat = servicio.origen_especifico
+    ? servicio.origen_latitud
+    : servicio.origen?.latitud;
+  const origenLng = servicio.origen_especifico
+    ? servicio.origen_longitud
+    : servicio.origen?.longitud;
+  const destinoLat = servicio.destino_especifico
+    ? servicio.destino_latitud
+    : servicio.destino?.latitud;
+  const destinoLng = servicio.destino_especifico
+    ? servicio.destino_longitud
+    : servicio.destino?.longitud;
+
+  if (!origenLat && !destinoLat) return null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+          <MapPin className="w-4 h-4 text-gray-600" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900">Coordenadas</h3>
+      </div>
+      <div className="space-y-3">
+        {origenLat && origenLng && (
+          <div>
+            <p className="text-sm text-gray-500 mb-1">
+              Origen {servicio.origen_especifico && "(Específico)"}
+            </p>
+            <p className="text-sm font-mono text-gray-900">
+              {origenLat}, {origenLng}
+            </p>
+          </div>
+        )}
+        {destinoLat && destinoLng && (
+          <div>
+            <p className="text-sm text-gray-500 mb-1">
+              Destino {servicio.destino_especifico && "(Específico)"}
+            </p>
+            <p className="text-sm font-mono text-gray-900">
+              {destinoLat}, {destinoLng}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CancelacionCard = ({ cancelacion }: { cancelacion: Cancelacion }) => {
+  if (!cancelacion) return null;
+
+  return (
+    <div className="bg-red-50 rounded-xl border border-red-100 p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+          <Ban className="w-4 h-4 text-red-600" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900">Cancelación</h3>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Motivo</p>
+          <p className="text-sm font-medium text-gray-900">
+            {DEFAULT_MOTIVOS.find(
+              (motivo) => motivo.value === cancelacion.motivo_cancelacion,
+            )?.label || cancelacion.motivo_cancelacion}
+          </p>
+        </div>
+
+        {cancelacion.observaciones && (
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Observaciones</p>
+            <p className="text-sm text-gray-900">{cancelacion.observaciones}</p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Fecha de cancelación</p>
+          <p className="text-sm text-gray-900">
+            {new Date(cancelacion.fecha_cancelacion).toLocaleString("es-CO", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+
+        {cancelacion.usuario_cancelacion && (
+          <div>
+            <p className="text-sm text-gray-500 mb-1">Cancelado por</p>
+            <p className="text-sm text-gray-900">
+              {cancelacion.usuario_cancelacion.nombre}
+              <span className="text-xs text-gray-500 ml-2">
+                ({cancelacion.usuario_cancelacion.role})
+              </span>
+            </p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-sm text-gray-500 mb-1">Fecha de registro</p>
+          <p className="text-xs text-gray-600">
+            {new Date(cancelacion.created_at).toLocaleString("es-CO", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecorridoCard = ({
+  servicio,
+  distancia,
+  duracion,
+  formatDuration,
+}: {
+  servicio: ServicioConRelaciones;
+  distancia: number;
+  duracion: number;
+  formatDuration: (duracion: number) => string;
+}) => (
+  <div className="bg-white rounded-xl border border-gray-100 p-6">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+        <Route className="w-4 h-4 text-emerald-600" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">Recorrido</h3>
+    </div>
+
+    <div className="space-y-6">
+      {/* Ruta principal */}
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">A</span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Origen</p>
+              <p className="text-base font-medium text-gray-900">
+                {servicio.origen?.nombre_municipio || "No especificado"}
+              </p>
+              {servicio.origen_especifico && (
+                <p className="text-xs text-gray-400 italic">
+                  ({servicio.origen_especifico})
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-2">
+          <div className="w-px h-8 bg-gray-200" />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">B</span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Destino</p>
+              <p className="text-base font-medium text-gray-900">
+                {servicio.destino?.nombre_municipio || "No especificado"}
+              </p>
+              {servicio.destino_especifico && (
+                <p className="text-xs text-gray-400 italic">
+                  ({servicio.destino_especifico})
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Métricas del viaje */}
+      <div className="border-t border-gray-100 pt-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-500 mb-1">Distancia</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {distancia} km
+            </p>
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-500 mb-1">Duración</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {formatDuration(duracion)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Propósito del servicio */}
+      {servicio.proposito_servicio && (
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-sm text-gray-500 mb-1">Propósito del servicio</p>
+          <p className="text-base text-gray-900 capitalize">
+            Transporte de {servicio.proposito_servicio}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const ProcesamientoCard = ({
+  servicio,
+}: {
+  servicio: ServicioConRelaciones;
+}) => (
+  <div className="bg-white rounded-xl border border-gray-100 p-6">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+        <Clock className="w-4 h-4 text-gray-600" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">Procesamiento</h3>
+    </div>
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm text-gray-500 mb-1">Fecha de creación</p>
+        <p className="text-sm text-gray-900">
+          {new Date(servicio.created_at || servicio.createdAt).toLocaleString(
+            "es-CO",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          )}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm text-gray-500 mb-1">Última actualización</p>
+        <p className="text-sm text-gray-900">
+          {new Date(servicio.updated_at || servicio.updatedAt).toLocaleString(
+            "es-CO",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          )}
+        </p>
+      </div>
+    </div>
+  </div>
+);

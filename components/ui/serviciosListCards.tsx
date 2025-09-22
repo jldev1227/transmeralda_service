@@ -15,13 +15,14 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  Map,
+  BanIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ZonedDateTime } from "@internationalized/date";
 
 import { useConfirmDialogWithTextarea } from "./confirmDialogWithTextArea";
-import ModalMap from "./modalMap";
 
 import {
   EstadoServicio,
@@ -64,7 +65,6 @@ const ServiciosListCards = ({
 
   const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
   const [modalFinalizarOpen, setModalFinalizarServicio] = useState(false);
-  const [modalMapOpen, setModalMapOpen] = useState(false);
   const [servicioHistorialId, setServicioHistorialId] = useState<string | null>(
     null,
   );
@@ -158,15 +158,6 @@ const ServiciosListCards = ({
     }
   };
 
-  const handleMap = (
-    e: MouseEvent<HTMLButtonElement>,
-    servicio: ServicioConRelaciones,
-  ) => {
-    e.stopPropagation();
-    setModalMapOpen(true);
-    setServicioWithRoutes(servicio);
-  };
-
   const eliminarServicio = async (
     e: MouseEvent<HTMLButtonElement>,
     id: string | undefined,
@@ -191,6 +182,127 @@ const ServiciosListCards = ({
       await apiClient.delete<ServicioConRelaciones>(`/api/servicios/${id}`);
     } catch (err) {
       console.error("Error al eliminar el servicio:", err);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const cancelarServicio = async (
+    e: MouseEvent<HTMLButtonElement>,
+    id: string | undefined,
+  ) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    const { confirmed, observaciones, motivo, fechaCancelacion } =
+      await confirm({
+        title: "Cancelar Servicio",
+
+        // Mensaje dinámico con JSX/HTML
+        message: (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-red-800">Atención</p>
+                <p className="text-sm text-red-700">
+                  Esta acción cancelará el servicio permanentemente y puede
+                  requerir aprobación adicional.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">
+                Consecuencias de la cancelación:
+              </h4>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>El servicio cambiará a estado "Cancelado"</li>
+                <li>Se registrará en el historial del servicio</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              ¿Estás seguro de que deseas continuar con la cancelación?
+            </p>
+          </div>
+        ),
+
+        confirmText: "Cancelar Servicio",
+        cancelText: "Mantener Servicio",
+        confirmVariant: "danger",
+
+        // Habilitar selector de motivo
+        showMotivoSelector: true,
+        motivoLabel: "Motivo de cancelación",
+        motivoRequired: true,
+
+        // Habilitar seleccionador de fecha de cancelacion
+        showFechaCancelacion: true,
+        fechaCancelacionLabel: "Fecha y hora de cancelación",
+        fechaCancelacionRequired: false, // Opcional, usará fecha actual si no se especifica
+
+        // Textarea obligatorio
+        textareaRequired: true,
+        textareaLabel: "Observaciones detalladas",
+        textareaPlaceholder:
+          "Describe las razones específicas de la cancelación, impacto en el cliente, acciones tomadas, etc...",
+
+        // Opciones personalizadas de motivo
+        motivoOptions: [
+          { value: "cliente_solicito", label: "Cliente solicitó cancelación" },
+          {
+            value: "conductor_no_disponible",
+            label: "Conductor no disponible",
+          },
+          {
+            value: "vehiculo_averiado",
+            label: "Vehículo averiado o en mantenimiento",
+          },
+          { value: "vehiculo_no_disponible", label: "Vehículo no disponible" },
+          {
+            value: "condiciones_climaticas",
+            label: "Condiciones climáticas adversas",
+          },
+          { value: "problema_operativo", label: "Problema operativo interno" },
+          { value: "falta_pago", label: "Falta de pago" },
+          { value: "problemas_comunidad", label: "Problemas con la comunidad" },
+          { value: "paro_via", label: "Paro o condiciones en la vía" },
+          { value: "emergencia", label: "Situación de emergencia" },
+          { value: "otro", label: "Otro motivo" },
+        ],
+      });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+    try {
+      // Preparar datos para enviar al backend
+      const cancelacionData = {
+        observaciones: observaciones,
+        motivo_cancelacion: motivo,
+        costo_cancelacion: 0.0,
+        // Convertir ZonedDateTime a ISO string si se proporciona
+        ...(fechaCancelacion && {
+          fecha_cancelacion: fechaCancelacion.toAbsoluteString(), // Convierte a ISO string
+        }),
+      };
+
+      const response = await apiClient.patch<ServicioConRelaciones>(
+        `/api/servicios/${id}/cancelar`,
+        cancelacionData,
+      );
+    } catch (err: any) {
+      console.error("Error al cancelar el servicio:", err);
+
+      // Manejar errores específicos
+      if (err.response?.status === 400) {
+        console.error("Error de validación:", err.response.data.message);
+      } else if (err.response?.status === 404) {
+        console.error("Servicio no encontrado");
+      } else {
+        console.error("Error interno del servidor");
+      }
     } finally {
       setConfirmLoading(false);
     }
@@ -228,6 +340,19 @@ const ServiciosListCards = ({
   };
 
   const showDelete = (estado: EstadoServicio) => {
+    if (
+      user?.permisos.gestor_planillas ||
+      ["admin", "gestor_servicio"].includes(user?.role || "")
+    ) {
+      return (
+        estado === "solicitado" ||
+        estado === "planificado" ||
+        estado === "en_curso"
+      );
+    }
+  };
+
+  const showCancel = (estado: EstadoServicio) => {
     if (
       user?.permisos.gestor_planillas ||
       ["admin", "gestor_servicio"].includes(user?.role || "")
@@ -317,15 +442,6 @@ const ServiciosListCards = ({
   return (
     <div className="space-y-3">
       {DialogComponent}
-
-      <React.Suspense>
-        {modalMapOpen && (
-          <ModalMap
-            isOpen={modalMapOpen}
-            onClose={() => setModalMapOpen(false)}
-          />
-        )}
-      </React.Suspense>
 
       <React.Suspense>
         {modalHistorialOpen && (
@@ -565,13 +681,15 @@ const ServiciosListCards = ({
                     </button>
                   )}
 
-                  <button
-                    className="p-2 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
-                    title="Ver mapa"
-                    onClick={(e) => handleMap(e, servicio)}
-                  >
-                    <Map className="w-4 h-4" />
-                  </button>
+                  {showCancel(servicio.estado) && (
+                    <button
+                      className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                      title="Cancelar servicio"
+                      onClick={(e) => cancelarServicio(e, servicio.id)}
+                    >
+                      <BanIcon className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1">

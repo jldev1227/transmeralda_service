@@ -48,3 +48,9 @@ export interface Documento {
   createdAt: string;
   updatedAt: string;
 }
+
+// Tipos para mejor tipado
+export interface MotivoCancelacion {
+  value: string;
+  label: string;
+}
