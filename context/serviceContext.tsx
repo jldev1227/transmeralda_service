@@ -10,7 +10,7 @@ import React, {
 import { LatLngExpression, LatLngTuple } from "leaflet";
 import { addToast } from "@heroui/toast";
 
-import { useAuth } from "./AuthContext";
+import { useAuth, User } from "./AuthContext";
 
 import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
@@ -266,6 +266,16 @@ export interface Vehiculo {
   updated_at?: Date | string;
 }
 
+export interface Cancelacion {
+  id: string;
+  fecha_cancelacion: string | Date;
+  motivo_cancelacion: string;
+  observaciones: string;
+  created_at: string;
+  updated_at: string;
+  usuario_cancelacion: User;
+}
+
 // Interface para Servicio con relaciones cargadas
 export interface ServicioConRelaciones extends Servicio {
   origen: Municipio;
@@ -274,6 +284,7 @@ export interface ServicioConRelaciones extends Servicio {
   vehiculo: Vehiculo;
   cliente: Cliente;
   es_creador: boolean; // Indica si el usuario actual es el creador del servicio
+  cancelacion: Cancelacion;
 }
 
 export interface VehicleTracking {

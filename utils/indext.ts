@@ -1,3 +1,5 @@
+import { MotivoCancelacion } from "@/types";
+
 const statusColors = {
   solicitado: "#6a7282",
   realizado: "#155dfc",
@@ -28,3 +30,15 @@ export const getStatusColor = (estado: string): string => {
 export const getStatusText = (estado: string): string => {
   return statusTextMap[estado] || estado;
 };
+
+// Opciones por defecto para motivos de cancelación
+export const DEFAULT_MOTIVOS: MotivoCancelacion[] = [
+  { value: "cliente_solicito", label: "Cliente solicitó cancelación" },
+  { value: "conductor_no_disponible", label: "Conductor no disponible" },
+  { value: "vehiculo_averiado", label: "Vehículo averiado" },
+  { value: "condiciones_climaticas", label: "Condiciones climáticas adversas" },
+  { value: "problema_operativo", label: "Problema operativo" },
+  { value: "duplicado", label: "Servicio duplicado" },
+  { value: "error_sistema", label: "Error del sistema" },
+  { value: "otro", label: "Otro motivo" },
+];
