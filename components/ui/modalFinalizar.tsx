@@ -212,7 +212,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               <FlagIcon className="h-5 w-5 mr-2 text-gray-500" />
                               <div>
                                 <span className="block text-sm text-gray-500">
-                                  Fecha de Realiazción
+                                  Fecha de Realización
                                 </span>
                                 <span className="font-medium">
                                   {formatearFecha(
