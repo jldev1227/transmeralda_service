@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { useEffect, useState } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
+import { Checkbox } from "@heroui/checkbox";
 import SelectReact from "react-select";
 import { SelectInstance } from "react-select";
 // Ajusta esta importación según la biblioteca que uses
@@ -216,6 +217,16 @@ export default function ModalFormServicio() {
   // Estado para controlar si se puede editar el servicio
   const [isReadOnly, setIsReadOnly] = useState(false);
 
+  // Estado para manejar la finalizacion del servicio
+  const [finalizarServicio, setFinalizarServicio] = useState(false);
+
+  // Fecha de finalización
+  const [fechaFinalizacion, setFechaFinalizacion] = useState<ZonedDateTime>(
+    parseZonedDateTime(
+      `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+    ),
+  );
+
   const [loading, setLoading] = useState(false);
 
   // Asegurarse de que el servicio seleccionado se limpie cuando se abre el modal
@@ -382,6 +393,22 @@ export default function ModalFormServicio() {
 
         return;
       }
+
+      // Validación: fechaRealizacion no puede ser menor a fechaSolicitud
+      if (
+        fechaSolicitud &&
+        fechaRealizacion &&
+        fechaRealizacion.toDate() < fechaSolicitud.toDate()
+      ) {
+        addToast({
+          title: "Fechas inválidas",
+          description:
+            "La fecha de realización no puede ser anterior a la fecha de solicitud.",
+          color: "danger",
+        });
+
+        return;
+      }
       // Date validations can be added here if needed
     } else if (currentStep === 2) {
       // Step 2: Journey Details validation
@@ -434,6 +461,8 @@ export default function ModalFormServicio() {
     setError(null);
     setLoading(true);
 
+    console.log("Submitting form with data:");
+
     try {
       // Asegurarse de limpiar el servicio seleccionado primero
       if (selectedServicio !== null) {
@@ -461,12 +490,15 @@ export default function ModalFormServicio() {
       }
 
       // Determinar el estado automáticamente basado en la presencia de conductor y vehículo
-      const estadoServicio: EstadoServicio =
-        conductorSelected && vehicleSelected
-          ? fechaReal && fechaReal < now
-            ? "en_curso"
-            : "planificado"
-          : "solicitado";
+      let estadoServicio: EstadoServicio;
+      if (finalizarServicio && fechaFinalizacion) {
+        estadoServicio = "realizado";
+      } else if (conductorSelected && vehicleSelected) {
+        estadoServicio =
+          fechaReal && fechaReal < now ? "en_curso" : "planificado";
+      } else {
+        estadoServicio = "solicitado";
+      }
 
       // Crear un objeto de datos que cumpla con la interfaz y modelo Servicio
       const servicioData = {
@@ -484,6 +516,9 @@ export default function ModalFormServicio() {
         proposito_servicio: purpose,
         fecha_solicitud: convertirFechaParaDB(fechaSolicitud),
         fecha_realizacion: convertirFechaParaDB(fechaRealizacion),
+        fecha_finalizacion: finalizarServicio
+          ? convertirFechaParaDB(fechaFinalizacion)
+          : null,
         estado: estadoServicio,
         valor: 0,
         observaciones: observaciones,
@@ -1502,11 +1537,13 @@ export default function ModalFormServicio() {
                                     fechaRealizacion?.toDate?.() ?? null;
 
                                   if (fechaReal && fechaReal < now) {
-                                    if (conductorSelected && vehicleSelected) {
-                                      return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual y tiene conductor y vehículo asignados.";
-                                    } else {
-                                      return "El servicio NO puede ser registrado porque la fecha de realización es anterior a la actual y requiere conductor y vehículo asignados.";
+                                    if (
+                                      !conductorSelected ||
+                                      !vehicleSelected
+                                    ) {
+                                      return "La fecha de realización es anterior a la actual. Para registrar o actualizar este servicio, debe asignar un conductor y un vehículo, ya que un servicio solicitado en el pasado debió tener estas asignaciones.";
                                     }
+                                    return "El servicio será registrado como EN CURSO ya que la fecha de realización es anterior a la actual; a menos que marque el servicio como finalizado e ingrese la fecha y hora de finalización correspondiente, en cuyo caso se marcará como REALIZADO.";
                                   }
 
                                   return conductorSelected && vehicleSelected
@@ -1514,10 +1551,80 @@ export default function ModalFormServicio() {
                                     : "El servicio será registrado como SOLICITADO ya que no tiene conductor o vehículo asignados.";
                                 })()}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                El estado se determina automáticamente según las
-                                asignaciones realizadas.
-                              </p>
+
+                              {(() => {
+                                const now = new Date();
+                                const fechaReal =
+                                  fechaRealizacion?.toDate?.() ?? null;
+                                // Mostrar el checkbox solo si:
+                                // - Hay conductor y vehículo asignados
+                                // - La fecha de realización es menor a la fecha actual
+                                if (
+                                  conductorSelected &&
+                                  vehicleSelected &&
+                                  fechaReal &&
+                                  fechaReal < now
+                                ) {
+                                  return (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center">
+                                        <Checkbox
+                                          isSelected={finalizarServicio}
+                                          onValueChange={setFinalizarServicio}
+                                        >
+                                          Servicio finalizado
+                                        </Checkbox>
+                                      </div>
+
+                                      {finalizarServicio && (
+                                        <div className="space-y-2">
+                                          <DateInput
+                                            hideTimeZone
+                                            classNames={{
+                                              inputWrapper: [
+                                                "!bg-transparent",
+                                                "data-[hover=true]:!bg-transparent",
+                                                "border-1",
+                                                "py-7",
+                                                "group-data-[focus=true]:!bg-transparent",
+                                                "rounded-md",
+                                              ],
+                                            }}
+                                            defaultValue={parseZonedDateTime(
+                                              `${new Date().toISOString().split("T")[0]}T${new Date().toTimeString().split(" ")[0]}[America/Bogota]`,
+                                            )}
+                                            granularity="minute"
+                                            value={fechaFinalizacion}
+                                            onChange={(value) => {
+                                              if (value)
+                                                setFechaFinalizacion(value);
+                                            }}
+                                          />
+                                          <p className="text-default-500 text-sm">
+                                            Fecha:{" "}
+                                            {fechaFinalizacion
+                                              ? new Intl.DateTimeFormat(
+                                                  "es-CO",
+                                                  {
+                                                    weekday: "long",
+                                                    year: "numeric",
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                  },
+                                                ).format(
+                                                  fechaFinalizacion.toDate(),
+                                                )
+                                              : "--"}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </div>
                         </div>

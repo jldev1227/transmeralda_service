@@ -54,8 +54,6 @@ const ServiciosListCards = ({
     // Pequeño delay para mostrar el loading
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    console.log(servicioId);
-
     navigation.push(`/servicio/${servicioId}`);
 
     // El loading se limpiará cuando el componente se desmonte

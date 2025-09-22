@@ -26,8 +26,6 @@ export function AuthGuard({
   const hasPublicToken = searchParams.has("token");
   const isPublicRoute = pathname.startsWith("/servicio/") && hasPublicToken;
 
-  console.log(isPublicRoute, hasPublicToken, pathname);
-
   useEffect(() => {
     // Si es ruta pública con token, permitir acceso
     if (allowPublicAccess && isPublicRoute) {
