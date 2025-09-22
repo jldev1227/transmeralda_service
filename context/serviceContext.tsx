@@ -14,6 +14,7 @@ import { useAuth } from "./AuthContext";
 
 import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
+import { Documento } from "@/types";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -26,11 +27,7 @@ export interface Conductor {
   email?: string;
   fecha_nacimiento?: Date;
   foto_url?: string;
-  documentos?: Array<{
-    categoria: string;
-    s3_key: string;
-    url?: string; // URL opcional para la foto
-  }>;
+  documentos: Documento[];
 }
 
 export interface Empresa {
@@ -47,6 +44,7 @@ export interface Vehiculo {
   linea: string;
   color: string;
   modelo: string;
+  documentos: Documento[];
 }
 
 export interface SocketEventLog {
@@ -1285,6 +1283,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           numero_identificacion,
           telefono,
           tipo_identificacion,
+          documentos,
         } = data.conductor;
 
         setConductores((prev) => [
@@ -1296,6 +1295,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             numero_identificacion,
             telefono,
             tipo_identificacion,
+            documentos,
           },
         ]);
         addToast({
@@ -1323,6 +1323,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           numero_identificacion,
           telefono,
           tipo_identificacion,
+          documentos,
         } = data;
 
         const conductorCreado = {
@@ -1332,6 +1333,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           numero_identificacion,
           telefono,
           tipo_identificacion,
+          documentos,
         };
 
         setConductores((prev) => [...prev, conductorCreado]);
@@ -1355,7 +1357,16 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           },
         ]);
 
-        const { id, placa, marca, clase_vehiculo, linea, modelo, color } = data;
+        const {
+          id,
+          placa,
+          marca,
+          clase_vehiculo,
+          linea,
+          modelo,
+          color,
+          documentos,
+        } = data;
 
         const vehiculoCreado = {
           id,
@@ -1365,6 +1376,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
           linea,
           modelo,
           color,
+          documentos,
         };
 
         setVehiculos((prev) => [...prev, vehiculoCreado]);
@@ -1392,12 +1404,29 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
-        const { id, placa, marca, clase_vehiculo, linea, modelo, color } =
-          data.vehiculo;
+        const {
+          id,
+          placa,
+          marca,
+          clase_vehiculo,
+          linea,
+          modelo,
+          color,
+          documentos,
+        } = data.vehiculo;
 
         setVehiculos((prev) => [
           ...prev,
-          { id, placa, marca, clase_vehiculo, linea, modelo, color },
+          {
+            id,
+            placa,
+            marca,
+            clase_vehiculo,
+            linea,
+            modelo,
+            color,
+            documentos,
+          },
         ]);
         addToast({
           title: "Se acaba de realizar el registro de una nueva vehiculo!",

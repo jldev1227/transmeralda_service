@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  use,
+  Suspense,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
@@ -8,7 +15,6 @@ import Image from "next/image";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import {
-  FileText,
   Truck,
   Clock,
   Route,
@@ -19,7 +25,6 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@heroui/button";
-import { Suspense } from "react";
 
 import LoadingPage from "@/components/loadingPage";
 import { useTicketShare } from "@/components/shareTicketImage";
@@ -30,6 +35,9 @@ import { PublicTokenGuard } from "@/components/guards/publicTokenGuard";
 import { Documento } from "@/types";
 import { useService } from "@/context/serviceContext";
 import ModalShareServicio from "@/components/ui/modalShareServicio";
+import { useAuth } from "@/context/AuthContext";
+import ModalDocumentosConductor from "@/components/ui/modalDocumentosConductor";
+import ModalDocumentosVehiculo from "@/components/ui/modalDocumentosVehiculo";
 
 // Hook personalizado para servicios públicos
 const usePublicService = (servicioId: string, token: string | null) => {
@@ -102,6 +110,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const { user } = useAuth();
 
   // Use different hooks based on whether token is present
   const publicService = usePublicService(servicioId, token);
@@ -987,36 +996,38 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 {/* Top row - Back button and title */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <button
-                      className={`
-                                w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center
-                                ${
-                                  isNavigating
-                                    ? "bg-gray-100 cursor-not-allowed opacity-50"
-                                    : "hover:bg-gray-50 text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300"
-                                }
-                            `}
-                      disabled={isNavigating}
-                      onClick={handleGoBack}
-                    >
-                      {isNavigating ? (
-                        <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M15 19l-7-7 7-7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                          />
-                        </svg>
-                      )}
-                    </button>
+                    {user && (
+                      <button
+                        className={`
+                                  w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center
+                                  ${
+                                    isNavigating
+                                      ? "bg-gray-100 cursor-not-allowed opacity-50"
+                                      : "hover:bg-gray-50 text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300"
+                                  }
+                              `}
+                        disabled={isNavigating}
+                        onClick={handleGoBack}
+                      >
+                        {isNavigating ? (
+                          <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M15 19l-7-7 7-7"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    )}
 
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -1064,34 +1075,13 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                     </span>
                   </div>
 
-                  <button
-                    className={`
-                            px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium text-sm
-                            ${
-                              isNavigating
-                                ? "bg-gray-100 cursor-not-allowed opacity-50 text-gray-400"
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
-                            }
-                        `}
-                    title="compartir"
-                    disabled={isNavigating}
-                    onClick={handleShare}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                      />
-                    </svg>
-                    <span className="hidden xs:inline">Compartir</span>
-                  </button>
+                  {user && (
+                    <ModalShareServicio
+                      isNavigating={isNavigating}
+                      servicioId={servicioId}
+                      handleShareBasicTicket={handleShare}
+                    />
+                  )}
                 </div>
 
                 {/* Mobile ID display */}
@@ -1105,37 +1095,39 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
               {/* Desktop Layout */}
               <div className="hidden lg:flex items-center justify-between">
                 <div className="flex items-center gap-6">
-                  <button
-                    className={`
-                            w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center
-                            ${
-                              isNavigating
-                                ? "bg-gray-100 cursor-not-allowed opacity-50"
-                                : "hover:bg-gray-50 text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300"
-                            }
-                        `}
-                    disabled={isNavigating}
-                    title="Volver"
-                    onClick={handleGoBack}
-                  >
-                    {isNavigating ? (
-                      <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M15 19l-7-7 7-7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                        />
-                      </svg>
-                    )}
-                  </button>
+                  {user && (
+                    <button
+                      className={`
+                              w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center
+                              ${
+                                isNavigating
+                                  ? "bg-gray-100 cursor-not-allowed opacity-50"
+                                  : "hover:bg-gray-50 text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300"
+                              }
+                          `}
+                      disabled={isNavigating}
+                      title="Volver"
+                      onClick={handleGoBack}
+                    >
+                      {isNavigating ? (
+                        <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M15 19l-7-7 7-7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  )}
 
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -1181,13 +1173,16 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                     </span>
                   </div>
 
-                  <div className="h-8 w-px bg-gray-200" />
-
-                  <ModalShareServicio
-                    isNavigating={isNavigating}
-                    servicioId={servicioId}
-                    handleShareBasicTicket={handleShare}
-                  />
+                  {user && (
+                    <>
+                      <div className="h-8 w-px bg-gray-200" />
+                      <ModalShareServicio
+                        isNavigating={isNavigating}
+                        servicioId={servicioId}
+                        handleShareBasicTicket={handleShare}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1248,15 +1243,9 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                 </div>
 
                 <div className="border-t border-gray-100 pt-4 mt-4">
-                  <Button
-                    fullWidth
-                    color="primary"
-                    radius="sm"
-                    startContent={<FileText className="w-4 h-4" />}
-                    variant="flat"
-                  >
-                    Ver documentación
-                  </Button>
+                  <ModalDocumentosConductor
+                    conductorData={currentServicio.conductor}
+                  />
                 </div>
               </div>
 
@@ -1310,15 +1299,9 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                     </div>
 
                     <div className="border-t border-gray-100 pt-4 mt-4">
-                      <Button
-                        fullWidth
-                        color="primary"
-                        radius="sm"
-                        startContent={<FileText className="w-4 h-4" />}
-                        variant="flat"
-                      >
-                        Ver documentación
-                      </Button>
+                      <ModalDocumentosVehiculo
+                        vehicleData={currentServicio.vehiculo}
+                      />
                     </div>
                   </div>
                 )}
@@ -1413,7 +1396,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
               <div className="grid sm:grid-cols-2 gap-2">
                 <div className="space-y-2">
                   {/* Cronograma minimalista */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-6">
+                  <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-2">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                         <Calendar className="w-4 h-4 text-blue-600" />
@@ -1423,15 +1406,28 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                       </h3>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">
-                          Fecha de solicitud
-                        </p>
-                        <p className="text-base font-medium text-gray-900">
-                          {formatearFecha(currentServicio.fecha_solicitud)}
-                        </p>
-                      </div>
+                    <div className="space-y-6">
+                      {currentServicio.fecha_finalizacion && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">
+                            Fecha de solicitud
+                          </p>
+                          <p className="text-base font-medium text-gray-900">
+                            {formatearFecha(currentServicio.fecha_solicitud)}
+                          </p>
+                        </div>
+                      )}
+
+                      {currentServicio.fecha_finalizacion && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">
+                            Fecha de realización
+                          </p>
+                          <p className="text-base font-medium text-gray-900">
+                            {formatearFecha(currentServicio.fecha_realizacion)}
+                          </p>
+                        </div>
+                      )}
 
                       {currentServicio.fecha_realizacion && (
                         <div>
@@ -1443,109 +1439,20 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                           </p>
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Información del Recorrido minimalista */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                        <Route className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Recorrido
-                      </h3>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Ruta principal */}
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                A
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Origen</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {currentServicio.origen?.nombre_municipio ||
-                                  "No especificado"}
-                              </p>
-                              {currentServicio.origen_especifico && (
-                                <p className="text-xs text-gray-400 italic">
-                                  ({currentServicio.origen_especifico})
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-2">
-                          <div className="w-px h-8 bg-gray-200" />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                B
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Destino</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {currentServicio.destino?.nombre_municipio ||
-                                  "No especificado"}
-                              </p>
-                              {currentServicio.destino_especifico && (
-                                <p className="text-xs text-gray-400 italic">
-                                  ({currentServicio.destino_especifico})
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Métricas del viaje */}
-                      <div className="border-t border-gray-100 pt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500 mb-1">
-                              Distancia
-                            </p>
-                            <p className="text-lg font-semibold text-gray-900">
-                              {distancia} km
-                            </p>
-                          </div>
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500 mb-1">
-                              Duración
-                            </p>
-                            <p className="text-lg font-semibold text-gray-900">
-                              {formatDuration(duracion)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Propósito del servicio */}
-                      {currentServicio.proposito_servicio && (
-                        <div className="border-t border-gray-100 pt-4">
+                      {currentServicio.fecha_finalizacion && (
+                        <div>
                           <p className="text-sm text-gray-500 mb-1">
-                            Propósito del servicio
+                            Fecha de finalización
                           </p>
-                          <p className="text-base text-gray-900 capitalize">
-                            Transporte de {currentServicio.proposito_servicio}
+                          <p className="text-base font-medium text-gray-900">
+                            {formatearFecha(currentServicio.fecha_realizacion)}
                           </p>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
-                <div className="space-y-2">
+
                   {/* Observaciones */}
                   {currentServicio.observaciones ? (
                     <div className="bg-amber-50 rounded-xl border border-amber-100 p-6">
@@ -1651,6 +1558,106 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                           ).toLocaleString()}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {/* Información del Recorrido minimalista */}
+                  <div className="bg-white rounded-xl border border-gray-100 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                        <Route className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Recorrido
+                      </h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Ruta principal */}
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                A
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Origen</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {currentServicio.origen?.nombre_municipio ||
+                                  "No especificado"}
+                              </p>
+                              {currentServicio.origen_especifico && (
+                                <p className="text-xs text-gray-400 italic">
+                                  ({currentServicio.origen_especifico})
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-2">
+                          <div className="w-px h-8 bg-gray-200" />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                B
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Destino</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {currentServicio.destino?.nombre_municipio ||
+                                  "No especificado"}
+                              </p>
+                              {currentServicio.destino_especifico && (
+                                <p className="text-xs text-gray-400 italic">
+                                  ({currentServicio.destino_especifico})
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Métricas del viaje */}
+                      <div className="border-t border-gray-100 pt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500 mb-1">
+                              Distancia
+                            </p>
+                            <p className="text-lg font-semibold text-gray-900">
+                              {distancia} km
+                            </p>
+                          </div>
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500 mb-1">
+                              Duración
+                            </p>
+                            <p className="text-lg font-semibold text-gray-900">
+                              {formatDuration(duracion)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Propósito del servicio */}
+                      {currentServicio.proposito_servicio && (
+                        <div className="border-t border-gray-100 pt-4">
+                          <p className="text-sm text-gray-500 mb-1">
+                            Propósito del servicio
+                          </p>
+                          <p className="text-base text-gray-900 capitalize">
+                            Transporte de {currentServicio.proposito_servicio}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

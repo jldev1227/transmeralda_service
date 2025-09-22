@@ -95,18 +95,20 @@ export default function ModalShareServicio({
     <>
       <button
         className={`
-                    px-6 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 font-medium
-                    ${
-                      isNavigating
-                        ? "bg-gray-100 cursor-not-allowed opacity-50 text-gray-400"
-                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
-                    }
-                `}
+          px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium
+          text-base
+          sm:px-6 sm:py-3 sm:rounded-xl sm:gap-3 sm:text-lg
+          ${
+            isNavigating
+              ? "bg-gray-100 cursor-not-allowed opacity-50 text-gray-400"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
+          }
+        `}
         disabled={isNavigating}
         onClick={onOpen}
       >
         <svg
-          className="w-4 h-4"
+          className="w-4 h-4 sm:w-5 sm:h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -118,7 +120,7 @@ export default function ModalShareServicio({
             strokeWidth={2}
           />
         </svg>
-        Compartir
+        <span className="text-sm sm:text-base">Compartir</span>
       </button>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} onClose={handleClose}>

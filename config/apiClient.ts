@@ -11,33 +11,6 @@ const createApiClient = () => {
     withCredentials: true, // Esto enviará las cookies automáticamente
   });
 
-  // // Función para manejar el cierre de sesión
-  const handleLogout = () => {
-    // Limpiar cookies - eliminamos tanto token como userInfo
-    // Eliminar token
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-    // Eliminar userInfo
-    document.cookie =
-      "userInfo=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-    // Asegurarse de eliminar en todos los dominios posibles
-    const domainParts = window.location.hostname.split(".");
-
-    if (domainParts.length > 1) {
-      const rootDomain = domainParts.slice(-2).join(".");
-
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain}`;
-      document.cookie = `userInfo=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain}`;
-    }
-
-    // Redirigir al sistema de autenticación
-    const authSystem =
-      process.env.NEXT_PUBLIC_AUTH_SYSTEM || "https://auth.midominio.com/login";
-
-    window.location.href = authSystem;
-  };
-
   // Interceptor para incluir el token en cada petición
   instance.interceptors.request.use(
     (config) => {
@@ -65,16 +38,6 @@ const createApiClient = () => {
       return response;
     },
     (error) => {
-      // Manejar errores de autenticación (401 - Unauthorized, 403 - Forbidden)
-      if (
-        error.response &&
-        (error.response.status === 401 || error.response.status === 403)
-      ) {
-        // Ejecutar logout si hay error de autenticación
-        // handleLogout();
-        console.log("cerrando sesion");
-      }
-
       return Promise.reject(error);
     },
   );
