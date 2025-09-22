@@ -14,7 +14,8 @@ import { useAuth, User } from "./AuthContext";
 
 import { apiClient } from "@/config/apiClient";
 import socketService from "@/services/socketService";
-import { Documento } from "@/types";
+import { Documento, MotivoCancelacion } from "@/types";
+import { DEFAULT_MOTIVOS } from "@/utils/indext";
 
 // Definiciones de tipos
 export interface Conductor {
@@ -570,8 +571,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         setLoading(true);
         setError(null);
 
-        console.log(id);
-
         const response = await apiClient.get(`/api/servicios/${id}`);
 
         if (response.data.success) {
@@ -919,7 +918,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
         addToast({
           title: "Nuevo servicio",
-          description: `Se ha creado un nuevo servicio hacia ${data.destino_especifico || data.destino.nombre_municipio}`,
+          description: `Se ha creado un nuevo servicio ${data.origen_especifico || data.origen.nombre_municipio} - ${data.destino_especifico || data.destino.nombre_municipio}`,
           color: "success",
         });
       };
@@ -1014,8 +1013,6 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
             timestamp: new Date(),
           },
         ]);
-
-        console.log(data);
 
         // Eliminar de la lista principal de servicios
         setServicios((prevServicios) =>
@@ -1457,6 +1454,46 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         }
       };
 
+      const handleCancelarServicio = (data: ServicioConRelaciones) => {
+        setSocketEventLogs((prev) => [
+          ...prev,
+          {
+            eventName: "servicio:cancelado",
+            data,
+            timestamp: new Date(),
+          },
+        ]);
+
+        setServicios((prevServicios) =>
+          prevServicios.filter((s) => s.id !== data.id),
+        );
+
+        if (data.cancelacion.usuario_cancelacion.id === user.id) {
+          addToast({
+            title: "Acabas de cancelar un servicio",
+            description: `Has cancelado el servicio ${data.origen_especifico || data.origen.nombre_municipio} - ${data.destino_especifico || data.destino.nombre_municipio} por motivo de: ${
+              DEFAULT_MOTIVOS.find(
+                (motivo: MotivoCancelacion) =>
+                  motivo.value === data.cancelacion.motivo_cancelacion,
+              )?.label || data.cancelacion.motivo_cancelacion
+            }`,
+            color: "danger",
+          });
+          return;
+        }
+
+        addToast({
+          title: "Se acaba de cancelar un servicio",
+          description: `${data.cancelacion.usuario_cancelacion.nombre} ha cancelado el servicio ${data.origen_especifico || data.origen.nombre_municipio} - ${data.destino_especifico || data.destino.nombre_municipio} por motivo de: ${
+            DEFAULT_MOTIVOS.find(
+              (motivo: MotivoCancelacion) =>
+                motivo.value === data.cancelacion.motivo_cancelacion,
+            )?.label || data.cancelacion.motivo_cancelacion
+          }`,
+          color: "danger",
+        });
+      };
+
       // Registrar manejadores de eventos de conexión
       socketService.on("connect", handleConnect);
       socketService.on("disconnect", handleDisconnect);
@@ -1466,6 +1503,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
       socketService.on("servicio:actualizado", handleServicioActualizado);
       socketService.on("servicio:asignado", handleServicioAsignado);
       socketService.on("servicio:desasignado", handleServicioDesasignado);
+      socketService.on("servicio:cancelado", handleCancelarServicio);
       socketService.on("servicio:eliminado", handleServicioEliminado);
       socketService.on(
         "servicio:estado-actualizado",
@@ -1506,6 +1544,7 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
         socketService.off("servicio:asignado");
         socketService.off("servicio:desasignado");
         socketService.off("servicio:eliminado");
+        socketService.off("servicio:cancelado");
         socketService.off("servicio:estado-actualizado");
         socketService.off("servicio:numero-planilla-actualizado");
         socketService.off("liquidacion:estado-aprobado");
