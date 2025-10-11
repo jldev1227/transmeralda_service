@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import "mapbox-gl/dist/mapbox-gl.css";
-import axios from "axios";
-import { LatLngExpression, LatLngTuple } from "leaflet";
 import { useRouter } from "next/navigation";
 import { MapPinIcon, PlusIcon } from "lucide-react"; // al inicio del archivo
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -11,7 +8,6 @@ import { Button } from "@heroui/button";
 
 import {
   useService,
-  VehicleTracking,
   ServicioConRelaciones,
 } from "@/context/serviceContext";
 import ModalFormServicio from "@/components/ui/modalFormServicio";
@@ -22,14 +18,6 @@ import ModalPlanilla from "@/components/ui/modalPlanilla";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loadingPage";
 import FiltersDrawer from "@/components/ui/filterDrawer";
-
-interface MapboxRoute {
-  distance: number;
-  duration: number;
-  geometry: {
-    coordinates: number[][];
-  };
-}
 
 interface Filters {
   estado: string;
@@ -45,10 +33,6 @@ interface Filters {
 
 // Main Dashboard Component
 const AdvancedDashboard = () => {
-  const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
-  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-  const [token] = useState(WIALON_API_TOKEN);
-
   // State
   const {
     servicios,
@@ -61,11 +45,6 @@ const AdvancedDashboard = () => {
     conductores,
   } = useService();
   const { modalTicket } = useService();
-  const [servicioWithRoutes, setServicioWithRoutes] =
-    useState<ServicioConRelaciones | null>(null);
-  const [vehicleTracking, setVehicleTracking] =
-    useState<VehicleTracking | null>(null);
-  const [trackingError, setTrackingError] = useState<string>("");
 
   const [filters, setFilters] = useState<Filters>({
     estado: "",
@@ -98,224 +77,12 @@ const AdvancedDashboard = () => {
     to: "",
   });
 
-  // Wialon API call function
-  const callWialonApi = useCallback(
-    async (sessionIdOrToken: string, service: string, params: any) => {
-      const isLoginCall = service === "token/login";
-      const payload = {
-        token: isLoginCall ? null : sessionIdOrToken,
-        service,
-        params,
-      };
-
-      if (isLoginCall) {
-        payload.params = { ...params, token: sessionIdOrToken };
-      }
-
-      try {
-        const response = await axios.post("/api/wialon-api", payload);
-
-        if (response.data && response.data.error) {
-          throw new Error(
-            `Error Wialon API (${response.data.error}): ${response.data.reason || service}`,
-          );
-        }
-
-        return response.data;
-      } catch (err) {
-        console.error(`Error llamando a ${service} via /api/wialon-api:`, err);
-        throw err;
-      }
-    },
-    [],
-  );
-
-  // Fetch route geometry using Mapbox API
-  const fetchRouteGeometry = useCallback(
-    async (servicio: ServicioConRelaciones) => {
-      if (!servicio || !MAPBOX_ACCESS_TOKEN) {
-        return null;
-      }
-
-      try {
-        // For 'en_curso' services, try to get the vehicle position from Wialon first
-        let origenLat = Number(
-          servicio.origen_latitud || servicio.origen.latitud,
-        );
-        let origenLng = Number(
-          servicio.origen_longitud || servicio.origen.longitud,
-        );
-        let destinoLat = Number(
-          servicio.destino_latitud || servicio.destino.latitud,
-        );
-        let destinoLng = Number(
-          servicio.destino_longitud || servicio.destino.longitud,
-        );
-        let useVehiclePosition = false;
-
-        if (
-          servicio.estado === "en_curso" &&
-          servicio.vehiculo?.placa &&
-          token
-        ) {
-          try {
-            setTrackingError("");
-
-            // Login to Wialon to get session ID
-            const loginData = await callWialonApi(token, "token/login", {});
-
-            if (loginData?.eid) {
-              const sessionId = loginData.eid;
-
-              // Search for the vehicle by plate number
-              const vehiclesData = await callWialonApi(
-                sessionId,
-                "core/search_items",
-                {
-                  spec: {
-                    itemsType: "avl_unit",
-                    propName: "sys_name",
-                    propValueMask: "*",
-                    sortType: "sys_name",
-                  },
-                  force: 1,
-                  flags: 1025, // Include position data
-                  from: 0,
-                  to: 1000,
-                },
-              );
-
-              if (vehiclesData?.items) {
-                // Find the vehicle with matching plate number
-                const vehicleData = vehiclesData.items.find(
-                  (v: any) =>
-                    v.nm.includes(servicio.vehiculo.placa) ||
-                    v.nm.toLowerCase() ===
-                      servicio.vehiculo.placa.toLowerCase(),
-                );
-
-                // If vehicle found and has position data
-                if (vehicleData?.pos) {
-                  // Update origin coordinates to vehicle's current position
-                  origenLat = vehicleData.pos.y;
-                  origenLng = vehicleData.pos.x;
-                  useVehiclePosition = true;
-
-                  // Create vehicle tracking object for the map component
-                  const trackingData: VehicleTracking = {
-                    id: vehicleData.id,
-                    name: vehicleData.nm,
-                    flags: vehicleData.flags || 0,
-                    position: vehicleData.pos,
-                    lastUpdate: new Date(),
-                    item: vehicleData,
-                  };
-
-                  setVehicleTracking(trackingData);
-                } else {
-                  setTrackingError(
-                    "No se encontró la posición actual del vehículo",
-                  );
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Error al obtener posición del vehículo:", error);
-            setTrackingError("Error al obtener información del vehículo");
-          }
-        }
-
-        // Ensure coordinates exist and are valid
-        if (!origenLat || !origenLng || !destinoLat || !destinoLng) {
-          throw new Error("Coordenadas de origen o destino no válidas");
-        }
-
-        const origenCoords: LatLngTuple = [origenLat, origenLng];
-        const destinoCoords: LatLngTuple = [destinoLat, destinoLng];
-
-        // Build URL for Mapbox Directions API
-        const originCoords = `${origenCoords[1]},${origenCoords[0]}`; // [lng, lat] format
-        const destCoords = `${destinoCoords[1]},${destinoCoords[0]}`;
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords};${destCoords}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_ACCESS_TOKEN}`;
-
-        // Make request to API
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(
-            `Error en la respuesta de Mapbox API: ${response.status}`,
-          );
-        }
-
-        const data = await response.json();
-
-        if (!data.routes || data.routes.length === 0) {
-          throw new Error("No se encontró una ruta válida");
-        }
-
-        // Extract route geometry
-        const route: MapboxRoute = data.routes[0];
-
-        const servicioWithRoutesData = {
-          ...servicio,
-          origenCoords: useVehiclePosition
-            ? ([origenLat, origenLng] as LatLngTuple)
-            : origenCoords,
-          destinoCoords,
-          geometry: [origenCoords, destinoCoords] as LatLngExpression[],
-          routeDistance: (route.distance / 1000).toFixed(1),
-          routeDuration: Math.round(route.duration / 60),
-        };
-
-        setServicioWithRoutes(servicioWithRoutesData);
-
-        return servicioWithRoutesData;
-      } catch (error: any) {
-        console.error("Error:", error.message);
-
-        // Handle error case using a straight line
-        if (
-          servicio.origen_latitud &&
-          servicio.origen_longitud &&
-          servicio.destino_latitud &&
-          servicio.destino_longitud
-        ) {
-          const origenCoords: LatLngTuple = [
-            servicio.origen_latitud,
-            servicio.origen_longitud,
-          ];
-          const destinoCoords: LatLngTuple = [
-            servicio.destino_latitud,
-            servicio.destino_longitud,
-          ];
-
-          const servicioWithRoutesData = {
-            ...servicio,
-            origenCoords,
-            destinoCoords,
-            geometry: [origenCoords, destinoCoords],
-            routeDistance: servicio.distancia_km.toString() || "0",
-            routeDuration: null,
-          };
-
-          setServicioWithRoutes(servicioWithRoutesData);
-
-          return servicioWithRoutesData;
-        }
-
-        return null;
-      }
-    },
-    [MAPBOX_ACCESS_TOKEN, token, callWialonApi],
-  );
-
   // Select a service
   const handleSelectServicio = useCallback(
     async (servicio: ServicioConRelaciones) => {
       setSelectedServicio(servicio);
-      await fetchRouteGeometry(servicio);
     },
-    [fetchRouteGeometry],
+    [],
   );
 
   const limpiarFiltros = () => {

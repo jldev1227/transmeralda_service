@@ -2,6 +2,7 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import Script from "next/script";
 
 import { Providers } from "./providers";
 import { ClientLayout } from "./client-layout"; // Componente cliente que crearemos
@@ -47,6 +48,17 @@ export default function RootLayout({
           </AuthGuard>
         </Providers>
       </body>
+      <Script id="wialon-sdk" strategy="afterInteractive">
+        {`
+    function someFunc() {
+      console.log("Wialon SDK cargado ✅");
+    }
+  `}
+      </Script>
+      <Script
+        src="https://hst-api.wialon.com/wsdk/script/wialon.js?callback=someFunc"
+        strategy="afterInteractive"
+      />
     </html>
   );
 }
