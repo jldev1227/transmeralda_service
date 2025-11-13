@@ -34,10 +34,10 @@ export function AuthGuard({
 
     // Resto de tu lógica de autenticación existente
     if (!loading && !isAuthenticated) {
-      // router.push(
-      //   process.env.NEXT_PUBLIC_AUTH_SYSTEM ||
-      //     `http://auth.midominio.local:3001`,
-      // );
+      router.push(
+        process.env.NEXT_PUBLIC_AUTH_SYSTEM ||
+          `http://auth.midominio.local:3001`,
+      );
       return;
     }
 
