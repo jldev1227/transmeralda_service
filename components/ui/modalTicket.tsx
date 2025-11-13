@@ -81,14 +81,9 @@ export default function ModalTicket() {
     setFotoUrl(null);
   }, []);
 
-  // Función mejorada para manejar el compartir
+  // Compartir manteniendo el modal abierto y evitando cambios de estado previos
   const handleShare = async () => {
     if (!servicio) return;
-    // Cerrar el modal primero para preservar la activación de usuario
-    // y evitar re-render inmediato que puede invalidar navigator.share
-    handleModalTicket();
-    // Dar un pequeño respiro al DOM antes de compartir
-    await new Promise((r) => setTimeout(r, 40));
     await shareTicket(servicio);
   };
 
@@ -264,37 +259,24 @@ export default function ModalTicket() {
                     <div className="text-right flex items-center gap-3">
                       {/* Botón de compartir mejorado */}
                       <button
-                        className={`relative bg-white/20 hover:bg-white/30 transition-all duration-200 rounded-full p-2 ${
-                          isSharing
-                            ? "cursor-wait opacity-70"
-                            : "cursor-pointer"
-                        }`}
-                        disabled={isSharing}
-                        title={
-                          isSharing ? "Compartiendo..." : "Compartir ticket"
-                        }
+                        className="relative bg-white/20 hover:bg-white/30 transition-all duration-200 rounded-full p-2 cursor-pointer"
+                        title="Compartir ticket"
                         onClick={handleShare}
                       >
-                        {isSharing ? (
-                          // Spinner mientras comparte
-                          <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          // Icono de compartir
-                          <svg
-                            className="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                            />
-                          </svg>
-                        )}
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                          />
+                        </svg>
                       </button>
                       <span className="text-sm font-medium block">
                         Ticket de Servicio
