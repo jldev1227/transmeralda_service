@@ -56,7 +56,7 @@ export const shareTicketImage = async (servicio: ServicioConRelaciones) => {
           timeoutId = null;
         }
         throw error;
-      }
+      },
     );
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -84,7 +84,7 @@ export const shareTicketImage = async (servicio: ServicioConRelaciones) => {
             resolve(b);
           },
           "image/png",
-          0.95
+          0.95,
         );
       } else {
         if (blobTimeoutId) {
@@ -153,7 +153,7 @@ export const shareTicketImage = async (servicio: ServicioConRelaciones) => {
 };
 
 const createTicketElement = (
-  servicio: ServicioConRelaciones
+  servicio: ServicioConRelaciones,
 ): HTMLDivElement => {
   const ticketDiv = document.createElement("div");
 
@@ -218,7 +218,7 @@ const createTicketElement = (
 };
 
 const createSimplifiedTicket = async (
-  servicio: ServicioConRelaciones
+  servicio: ServicioConRelaciones,
 ): Promise<void> => {
   try {
     const canvas = document.createElement("canvas");
@@ -252,18 +252,14 @@ const createSimplifiedTicket = async (
     ctx.fillText(
       `Nombre: ${servicio.conductor?.nombre || ""} ${servicio.conductor?.apellido || ""}`,
       20,
-      130
+      130,
     );
     ctx.fillText(
       `${servicio.conductor?.tipo_identificacion || "ID"}: ${servicio.conductor?.numero_identificacion || "N/A"}`,
       20,
-      155
+      155,
     );
-    ctx.fillText(
-      `Teléfono: ${servicio.conductor?.telefono || "N/A"}`,
-      20,
-      180
-    );
+    ctx.fillText(`Teléfono: ${servicio.conductor?.telefono || "N/A"}`, 20, 180);
 
     ctx.fillStyle = "#059669";
     ctx.font = "bold 18px Arial";
@@ -275,12 +271,12 @@ const createSimplifiedTicket = async (
     ctx.fillText(
       `Marca: ${servicio.vehiculo?.marca || ""} ${servicio.vehiculo?.linea || ""}`,
       20,
-      285
+      285,
     );
     ctx.fillText(
       `Modelo: ${servicio.vehiculo?.modelo || ""} - Color: ${servicio.vehiculo?.color || ""}`,
       20,
-      310
+      310,
     );
 
     const blob = await new Promise<Blob | null>((resolve) => {
@@ -301,7 +297,7 @@ const createSimplifiedTicket = async (
 // FUNCIÓN MEJORADA PARA WEB SHARE API
 const shareImage = async (
   blob: Blob,
-  servicio: ServicioConRelaciones
+  servicio: ServicioConRelaciones,
 ): Promise<void> => {
   const fileName = `ticket-${servicio.id || Date.now()}.png`;
 
@@ -313,17 +309,17 @@ const shareImage = async (
   });
 
   // Verificación mejorada para Web Share API
-  const hasWebShareAPI = 
-    "share" in navigator && 
+  const hasWebShareAPI =
+    "share" in navigator &&
     typeof navigator.share === "function" &&
     window.isSecureContext;
 
   if (hasWebShareAPI) {
     try {
       // Crear el archivo
-      const file = new File([blob], fileName, { 
+      const file = new File([blob], fileName, {
         type: "image/png",
-        lastModified: Date.now() 
+        lastModified: Date.now(),
       });
 
       console.log("📄 Archivo creado:", {
@@ -341,14 +337,16 @@ const shareImage = async (
 
       // Verificar si se puede compartir este contenido
       if (navigator.canShare && !navigator.canShare(shareData)) {
-        console.warn("⚠️ canShare retornó false, pero intentaremos de todos modos");
+        console.warn(
+          "⚠️ canShare retornó false, pero intentaremos de todos modos",
+        );
       }
 
       console.log("🚀 Llamando a navigator.share()");
-      
+
       // CRÍTICO: Llamar a share() directamente
       await navigator.share(shareData);
-      
+
       console.log("✅ Share completado exitosamente");
       return;
     } catch (error: any) {
@@ -369,7 +367,7 @@ const shareImage = async (
     }
   } else {
     console.log("❌ Web Share API no disponible");
-    
+
     // Diagnóstico detallado
     if (!window.isSecureContext) {
       console.error("⚠️ NO SECURE CONTEXT - necesitas HTTPS o localhost");
@@ -409,7 +407,7 @@ const downloadImageFromBlob = (blob: Blob, fileName: string) => {
 
 const downloadImage = (
   canvas: HTMLCanvasElement,
-  servicio: ServicioConRelaciones
+  servicio: ServicioConRelaciones,
 ): void => {
   try {
     canvas.toBlob(async (blob) => {
@@ -425,7 +423,7 @@ const downloadImage = (
 
 export const useTicketShare = () => {
   const shareTicket = async (
-    servicio: ServicioConRelaciones
+    servicio: ServicioConRelaciones,
   ): Promise<void> => {
     if (!servicio) {
       console.error("No hay información del servicio para compartir");
