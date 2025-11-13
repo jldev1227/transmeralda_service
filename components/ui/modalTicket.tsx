@@ -84,7 +84,11 @@ export default function ModalTicket() {
   // Función mejorada para manejar el compartir
   const handleShare = async () => {
     if (!servicio) return;
-    // Mantener la llamada directa como en page/[id]
+    // Cerrar el modal primero para preservar la activación de usuario
+    // y evitar re-render inmediato que puede invalidar navigator.share
+    handleModalTicket();
+    // Dar un pequeño respiro al DOM antes de compartir
+    await new Promise((r) => setTimeout(r, 40));
     await shareTicket(servicio);
   };
 
