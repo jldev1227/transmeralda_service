@@ -83,20 +83,9 @@ export default function ModalTicket() {
 
   // Función mejorada para manejar el compartir
   const handleShare = async () => {
-    if (!servicio || isSharing) return;
-
-    setIsSharing(true);
-
-    try {
-      await shareTicket(servicio);
-    } catch (error) {
-      console.error("Error al compartir ticket:", error);
-    } finally {
-      // Pequeño delay para mejor UX visual
-      setTimeout(() => {
-        setIsSharing(false);
-      }, 500);
-    }
+    if (!servicio) return;
+    // Mantener la llamada directa como en page/[id]
+    await shareTicket(servicio);
   };
 
   // Si no hay servicio, mostrar mensaje o regresar null
