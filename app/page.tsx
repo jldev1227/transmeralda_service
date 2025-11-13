@@ -6,10 +6,7 @@ import { MapPinIcon, PlusIcon } from "lucide-react"; // al inicio del archivo
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@heroui/button";
 
-import {
-  useService,
-  ServicioConRelaciones,
-} from "@/context/serviceContext";
+import { useService, ServicioConRelaciones } from "@/context/serviceContext";
 import ModalFormServicio from "@/components/ui/modalFormServicio";
 import { formatearFecha } from "@/helpers";
 import ServiciosListCards from "@/components/ui/serviciosListCards";

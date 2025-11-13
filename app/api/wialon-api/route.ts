@@ -34,9 +34,13 @@ async function wialonLogin() {
       console.log("✅ Nuevo SID obtenido con token:", cachedSid);
       return cachedSid;
     } else if (response.data?.error) {
-      throw new Error(`Error de Wialon (${response.data.error}): ${response.data.reason || "Error de autenticación"}`);
+      throw new Error(
+        `Error de Wialon (${response.data.error}): ${response.data.reason || "Error de autenticación"}`,
+      );
     } else {
-      throw new Error("Respuesta inesperada de Wialon: " + JSON.stringify(response.data));
+      throw new Error(
+        "Respuesta inesperada de Wialon: " + JSON.stringify(response.data),
+      );
     }
   } catch (error: any) {
     console.error("❌ Error en wialonLogin:", error.message);
@@ -64,7 +68,9 @@ async function callWialon(service: string, params: any) {
 
     // Si el SID expira (error 1, 4 o 8), renueva y reintenta
     if ([1, 4, 8].includes(response.data?.error)) {
-      console.warn(`⚠️ SID expirado (${response.data.error}). Renovando con token...`);
+      console.warn(
+        `⚠️ SID expirado (${response.data.error}). Renovando con token...`,
+      );
       await wialonLogin();
       return await callWialon(service, params);
     }
@@ -85,7 +91,10 @@ export async function POST(request: NextRequest) {
     console.log(`📞 Llamada API Wialon: ${service}`, { hasSid: !!sid });
 
     if (!service) {
-      return NextResponse.json({ error: "Falta parámetro 'service'" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Falta parámetro 'service'" },
+        { status: 400 },
+      );
     }
 
     // Si es un login directo, iniciar sesión y devolver el eid
@@ -96,7 +105,10 @@ export async function POST(request: NextRequest) {
 
     // Para otros servicios, verificar que tengamos parámetros
     if (!params) {
-      return NextResponse.json({ error: "Faltan parámetros 'params'" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Faltan parámetros 'params'" },
+        { status: 400 },
+      );
     }
 
     // Si tenemos un sid específico del frontend, usarlo directamente
@@ -115,7 +127,9 @@ export async function POST(request: NextRequest) {
 
         // Si el SID expira, intentar renovar automáticamente
         if ([1, 4, 8].includes(response.data?.error)) {
-          console.warn(`⚠️ SID del frontend expirado (${response.data.error}). Renovando...`);
+          console.warn(
+            `⚠️ SID del frontend expirado (${response.data.error}). Renovando...`,
+          );
           const data = await callWialon(service, params);
           return NextResponse.json(data, { status: 200 });
         }

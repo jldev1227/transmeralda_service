@@ -355,11 +355,14 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                               maxLength={1000}
                               placeholder="Describe brevemente las no conformidades ocurridas durante el servicio..."
                               value={noConformidades}
-                              onChange={(e) => setNoConformidades(e.target.value)}
+                              onChange={(e) =>
+                                setNoConformidades(e.target.value)
+                              }
                             />
                             <div className="mt-1 flex items-center justify-between">
                               <p className="text-xs text-gray-500">
-                                Esta información ayudará a mejorar el servicio y trazabilidad.
+                                Esta información ayudará a mejorar el servicio y
+                                trazabilidad.
                               </p>
                               <span className="text-xs text-gray-400">
                                 {noConformidades.length}/1000

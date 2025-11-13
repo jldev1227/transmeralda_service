@@ -86,7 +86,7 @@ export default function ModalTicket() {
     if (!servicio || isSharing) return;
 
     setIsSharing(true);
-    
+
     try {
       await shareTicket(servicio);
     } catch (error) {
@@ -238,7 +238,7 @@ export default function ModalTicket() {
             transform: translateX(200%);
           }
         }
-        
+
         @keyframes spin {
           to {
             transform: rotate(360deg);
@@ -272,10 +272,14 @@ export default function ModalTicket() {
                       {/* Botón de compartir mejorado */}
                       <button
                         className={`relative bg-white/20 hover:bg-white/30 transition-all duration-200 rounded-full p-2 ${
-                          isSharing ? "cursor-wait opacity-70" : "cursor-pointer"
+                          isSharing
+                            ? "cursor-wait opacity-70"
+                            : "cursor-pointer"
                         }`}
                         disabled={isSharing}
-                        title={isSharing ? "Compartiendo..." : "Compartir ticket"}
+                        title={
+                          isSharing ? "Compartiendo..." : "Compartir ticket"
+                        }
                         onClick={handleShare}
                       >
                         {isSharing ? (

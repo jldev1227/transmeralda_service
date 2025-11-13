@@ -818,10 +818,10 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   // Función para detectar si es ruta pública
   const isPublicRoute = () => {
     if (typeof window === "undefined") return false;
-    
+
     const isServiceRoute = window.location.pathname.startsWith("/servicio/");
     const hasToken = new URLSearchParams(window.location.search).has("token");
-    
+
     return isServiceRoute && hasToken;
   };
 

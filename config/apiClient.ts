@@ -16,10 +16,10 @@ const createApiClient = () => {
     // Verificar si estamos en una ruta pública antes de hacer logout
     const isPublicRoute = () => {
       if (typeof window === "undefined") return false;
-      
+
       const isServiceRoute = window.location.pathname.startsWith("/servicio/");
       const hasToken = new URLSearchParams(window.location.search).has("token");
-      
+
       return isServiceRoute && hasToken;
     };
 
