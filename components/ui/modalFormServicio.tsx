@@ -461,8 +461,6 @@ export default function ModalFormServicio() {
     setError(null);
     setLoading(true);
 
-    console.log("Submitting form with data:");
-
     try {
       // Asegurarse de limpiar el servicio seleccionado primero
       if (selectedServicio !== null) {

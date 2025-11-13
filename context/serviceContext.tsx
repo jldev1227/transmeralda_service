@@ -815,12 +815,25 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     setModalLiquidar(!modalLiquidar);
   };
 
+  // Función para detectar si es ruta pública
+  const isPublicRoute = () => {
+    if (typeof window === "undefined") return false;
+    
+    const isServiceRoute = window.location.pathname.startsWith("/servicio/");
+    const hasToken = new URLSearchParams(window.location.search).has("token");
+    
+    return isServiceRoute && hasToken;
+  };
+
   useEffect(() => {
-    obtenerServicios();
-    obtenerMunicipios();
-    obtenerConductores();
-    obtenerVehiculos();
-    obtenerEmpresas();
+    // Solo ejecutar estas llamadas API si NO es una ruta pública
+    if (!isPublicRoute()) {
+      obtenerServicios();
+      obtenerMunicipios();
+      obtenerConductores();
+      obtenerVehiculos();
+      obtenerEmpresas();
+    }
   }, []);
 
   // Estado para rastreo de vehículos y servicios seleccionados
@@ -869,7 +882,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
 
   // Inicializar Socket.IO cuando el usuario esté autenticado
   useEffect(() => {
-    if (user?.id) {
+    // Solo conectar socket si NO es una ruta pública y hay usuario autenticado
+    if (user?.id && !isPublicRoute()) {
       // Conectar socket
       socketService.connect(user.id);
 

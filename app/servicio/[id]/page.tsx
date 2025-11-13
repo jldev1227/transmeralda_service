@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   use,
   Suspense,
 } from "react";
@@ -13,6 +14,13 @@ import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 
 import "mapbox-gl/dist/mapbox-gl.css";
+
+// Declaración global para Wialon SDK
+declare global {
+  interface Window {
+    wialon: any;
+  }
+}
 
 import {
   Truck,
@@ -117,29 +125,33 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   const token = searchParams.get("token");
   const { user } = useAuth();
 
+  // Determine if it's public access first
+  const isPublicAccess = !!token;
+
   // Use different hooks based on whether token is present
   const publicService = usePublicService(servicioId, token);
   const { servicio, obtenerServicio, loading: authLoading } = useService();
 
-  // Determine which service data to use
-  const isPublicAccess = !!token;
+  const currentServicio = isPublicAccess 
+    ? publicService.servicio 
+    : servicio;
 
-  const currentServicio = isPublicAccess ? publicService.servicio : servicio; // servicio from useService should be the current service
-
-  const loading = isPublicAccess ? publicService.loading : authLoading;
+  const loading = isPublicAccess 
+    ? publicService.loading 
+    : authLoading;
 
   const { shareTicket } = useTicketShare();
 
   // Fetch service if authenticated and servicioId is provided
   useEffect(() => {
     const fetchServicio = async () => {
-      if (!isPublicAccess && servicioId) {
+      if (!isPublicAccess && servicioId && obtenerServicio) {
         await obtenerServicio(servicioId);
       }
     };
 
     fetchServicio();
-  }, [isPublicAccess, servicioId]);
+  }, [isPublicAccess, servicioId, obtenerServicio]);
 
   // Estados para la navegación
   const [isNavigating, setIsNavigating] = useState(false);
@@ -166,11 +178,26 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
   const [wialonSessionId, setWialonSessionId] = useState<string | null>(null);
   const [distancia, setDistancia] = useState<number>(0);
   const [duracion, setDuracion] = useState<number>(0);
-  console.log(currentServicio);
+
+  // Estados para WebSocket del vehículo específico
+  const [isVehicleWSConnected, setIsVehicleWSConnected] = useState(false);
+  const [vehicleWSError, setVehicleWSError] = useState<string | null>(null);
+  const [realTimePosition, setRealTimePosition] = useState<any>(null);
+  
+  // Referencias para WebSocket
+  const wialonSessionRef = useRef<any>(null);
+  const vehicleUnitRef = useRef<any>(null);
+  const wsReconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const positionListenerRef = useRef<((event: any) => void) | null>(null);
+  const isWebSocketActiveRef = useRef<boolean>(false);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Referencias para controlar inicializaciones y evitar loops
+  const isWialonInitializedRef = useRef(false);
+  const wialonInitPromiseRef = useRef<Promise<void> | null>(null);
 
   // Tokens desde variables de entorno
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-  const WIALON_API_TOKEN = process.env.NEXT_PUBLIC_WIALON_API_TOKEN || "";
 
   // Función para manejar la navegación hacia atrás con loading
   const handleGoBack = async () => {
@@ -306,24 +333,99 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
     );
   };
 
-  // Función para hacer llamadas a la API de Wialon
-  const callWialonApi = async (
-    sessionIdOrToken: string,
+  // Función para hacer llamadas a la API de Wialon con manejo automático de token
+  const callWialonApi = useCallback(async (
+    sessionIdOrToken: string | null,
     service: string,
     params: any,
+    isRetry: boolean = false,
   ) => {
-    const isLoginCall = service === "token/login";
-    const payload = {
-      token: isLoginCall ? null : sessionIdOrToken,
-      service,
-      params,
+    console.log('🔍 Llamada Wialon:', { sessionIdOrToken, service, params, isRetry });
+
+    // Obtener token del localStorage si no se proporciona uno específico
+    const getStoredToken = () => {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem('wialon_session_id');
+      }
+      return null;
     };
 
-    if (isLoginCall) {
-      payload.params = { ...params, token: sessionIdOrToken };
+    // Guardar token en localStorage
+    const saveToken = (token: string) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('wialon_session_id', token);
+        setWialonSessionId(token);
+      }
+    };
+
+    // Limpiar token del localStorage
+    const clearToken = () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('wialon_session_id');
+        setWialonSessionId(null);
+      }
+    };
+
+    // Función para hacer login y obtener nuevo token
+    const performLogin = async () => {
+      console.log('� Iniciando sesión en Wialon...');
+      
+      try {
+        const loginResponse = await fetch("/api/wialon-api", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            service: "token/login",
+            params: {},
+          }),
+        });
+
+        if (!loginResponse.ok) {
+          const loginError = await loginResponse.json();
+          throw new Error(`Error HTTP en login: ${loginError.details || loginError.error}`);
+        }
+
+        const loginData = await loginResponse.json();
+
+        if (loginData && loginData.eid) {
+          saveToken(loginData.eid);
+          console.log('✅ Nuevo token Wialon obtenido y guardado:', loginData.eid);
+          return loginData.eid;
+        } else {
+          throw new Error("No se pudo obtener token de Wialon");
+        }
+      } catch (error) {
+        console.error('❌ Error en login:', error);
+        clearToken();
+        throw error;
+      }
+    };
+
+    // Determinar qué token usar
+    let currentToken = sessionIdOrToken || getStoredToken();
+
+    // Si no hay token y no es una llamada de login, hacer login primero
+    if (!currentToken && service !== "token/login") {
+      currentToken = await performLogin();
     }
 
+    // Si es una llamada de login explícita, proceder directamente
+    if (service === "token/login") {
+      return await performLogin();
+    }
+
+    // Preparar el payload para la API
+    const payload = {
+      service,
+      params,
+      sid: currentToken, // Usar sid en lugar de token para las llamadas normales
+    };
+
     try {
+      console.log(`📞 Llamando a Wialon API: ${service}`);
+      
       const response = await fetch("/api/wialon-api", {
         method: "POST",
         headers: {
@@ -332,20 +434,62 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         body: JSON.stringify(payload),
       });
 
+      // Verificar si la respuesta HTTP es exitosa
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Error HTTP ${response.status}: ${errorData.details || errorData.error || 'Error desconocido'}`);
+      }
+
       const data = await response.json();
 
-      if (data && data.error) {
+      // Verificar si es un error de autenticación de Wialon (token expirado o inválido)
+      if (data && typeof data.error === 'number' && (data.error === 8 || data.error === 1 || data.error === 4)) {
+        if (isRetry) {
+          // Si ya reintentamos una vez, limpiar token y fallar
+          clearToken();
+          throw new Error(
+            `Error Wialon API después del reintento (${data.error}): ${data.reason || service}`,
+          );
+        }
+
+        console.warn('⚠️ Token expirado/inválido. Renovando automáticamente...');
+        
+        // Limpiar token actual y obtener uno nuevo
+        clearToken();
+        const newToken = await performLogin();
+        
+        // Reintentar la llamada original con el nuevo token
+        console.log('🔄 Reintentando llamada con nuevo token...');
+        return await callWialonApi(newToken, service, params, true);
+      }
+
+      // Manejar otros errores de Wialon (números de error diferentes)
+      if (data && typeof data.error === 'number') {
         throw new Error(
           `Error Wialon API (${data.error}): ${data.reason || service}`,
         );
       }
 
+      console.log(`✅ Respuesta exitosa de ${service}`);
       return data;
-    } catch (err) {
-      console.error(`Error llamando a ${service}:`, err);
+    } catch (err: any) {
+      console.error(`❌ Error llamando a ${service}:`, err);
+      
+      // Si hay error de conexión/HTTP y no es retry, intentar renovar token
+      if (!isRetry && err?.message?.includes('HTTP')) {
+        console.warn('🔄 Error HTTP, intentando renovar token...');
+        clearToken();
+        try {
+          const newToken = await performLogin();
+          return await callWialonApi(newToken, service, params, true);
+        } catch (loginErr) {
+          console.error('❌ Falló el reintento con nuevo token:', loginErr);
+        }
+      }
+      
       throw err;
     }
-  };
+  }, []); // Sin dependencias para evitar re-creación
 
   // Función para obtener la ruta desde Mapbox API
   const fetchMapboxRoute = async (
@@ -524,15 +668,30 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
     return marker;
   };
 
-  // Función para obtener información del vehículo desde Wialon
-  const fetchVehicleTracking = async (vehiclePlaca: string) => {
-    if (!WIALON_API_TOKEN || !wialonSessionId) return;
+  // Función para obtener información del vehículo desde Wialon con WebSocket
+  const fetchVehicleTracking = useCallback(async (vehiclePlaca: string) => {
+    // Obtener token de localStorage o del estado
+    const currentToken = (typeof window !== 'undefined' ? localStorage.getItem('wialon_session_id') : null) || wialonSessionId;
+    
+    if (!currentToken) {
+      console.warn("⚠️ No hay sessionId de Wialon disponible para tracking. Intentando login...");
+      try {
+        await callWialonApi(null, "token/login", {});
+        // Después del login, volver a intentar
+        return fetchVehicleTracking(vehiclePlaca);
+      } catch (error) {
+        console.error("❌ Error obteniendo token para tracking:", error);
+        setTrackingError("Error al conectar con Wialon para tracking");
+        return;
+      }
+    }
 
     try {
       setTrackingError("");
+      console.log(`🚗 Buscando vehículo con placa: ${vehiclePlaca}`);
 
       const vehiclesData = await callWialonApi(
-        wialonSessionId,
+        currentToken,
         "core/search_items",
         {
           spec: {
@@ -550,7 +709,6 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
 
       if (!vehiclesData?.items) {
         setTrackingError("No se pudieron obtener los vehículos");
-
         return;
       }
 
@@ -564,7 +722,6 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         setTrackingError(
           `No se encontró posición para el vehículo ${vehiclePlaca}`,
         );
-
         return;
       }
 
@@ -578,12 +735,285 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
 
       setVehicleTracking(trackingData);
 
+      // Iniciar conexión WebSocket específica para este vehículo usando token permanente
+      const permanentToken = process.env.NEXT_PUBLIC_WIALON_TOKEN;
+      console.log("🔑 Verificando token permanente para WebSocket:", !!permanentToken);
+      
+      if (permanentToken) {
+        console.log("🚀 Iniciando conexión WebSocket para vehículo:", vehicleData.nm);
+        await connectVehicleWebSocket(vehicleData, permanentToken);
+      } else {
+        console.warn("⚠️ Token permanente no disponible para WebSocket");
+        console.warn("⚠️ Variables de entorno disponibles:", Object.keys(process.env).filter(k => k.includes('WIALON')));
+      }
+
       return trackingData;
     } catch (error) {
       console.error("Error obteniendo tracking del vehículo:", error);
       setTrackingError("Error al obtener información del vehículo");
     }
-  };
+  }, [wialonSessionId]); // Solo dependencia estable
+
+  // Función para conectar WebSocket específico al vehículo
+  const connectVehicleWebSocket = useCallback(async (vehicleData: any, sessionToken: string) => {
+    try {
+      // Verificar que el SDK esté disponible
+      if (!window.wialon) {
+        console.warn("SDK de Wialon no disponible para WebSocket");
+        return;
+      }
+
+      // Limpiar conexión anterior si existe
+      disconnectVehicleWebSocket();
+
+      console.log(`🔌 Conectando WebSocket para vehículo: ${vehicleData.nm}`);
+
+      const session = window.wialon.core.Session.getInstance();
+      wialonSessionRef.current = session;
+
+      if (!session.getBaseUrl()) {
+        session.initSession("https://hst-api.wialon.com");
+      }
+
+      // Usar token permanente desde variables de entorno para WebSocket
+      const permanentToken = process.env.NEXT_PUBLIC_WIALON_TOKEN;
+      console.log("🔑 Token permanente disponible:", !!permanentToken);
+      
+      if (!permanentToken) {
+        throw new Error("Token permanente de Wialon no configurado en variables de entorno");
+      }
+
+      // Login con el token permanente
+      await new Promise<void>((resolve, reject) => {
+        console.log("🔐 Intentando login con token permanente...");
+        session.loginToken(permanentToken, "", (code: number) => {
+          console.log(`🔐 Resultado del login WebSocket: código ${code}`);
+          if (code !== 0) {
+            reject(new Error(`Error de autenticación WebSocket: código ${code}`));
+            return;
+          }
+          console.log("✅ WebSocket autenticado en Wialon con token permanente");
+          resolve();
+        });
+      });
+
+      // Cargar bibliotecas necesarias
+      session.loadLibrary("itemIcon");
+      session.loadLibrary("unitEvents");
+
+      // Actualizar la sesión para cargar las unidades
+      await new Promise<void>((resolve, reject) => {
+        session.updateDataFlags(
+          [{ type: "type", data: "avl_unit", flags: 1025, mode: 0 }],
+          (code: number) => {
+            if (code !== 0) {
+              reject(new Error(`Error cargando unidades WebSocket: código ${code}`));
+              return;
+            }
+            console.log("🚗 Unidades cargadas en WebSocket");
+            resolve();
+          }
+        );
+      });
+
+      // Obtener la unidad específica del vehículo
+      const unit = session.getItem(vehicleData.id);
+      if (!unit) {
+        // Si no se encuentra por ID, buscar por nombre
+        const units = session.getItems("avl_unit");
+        const foundUnit = units.find((u: any) => 
+          u.getName().includes(vehicleData.nm) || 
+          u.getName().toLowerCase() === vehicleData.nm.toLowerCase()
+        );
+        
+        if (!foundUnit) {
+          throw new Error(`No se pudo obtener la unidad del vehículo ${vehicleData.nm}`);
+        }
+        vehicleUnitRef.current = foundUnit;
+      } else {
+        vehicleUnitRef.current = unit;
+      }
+
+      const actualUnit = vehicleUnitRef.current;
+      console.log(`🛰️ WebSocket suscrito a vehículo: ${actualUnit.getName()}`);
+
+      // Obtener posición inicial
+      const currentPos = actualUnit.getPosition();
+      if (currentPos) {
+        const initialPosition = {
+          lat: currentPos.y,
+          lng: currentPos.x,
+          speed: currentPos.s || 0,
+          timestamp: currentPos.t || Date.now() / 1000,
+          direction: currentPos.c || 0
+        };
+
+        setRealTimePosition(initialPosition);
+        console.log("📍 Posición inicial WebSocket:", initialPosition);
+      }
+
+      // Configurar listener para cambios de posición en tiempo real
+      const positionListener = (event: any) => {
+        const pos = event.getPosition();
+        const newPosition = {
+          lat: pos.y,
+          lng: pos.x,
+          speed: pos.s || 0,
+          timestamp: pos.t || Date.now() / 1000,
+          direction: pos.c || 0,
+          lastUpdate: new Date()
+        };
+
+        console.log("📡 Nueva posición WebSocket:", newPosition);
+        setRealTimePosition(newPosition);
+
+        // Actualizar también el tracking data para el marcador
+        const updatedTrackingData = {
+          id: vehicleData.id,
+          name: vehicleData.nm,
+          position: {
+            x: pos.x,
+            y: pos.y,
+            s: pos.s || 0,
+            c: pos.c || 0,
+            t: pos.t || Date.now() / 1000
+          },
+          lastUpdate: new Date(),
+          item: vehicleData,
+        };
+        setVehicleTracking(updatedTrackingData);
+      };
+
+      // Guardar referencia del listener y agregarlo
+      positionListenerRef.current = positionListener;
+      actualUnit.addListener("changePosition", positionListener);
+      console.log("👂 Listener de posición agregado al vehículo:", actualUnit.getName());
+
+      setIsVehicleWSConnected(true);
+      setVehicleWSError(null);
+      isWebSocketActiveRef.current = true;
+      
+      // Iniciar heartbeat para mantener la conexión viva
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (wialonSessionRef.current && vehicleUnitRef.current) {
+          try {
+            // Verificar que la sesión siga activa
+            const sessionId = wialonSessionRef.current.getId();
+            if (sessionId) {
+              console.log("💓 Heartbeat WebSocket - Conexión activa");
+            } else {
+              console.warn("💔 Heartbeat WebSocket - Sesión perdida");
+              // Triggear reconexión
+              setIsVehicleWSConnected(false);
+            }
+          } catch (error) {
+            console.error("💔 Error en heartbeat WebSocket:", error);
+            setIsVehicleWSConnected(false);
+          }
+        }
+      }, 60000); // Cada 60 segundos
+      
+      console.log("🎉 WebSocket del vehículo conectado exitosamente");
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      console.error("❌ Error conectando WebSocket del vehículo:", errorMessage);
+      setVehicleWSError(errorMessage);
+      setIsVehicleWSConnected(false);
+      isWebSocketActiveRef.current = false;
+
+      // Programar reconexión automática en 10 segundos
+      wsReconnectTimeoutRef.current = setTimeout(() => {
+        console.log("🔄 Intentando reconectar WebSocket del vehículo...");
+        connectVehicleWebSocket(vehicleData, sessionToken);
+      }, 10000);
+    }
+  }, []);
+
+  // Función para desconectar WebSocket del vehículo
+  /**
+   * Desconecta de forma segura el WebSocket del vehículo y limpia recursos asociados.
+   *
+   * Este procedimiento realiza varias acciones de saneamiento y cierre:
+   * - Cancela y limpia cualquier temporizador de reconexión pendiente.
+   * - Elimina el listener "changePosition" del vehículo para evitar fugas de memoria
+   *   o callbacks residuales.
+   * - Si la sesión de Wialon está activa y el WebSocket del vehículo se reporta como conectado,
+   *   ejecuta `logout` para cerrar correctamente la sesión y liberar la conexión.
+   * - Restablece referencias internas (`vehicleUnitRef`, `wialonSessionRef`) a `null`
+   *   para impedir accesos posteriores no válidos.
+   * - Actualiza el estado de la UI, marcando la conexión como desconectada,
+   *   limpiando errores previos y reiniciando la posición en tiempo real.
+   *
+   * Nota sobre el comportamiento condicional:
+   * - El cierre de sesión en Wialon sólo se ejecuta si existen tanto una sesión activa
+   *   como un estado que indique conexión (`isVehicleWSConnected`). Esto evita
+   *   invocaciones redundantes o excepciones cuando no hay conexión real.
+   * - La eliminación del listener y el reseteo de referencias se realizan únicamente
+   *   si dichas referencias existen, previniendo errores al operar sobre valores nulos.
+   *
+   * Efectos colaterales:
+   * - Ajusta estados React relacionados con la conexión, error y posición.
+   * - Emite trazas en consola para facilitar la observabilidad del ciclo de desconexión.
+   *
+   * Dependencias:
+   * - Depende de `isVehicleWSConnected` para decidir si cerrar la sesión de Wialon.
+   */
+  const disconnectVehicleWebSocket = useCallback(() => {
+    console.log("🛑 Iniciando desconexión del WebSocket del vehículo...");
+    
+    // Cancelar reconexión automática si existe
+    if (wsReconnectTimeoutRef.current) {
+      clearTimeout(wsReconnectTimeoutRef.current);
+      wsReconnectTimeoutRef.current = null;
+      console.log("⏹️ Reconexión automática cancelada");
+    }
+
+    // Cancelar heartbeat si existe
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+      console.log("💔 Heartbeat cancelado");
+    }
+
+    // Remover listener usando la referencia guardada
+    if (vehicleUnitRef.current && positionListenerRef.current) {
+      try {
+        vehicleUnitRef.current.removeListener("changePosition", positionListenerRef.current);
+        console.log("🧹 Listener de posición removido correctamente");
+        positionListenerRef.current = null;
+      } catch (err) {
+        console.error("❌ Error removiendo listener de posición:", err);
+      }
+    }
+
+    // Limpiar referencia del vehículo
+    if (vehicleUnitRef.current) {
+      vehicleUnitRef.current = null;
+      console.log("🧹 Referencia del vehículo limpiada");
+    }
+
+    // Cerrar sesión de Wialon si está conectada
+    if (wialonSessionRef.current && isVehicleWSConnected) {
+      try {
+        wialonSessionRef.current.logout(() => {
+          console.log("👋 Sesión WebSocket cerrada correctamente");
+        });
+      } catch (err) {
+        console.error("❌ Error cerrando sesión WebSocket:", err);
+      } finally {
+        wialonSessionRef.current = null;
+      }
+    }
+
+    // Actualizar estados
+    setIsVehicleWSConnected(false);
+    setVehicleWSError(null);
+    setRealTimePosition(null);
+    isWebSocketActiveRef.current = false;
+    
+    console.log("✅ Desconexión del WebSocket completada");
+  }, [isVehicleWSConnected]);
 
   // Función para limpiar marcadores y rutas
   const clearMapObjects = () => {
@@ -689,27 +1119,54 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
 
   // Efecto para inicializar sesión de Wialon
   useEffect(() => {
+    // Evitar inicialización múltiple
+    if (isWialonInitializedRef.current || wialonInitPromiseRef.current) {
+      return;
+    }
+
     const initWialon = async () => {
-      if (!WIALON_API_TOKEN) return;
-
       try {
-        const loginData = await callWialonApi(
-          WIALON_API_TOKEN,
-          "token/login",
-          {},
-        );
-
-        if (loginData?.eid) {
-          setWialonSessionId(loginData.eid);
+        console.log("🔐 Verificando sesión de Wialon...");
+        
+        // Verificar si ya hay un token en localStorage
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('wialon_session_id') : null;
+        
+        if (storedToken) {
+          console.log("📱 Token encontrado en localStorage:", storedToken);
+          setWialonSessionId(storedToken);
+          
+          // Verificar si el token sigue siendo válido haciendo una llamada de prueba
+          try {
+            await callWialonApi(storedToken, "core/search_items", {
+              spec: { itemsType: "avl_unit", propName: "sys_name", propValueMask: "*" },
+              force: 1, flags: 1, from: 0, to: 1
+            });
+            console.log("✅ Token de localStorage válido");
+            isWialonInitializedRef.current = true;
+            return; // Token válido, no necesitamos hacer login
+          } catch (error) {
+            console.warn("⚠️ Token de localStorage inválido, obteniendo nuevo...");
+            // El token no es válido, se limpiará automáticamente en callWialonApi
+          }
         }
+        
+        // Si no hay token o no es válido, hacer login
+        console.log("🔐 Iniciando nueva sesión...");
+        await callWialonApi(null, "token/login", {});
+        console.log("✅ Sesión de Wialon iniciada exitosamente");
+        isWialonInitializedRef.current = true;
+        
       } catch (error) {
-        console.error("Error al iniciar sesión en Wialon:", error);
-        setTrackingError("Error al conectar con Wialon");
+        console.error("❌ Error al inicializar Wialon:", error);
+        setTrackingError("Error al conectar con el sistema de tracking");
+      } finally {
+        wialonInitPromiseRef.current = null;
       }
     };
 
-    initWialon();
-  }, [WIALON_API_TOKEN]);
+    // Crear promesa para evitar múltiples inicializaciones
+    wialonInitPromiseRef.current = initWialon();
+  }, []); // Solo ejecutar una vez al cargar el componente
 
   // Efecto para inicializar el mapa
   useEffect(() => {
@@ -752,35 +1209,189 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         setIsMapLoaded(false);
       }
     };
-  }, [MAPBOX_ACCESS_TOKEN, currentServicio]);
+  }, [MAPBOX_ACCESS_TOKEN, currentServicio?.id]);
+
+  // Efecto para cargar SDK de Wialon
+  useEffect(() => {
+    const loadWialonSDK = () => {
+      if (window.wialon) {
+        return;
+      }
+
+      console.log("📦 Cargando SDK de Wialon para WebSocket...");
+      
+      const script = document.createElement("script");
+      script.src = "https://hst-api.wialon.com/wsdk/script/wialon.js";
+      script.async = true;
+      
+      script.onload = () => {
+        console.log("✅ SDK de Wialon para WebSocket cargado");
+      };
+      
+      script.onerror = () => {
+        console.error("❌ Error cargando SDK de Wialon para WebSocket");
+        setVehicleWSError("Error cargando SDK de Wialon");
+      };
+
+      document.head.appendChild(script);
+    };
+
+    loadWialonSDK();
+  }, []);
+
+  // Efecto para limpiar WebSocket al desmontar el componente
+  useEffect(() => {
+    return () => {
+      // Solo desconectar si realmente se está desmontando (no durante Fast Refresh)
+      const shouldDisconnect = () => {
+        // En desarrollo, verificar si es Fast Refresh o desmontaje real
+        if (process.env.NODE_ENV === 'development') {
+          // Si tenemos una conexión activa y es desarrollo, no desconectar inmediatamente
+          if (isWebSocketActiveRef.current) {
+            console.log("🛠️ Desarrollo: postponiendo desconexión WebSocket durante Fast Refresh");
+            setTimeout(() => {
+              // Verificar si aún no se ha reconectado después de 5 segundos
+              if (!isWebSocketActiveRef.current) {
+                console.log("🧹 Limpiando WebSocket después de timeout en desarrollo");
+                disconnectVehicleWebSocket();
+              }
+            }, 5000);
+            return false;
+          }
+        }
+        return true;
+      };
+
+      if (shouldDisconnect()) {
+        console.log("🏭 Limpiando WebSocket al desmontar componente");
+        disconnectVehicleWebSocket();
+      }
+    };
+  }, []);
+
+  // Efecto para verificar el estado de la conexión WebSocket periódicamente
+  useEffect(() => {
+    if (!isVehicleWSConnected) return;
+
+    const checkConnection = () => {
+      if (wialonSessionRef.current && vehicleUnitRef.current) {
+        try {
+          // Verificar si la sesión sigue activa
+          const session = wialonSessionRef.current;
+          if (session && typeof session.getId === 'function') {
+            const sessionId = session.getId();
+            if (!sessionId) {
+              console.warn("⚠️ Sesión WebSocket perdida, reconectando...");
+              setIsVehicleWSConnected(false);
+              setVehicleWSError("Conexión perdida, reconectando...");
+              
+              // Intentar reconectar si tenemos datos del vehículo
+              if (vehicleTracking) {
+                const permanentToken = process.env.NEXT_PUBLIC_WIALON_TOKEN;
+                if (permanentToken) {
+                  connectVehicleWebSocket(vehicleTracking.item, permanentToken);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("❌ Error verificando estado de la conexión:", error);
+        }
+      }
+    };
+
+    const interval = setInterval(checkConnection, 30000); // Verificar cada 30 segundos
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isVehicleWSConnected, vehicleTracking, connectVehicleWebSocket]);
+
+  // Efecto para actualizar marcador del vehículo en tiempo real
+  useEffect(() => {
+    if (!realTimePosition || !map.current || !isMapLoaded) return;
+
+    // Actualizar marcador del vehículo con la nueva posición
+    if (markersRef.current.vehicle) {
+      const newLngLat: [number, number] = [realTimePosition.lng, realTimePosition.lat];
+      markersRef.current.vehicle.setLngLat(newLngLat);
+
+      // Actualizar popup si está abierto
+      const popup = markersRef.current.vehicle.getPopup();
+      if (popup && popup.isOpen()) {
+        const updatedPopupContent = `
+          <div class="vehicle-popup" style="padding: 8px;">
+            <h3 style="font-weight: bold; margin-bottom: 8px;">${vehicleTracking?.name || "Vehículo"}</h3>
+            <div style="font-size: 0.875rem;">
+              <div style="margin-bottom: 4px;">
+                <strong>Velocidad:</strong> ${realTimePosition.speed || 0} km/h
+              </div>
+              <div style="margin-bottom: 4px;">
+                <strong>Dirección:</strong> ${realTimePosition.direction || 0}°
+              </div>
+              <div style="margin-bottom: 4px;">
+                <strong>Coordenadas:</strong><br>
+                ${realTimePosition.lng?.toFixed(6)}, ${realTimePosition.lat?.toFixed(6)}
+              </div>
+              <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <div style="width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                  <span>En tiempo real</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        popup.setHTML(updatedPopupContent);
+      }
+
+      console.log("🔄 Marcador del vehículo actualizado en tiempo real");
+    }
+  }, [realTimePosition, vehicleTracking?.name, map, isMapLoaded]);
+
+  // Memoizar las coordenadas del servicio para evitar re-renders innecesarios
+  const servicioCoords = useMemo(() => {
+    if (!currentServicio) return null;
+    
+    const origenLat = currentServicio.origen_latitud || currentServicio.origen?.latitud;
+    const origenLng = currentServicio.origen_longitud || currentServicio.origen?.longitud;
+    const destinoLat = currentServicio.destino_latitud || currentServicio.destino?.latitud;
+    const destinoLng = currentServicio.destino_longitud || currentServicio.destino?.longitud;
+    
+    if (!origenLat || !origenLng || !destinoLat || !destinoLng) {
+      return null;
+    }
+    
+    return {
+      origen: [origenLng, origenLat] as [number, number],
+      destino: [destinoLng, destinoLat] as [number, number],
+      servicioId: currentServicio.id,
+      estado: currentServicio.estado,
+      vehiculoPlaca: currentServicio.vehiculo?.placa || null
+    };
+  }, [
+    currentServicio?.id,
+    currentServicio?.estado,
+    currentServicio?.origen_latitud,
+    currentServicio?.origen_longitud,
+    currentServicio?.destino_latitud,
+    currentServicio?.destino_longitud,
+    currentServicio?.origen?.latitud,
+    currentServicio?.origen?.longitud,
+    currentServicio?.destino?.latitud,
+    currentServicio?.destino?.longitud,
+    currentServicio?.vehiculo?.placa,
+  ]);
 
   // Efecto para crear/actualizar ruta cuando cambie el servicio
   useEffect(() => {
-    if (!isMapLoaded || !map.current || !currentServicio) return;
+    if (!isMapLoaded || !map.current || !servicioCoords) return;
 
     clearMapObjects();
 
-    const origenLat =
-      currentServicio.origen_latitud || currentServicio.origen?.latitud;
-    const origenLng =
-      currentServicio.origen_longitud || currentServicio.origen?.longitud;
-    const destinoLat =
-      currentServicio.destino_latitud || currentServicio.destino?.latitud;
-    const destinoLng =
-      currentServicio.destino_longitud || currentServicio.destino?.longitud;
-
-    if (!origenLat || !origenLng || !destinoLat || !destinoLng) {
-      console.warn(
-        "Coordenadas incompletas para el servicio:",
-        currentServicio,
-      );
-
-      return;
-    }
-
+    const { origen: origenCoords, destino: destinoCoords, estado, vehiculoPlaca } = servicioCoords;
     const bounds = new mapboxgl.LngLatBounds();
 
-    const origenCoords: [number, number] = [origenLng, origenLat];
     const markerOrigen = createMarker(
       origenCoords,
       "origen",
@@ -792,7 +1403,6 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       bounds.extend(origenCoords);
     }
 
-    const destinoCoords: [number, number] = [destinoLng, destinoLat];
     const markerDestino = createMarker(
       destinoCoords,
       "destino",
@@ -811,15 +1421,9 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
       let endCoords = destinoCoords;
       let routeColor = "#059669";
 
-      if (
-        currentServicio.estado === "en_curso" &&
-        currentServicio.vehiculo?.placa &&
-        wialonSessionId
-      ) {
+      if (estado === "en_curso" && vehiculoPlaca && isWialonInitializedRef.current) {
         try {
-          const trackingData = await fetchVehicleTracking(
-            currentServicio.vehiculo.placa,
-          );
+          const trackingData = await fetchVehicleTracking(vehiculoPlaca);
 
           if (trackingData?.position) {
             const vehiclePosition: [number, number] = [
@@ -915,12 +1519,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
         maxZoom: 14,
       });
     }
-  }, [
-    isMapLoaded,
-    currentServicio?.id,
-    currentServicio?.estado,
-    wialonSessionId,
-  ]);
+  }, [isMapLoaded, servicioCoords, fetchVehicleTracking]); // Dependencias optimizadas
 
   if (loading) {
     return <LoadingPage>Cargando servicio</LoadingPage>;
@@ -1385,11 +1984,59 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
                           <span>Destino</span>
                         </div>
                         {vehicleTracking && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <div className="w-5 h-5 bg-[#0077b6] rounded-full flex items-center justify-center text-white text-xs">
                               🚗
                             </div>
                             <span>Vehículo</span>
+                          </div>
+                        )}
+                        {/* Indicador WebSocket */}
+                        {currentServicio.estado === "en_curso" && currentServicio.vehiculo?.placa && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  isVehicleWSConnected ? 'bg-green-500 animate-pulse' : 
+                                  vehicleWSError ? 'bg-red-500' : 'bg-gray-400'
+                                }`} />
+                                <span className={`text-xs font-medium ${
+                                  isVehicleWSConnected ? 'text-green-700' : 
+                                  vehicleWSError ? 'text-red-700' : 'text-gray-600'
+                                }`}>
+                                  {isVehicleWSConnected ? 'Tiempo real' : 
+                                   vehicleWSError ? 'Error WS' : 'Desconectado'}
+                                </span>
+                              </div>
+                              
+                              {/* Botón de reconexión */}
+                              {!isVehicleWSConnected && vehicleTracking && (
+                                <button
+                                  onClick={async () => {
+                                    const permanentToken = process.env.NEXT_PUBLIC_WIALON_TOKEN;
+                                    if (permanentToken && vehicleTracking.item) {
+                                      await connectVehicleWebSocket(vehicleTracking.item, permanentToken);
+                                    }
+                                  }}
+                                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                  title="Reconectar WebSocket"
+                                >
+                                  🔄
+                                </button>
+                              )}
+                            </div>
+                            
+                            {vehicleWSError && (
+                              <div className="text-xs text-red-600 mb-1 max-w-40 truncate" title={vehicleWSError}>
+                                {vehicleWSError}
+                              </div>
+                            )}
+                            
+                            {realTimePosition && isVehicleWSConnected && (
+                              <div className="text-xs text-blue-600 font-medium">
+                                {realTimePosition.speed} km/h • {realTimePosition.direction}°
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

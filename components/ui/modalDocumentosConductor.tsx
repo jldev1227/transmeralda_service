@@ -214,108 +214,114 @@ export default function ModalDocumentosConductor({
                       Documentos ({conductorData.documentos.length})
                     </h3>
 
-                    <div className="space-y-3">
-                      {conductorData.documentos.map((doc) => {
-                        const expirationStatus = getExpirationStatus(
-                          doc.fecha_vigencia,
-                        );
+                    {conductorData.documentos.length === 0 ? (
+                      <div className="text-center text-gray-500 py-8">
+                        No hay documentos cargados para este conductor.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {conductorData.documentos.map((doc) => {
+                          const expirationStatus = getExpirationStatus(
+                            doc.fecha_vigencia,
+                          );
 
-                        return (
-                          <Card
-                            key={doc.id}
-                            className="hover:shadow-md transition-shadow"
-                          >
-                            <CardBody>
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <FileText className="w-4 h-4 text-blue-600" />
-                                    <h4 className="font-semibold text-sm">
-                                      {getCategoryName(doc.categoria)}
-                                    </h4>
-                                    <Chip
+                          return (
+                            <Card
+                              key={doc.id}
+                              className="hover:shadow-md transition-shadow"
+                            >
+                              <CardBody>
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <FileText className="w-4 h-4 text-blue-600" />
+                                      <h4 className="font-semibold text-sm">
+                                        {getCategoryName(doc.categoria)}
+                                      </h4>
+                                      <Chip
+                                        size="sm"
+                                        color={expirationStatus.color}
+                                        variant="flat"
+                                        startContent={
+                                          expirationStatus.status ===
+                                          "expired" ? (
+                                            <AlertTriangle className="w-3 h-3" />
+                                          ) : (
+                                            <CheckCircle className="w-3 h-3" />
+                                          )
+                                        }
+                                      >
+                                        {expirationStatus.text}
+                                      </Chip>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                      {doc.fecha_vigencia && (
+                                        <div className="flex items-center gap-1">
+                                          <Calendar className="w-3 h-3" />
+                                          <span>
+                                            Vigencia:{" "}
+                                            {formatDate(doc.fecha_vigencia)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <span>
+                                        Tamaño: {formatFileSize(doc.size)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-1 ml-2 sm:ml-4 sm:gap-2">
+                                    <Button
                                       size="sm"
-                                      color={expirationStatus.color}
                                       variant="flat"
-                                      startContent={
-                                        expirationStatus.status ===
-                                        "expired" ? (
-                                          <AlertTriangle className="w-3 h-3" />
-                                        ) : (
-                                          <CheckCircle className="w-3 h-3" />
-                                        )
-                                      }
+                                      color="primary"
+                                      isIconOnly
+                                      className="sm:hidden"
+                                      onPress={() => handleView(doc)}
                                     >
-                                      {expirationStatus.text}
-                                    </Chip>
-                                  </div>
-                                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                                    {doc.fecha_vigencia && (
-                                      <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>
-                                          Vigencia:{" "}
-                                          {formatDate(doc.fecha_vigencia)}
-                                        </span>
-                                      </div>
-                                    )}
-                                    <span>
-                                      Tamaño: {formatFileSize(doc.size)}
-                                    </span>
-                                  </div>
-                                </div>
+                                      <Eye className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="flat"
+                                      color="primary"
+                                      startContent={<Eye className="w-3 h-3" />}
+                                      className="hidden sm:flex"
+                                      onPress={() => handleView(doc)}
+                                    >
+                                      Ver
+                                    </Button>
 
-                                <div className="flex gap-1 ml-2 sm:ml-4 sm:gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="primary"
-                                    isIconOnly
-                                    className="sm:hidden"
-                                    onPress={() => handleView(doc)}
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="primary"
-                                    startContent={<Eye className="w-3 h-3" />}
-                                    className="hidden sm:flex"
-                                    onPress={() => handleView(doc)}
-                                  >
-                                    Ver
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="secondary"
-                                    isIconOnly
-                                    className="sm:hidden"
-                                    onPress={() => handleDownload(doc)}
-                                  >
-                                    <Download className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="secondary"
-                                    startContent={
+                                    <Button
+                                      size="sm"
+                                      variant="flat"
+                                      color="secondary"
+                                      isIconOnly
+                                      className="sm:hidden"
+                                      onPress={() => handleDownload(doc)}
+                                    >
                                       <Download className="w-3 h-3" />
-                                    }
-                                    className="hidden sm:flex"
-                                    onPress={() => handleDownload(doc)}
-                                  >
-                                    Descargar
-                                  </Button>
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="flat"
+                                      color="secondary"
+                                      startContent={
+                                        <Download className="w-3 h-3" />
+                                      }
+                                      className="hidden sm:flex"
+                                      onPress={() => handleDownload(doc)}
+                                    >
+                                      Descargar
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            </CardBody>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                              </CardBody>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </ModalBody>
@@ -323,9 +329,6 @@ export default function ModalDocumentosConductor({
               <ModalFooter>
                 <Button color="danger" variant="light" onPress={onClose}>
                   Cerrar
-                </Button>
-                <Button color="primary" onPress={onClose}>
-                  Descargar Todo
                 </Button>
               </ModalFooter>
             </>

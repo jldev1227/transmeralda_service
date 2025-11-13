@@ -31,6 +31,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
   const [servicio, setServicio] = useState<ServicioConRelaciones | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noConformidades, setNoConformidades] = useState<string>("");
 
   // State for date to do request
   const [fechaFinalizacion, setFechaFinalizacion] = useState<ZonedDateTime>(
@@ -111,6 +112,7 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
     } else {
       // Limpiar datos cuando se cierra el modal
       setServicio(null);
+      setNoConformidades("");
     }
   }, [isOpen, servicioId]);
 
@@ -119,13 +121,19 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
     setLoading(true);
     setError(null);
     try {
+      const payload: any = {
+        estado: "realizado",
+        fecha_finalizacion: convertirFechaParaDB(fechaFinalizacion),
+      };
+
+      if (noConformidades.trim().length > 0) {
+        payload.no_conformidades = noConformidades.trim();
+      }
+
       const response = await apiClient.patch<{
         success: boolean;
         data: ServicioConRelaciones;
-      }>(`/api/servicios/${servicioId}/estado`, {
-        estado: "realizado",
-        fecha_finalizacion: convertirFechaParaDB(fechaFinalizacion),
-      });
+      }>(`/api/servicios/${servicioId}/estado`, payload);
 
       if (response.data.success) {
         setServicio(response.data.data);
@@ -329,6 +337,33 @@ const ModalFinalizarServicio: React.FC<ModalFinalizarServicioProps> = ({
                                     }).format(fechaFinalizacion.toDate())
                                   : "--"}
                               </p>
+                            </div>
+                          </div>
+
+                          {/* No conformidades */}
+                          <div className="relative">
+                            <label
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                              htmlFor="noConformidades"
+                            >
+                              No conformidades (opcional)
+                            </label>
+                            <textarea
+                              id="noConformidades"
+                              className="w-full rounded-md border border-gray-200 bg-white p-3 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                              rows={4}
+                              maxLength={1000}
+                              placeholder="Describe brevemente las no conformidades ocurridas durante el servicio..."
+                              value={noConformidades}
+                              onChange={(e) => setNoConformidades(e.target.value)}
+                            />
+                            <div className="mt-1 flex items-center justify-between">
+                              <p className="text-xs text-gray-500">
+                                Esta información ayudará a mejorar el servicio y trazabilidad.
+                              </p>
+                              <span className="text-xs text-gray-400">
+                                {noConformidades.length}/1000
+                              </span>
                             </div>
                           </div>
 

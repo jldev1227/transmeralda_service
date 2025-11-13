@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_WIALON_TOKEN: process.env.NEXT_PUBLIC_WIALON_TOKEN,
+  },
   images: {
     remotePatterns: [
       {

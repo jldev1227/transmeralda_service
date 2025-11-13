@@ -2,65 +2,141 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-// Exporta una función nombrada para el método POST
-export async function POST(request: NextRequest) {
+let cachedSid: string | null = null;
+
+const WIALON_BASE_URL = "https://hst-api.wialon.com/wialon/ajax.html";
+const WIALON_TOKEN = process.env.WIALON_TOKEN!;
+
+/**
+ * 🔐 Inicia sesión usando token de Wialon
+ */
+async function wialonLogin() {
+  console.log("🔐 Iniciando sesión con token de Wialon...");
+
+  if (!WIALON_TOKEN) {
+    throw new Error("Variable WIALON_TOKEN no configurada en el servidor");
+  }
+
   try {
-    // Obtiene el cuerpo de la solicitud como JSON
-    const { token, service, params } = await request.json();
-
-    // Validar que los datos necesarios estén presentes (opcional pero recomendado)
-    if ((!token && service !== "token/login") || !service || !params) {
-      return NextResponse.json(
-        { error: "Faltan parámetros requeridos: token, service, params" },
-        { status: 400 },
-      );
-    }
-
     const response = await axios.post(
-      "https://hst-api.wialon.com/wialon/ajax.html",
+      WIALON_BASE_URL,
       new URLSearchParams({
-        svc: service,
-        params: JSON.stringify(params),
-        sid: token, // Asegúrate de que 'token' sea el 'sid' esperado por Wialon
+        svc: "token/login",
+        params: JSON.stringify({ token: WIALON_TOKEN }),
       }).toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      },
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
     );
 
-    // Devuelve la respuesta de Wialon usando NextResponse
-    return NextResponse.json(response.data, { status: 200 });
-  } catch (error: any) {
-    // Es buena práctica tipar el error si es posible, o usar 'any'/'unknown'
-    console.error("Error al comunicarse con Wialon:", error);
+    console.log("📡 Respuesta de Wialon login:", response.data);
 
-    // Manejo de errores de Axios específicamente si es necesario
-    let errorMessage = "Error al comunicarse con Wialon";
-    let errorDetails =
-      error instanceof Error ? error.message : "Error desconocido";
-    let statusCode = 500; // Error interno del servidor por defecto
-
-    if (axios.isAxiosError(error)) {
-      // Puedes acceder a error.response, error.request, etc.
-      errorDetails = error.response?.data || error.message;
-      // Si Wialon devuelve un código de error específico, podrías pasarlo
-      // statusCode = error.response?.status || 500;
+    if (response.data?.eid) {
+      cachedSid = response.data.eid;
+      console.log("✅ Nuevo SID obtenido con token:", cachedSid);
+      return cachedSid;
+    } else if (response.data?.error) {
+      throw new Error(`Error de Wialon (${response.data.error}): ${response.data.reason || "Error de autenticación"}`);
+    } else {
+      throw new Error("Respuesta inesperada de Wialon: " + JSON.stringify(response.data));
     }
-
-    // Devuelve una respuesta de error usando NextResponse
-    return NextResponse.json(
-      {
-        error: errorMessage,
-        details: errorDetails,
-      },
-      { status: statusCode }, // Usa el código de estado apropiado
-    );
+  } catch (error: any) {
+    console.error("❌ Error en wialonLogin:", error.message);
+    throw error;
   }
 }
 
-// Opcional: Si quieres explícitamente denegar otros métodos
-export async function GET() {
-  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+/**
+ * 📡 Llamada genérica a cualquier servicio Wialon.
+ * Reintenta automáticamente si el SID expira.
+ */
+async function callWialon(service: string, params: any) {
+  if (!cachedSid) await wialonLogin();
+
+  try {
+    const response = await axios.post(
+      WIALON_BASE_URL,
+      new URLSearchParams({
+        svc: service,
+        params: JSON.stringify(params),
+        sid: cachedSid!,
+      }).toString(),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+    );
+
+    // Si el SID expira (error 1, 4 o 8), renueva y reintenta
+    if ([1, 4, 8].includes(response.data?.error)) {
+      console.warn(`⚠️ SID expirado (${response.data.error}). Renovando con token...`);
+      await wialonLogin();
+      return await callWialon(service, params);
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error comunicándose con Wialon:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * 🔄 Route principal (Next.js API)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { service, params, sid } = await request.json();
+    console.log(`📞 Llamada API Wialon: ${service}`, { hasSid: !!sid });
+
+    if (!service) {
+      return NextResponse.json({ error: "Falta parámetro 'service'" }, { status: 400 });
+    }
+
+    // Si es un login directo, iniciar sesión y devolver el eid
+    if (service === "core/login" || service === "token/login") {
+      const newSid = await wialonLogin();
+      return NextResponse.json({ eid: newSid }, { status: 200 });
+    }
+
+    // Para otros servicios, verificar que tengamos parámetros
+    if (!params) {
+      return NextResponse.json({ error: "Faltan parámetros 'params'" }, { status: 400 });
+    }
+
+    // Si tenemos un sid específico del frontend, usarlo directamente
+    if (sid) {
+      console.log(`🔧 Usando SID proporcionado: ${sid}`);
+      try {
+        const response = await axios.post(
+          WIALON_BASE_URL,
+          new URLSearchParams({
+            svc: service,
+            params: JSON.stringify(params),
+            sid: sid,
+          }).toString(),
+          { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+        );
+
+        // Si el SID expira, intentar renovar automáticamente
+        if ([1, 4, 8].includes(response.data?.error)) {
+          console.warn(`⚠️ SID del frontend expirado (${response.data.error}). Renovando...`);
+          const data = await callWialon(service, params);
+          return NextResponse.json(data, { status: 200 });
+        }
+
+        return NextResponse.json(response.data, { status: 200 });
+      } catch (error: any) {
+        console.error("❌ Error con SID del frontend:", error.message);
+        // Si falla, intentar con el SID del backend
+        const data = await callWialon(service, params);
+        return NextResponse.json(data, { status: 200 });
+      }
+    }
+
+    // Si no hay SID del frontend, usar la función normal del backend
+    const data = await callWialon(service, params);
+    return NextResponse.json(data, { status: 200 });
+  } catch (error: any) {
+    console.error("❌ Error general API Wialon:", error.message);
+    return NextResponse.json(
+      { error: "Error al comunicarse con Wialon", details: error.message },
+      { status: 500 },
+    );
+  }
 }

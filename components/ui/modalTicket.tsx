@@ -16,6 +16,7 @@ export default function ModalTicket() {
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -72,13 +73,31 @@ export default function ModalTicket() {
     if (servicio?.conductor) {
       cargarFotoPerfil();
     }
-  }, [servicio?.conductor?.id, getPresignedUrl]);
+  }, [servicio?.conductor?.id, getPresignedUrl, servicio]);
 
   // Función para manejar errores de carga de imagen
   const handleImageError = useCallback(() => {
     setPhotoError(true);
     setFotoUrl(null);
   }, []);
+
+  // Función mejorada para manejar el compartir
+  const handleShare = async () => {
+    if (!servicio || isSharing) return;
+
+    setIsSharing(true);
+    
+    try {
+      await shareTicket(servicio);
+    } catch (error) {
+      console.error("Error al compartir ticket:", error);
+    } finally {
+      // Pequeño delay para mejor UX visual
+      setTimeout(() => {
+        setIsSharing(false);
+      }, 500);
+    }
+  };
 
   // Si no hay servicio, mostrar mensaje o regresar null
   if (!servicio) {
@@ -104,11 +123,6 @@ export default function ModalTicket() {
   }
 
   const statusColors = getStatusColor(servicio.estado);
-
-  // Función para manejar el compartir
-  const handleShare = async () => {
-    await shareTicket(servicio);
-  };
 
   // Componente mejorado para la foto del conductor
   const ConductorPhoto = () => {
@@ -224,6 +238,12 @@ export default function ModalTicket() {
             transform: translateX(200%);
           }
         }
+        
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
       `}</style>
 
       <Modal
@@ -249,26 +269,35 @@ export default function ModalTicket() {
                   <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold">Transmeralda</h2>
                     <div className="text-right flex items-center gap-3">
-                      {/* Botón de compartir */}
+                      {/* Botón de compartir mejorado */}
                       <button
-                        className="bg-white/20 hover:bg-white/30 transition-colors duration-200 rounded-full p-2"
-                        title="Compartir ticket"
+                        className={`relative bg-white/20 hover:bg-white/30 transition-all duration-200 rounded-full p-2 ${
+                          isSharing ? "cursor-wait opacity-70" : "cursor-pointer"
+                        }`}
+                        disabled={isSharing}
+                        title={isSharing ? "Compartiendo..." : "Compartir ticket"}
                         onClick={handleShare}
                       >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                          />
-                        </svg>
+                        {isSharing ? (
+                          // Spinner mientras comparte
+                          <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          // Icono de compartir
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                            />
+                          </svg>
+                        )}
                       </button>
                       <span className="text-sm font-medium block">
                         Ticket de Servicio
