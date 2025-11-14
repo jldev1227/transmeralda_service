@@ -33,6 +33,9 @@ const AdvancedDashboard = () => {
   // State
   const {
     servicios,
+    stats,
+    pagination,
+    obtenerServicios,
     socketConnected,
     selectedServicio,
     handleModalForm,
@@ -374,7 +377,9 @@ const AdvancedDashboard = () => {
                     Total
                   </p>
                   <p className="text-lg font-bold text-gray-900">
-                    {sortedServices?.length || 0}
+                    {typeof stats?.total === "number"
+                      ? stats.total
+                      : pagination.total || sortedServices?.length || 0}
                   </p>
                 </div>
 
@@ -385,8 +390,7 @@ const AdvancedDashboard = () => {
                     Activos
                   </p>
                   <p className="text-lg font-bold text-emerald-600">
-                    {sortedServices?.filter((s) => s.estado === "en_curso")
-                      .length || 0}
+                    {stats?.en_curso ?? 0}
                   </p>
                 </div>
 
@@ -397,9 +401,7 @@ const AdvancedDashboard = () => {
                     Realizados
                   </p>
                   <p className="text-lg font-bold text-primary-600">
-                    {sortedServices?.filter((s) =>
-                      ["realizado"].includes(s.estado),
-                    ).length || 0}
+                    {stats?.realizado ?? 0}
                   </p>
                 </div>
 
@@ -410,9 +412,7 @@ const AdvancedDashboard = () => {
                     Solicitados
                   </p>
                   <p className="text-lg font-bold text-gray-600">
-                    {sortedServices?.filter((s) =>
-                      ["solicitado"].includes(s.estado),
-                    ).length || 0}
+                    {stats?.solicitado ?? 0}
                   </p>
                 </div>
 
@@ -423,9 +423,7 @@ const AdvancedDashboard = () => {
                     Pendientes
                   </p>
                   <p className="text-lg font-bold text-amber-600">
-                    {sortedServices?.filter((s) =>
-                      ["planificado"].includes(s.estado),
-                    ).length || 0}
+                    {stats?.planificado ?? 0}
                   </p>
                 </div>
 
@@ -436,9 +434,7 @@ const AdvancedDashboard = () => {
                     Cancelados
                   </p>
                   <p className="text-lg font-bold text-danger-600">
-                    {sortedServices?.filter((s) =>
-                      ["cancelado"].includes(s.estado),
-                    ).length || 0}
+                    {stats?.cancelado ?? 0}
                   </p>
                 </div>
               </div>
@@ -469,8 +465,11 @@ const AdvancedDashboard = () => {
               <h2 className="text-xl font-semibold text-gray-900">
                 Servicios Encontrados
                 <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({sortedServices.length} resultado
-                  {sortedServices.length !== 1 ? "s" : ""})
+                  (página {pagination.page} de {pagination.totalPages}
+                  {typeof pagination.total === "number"
+                    ? ` • ${pagination.total} total`
+                    : ""}
+                  )
                 </span>
               </h2>
 
@@ -529,6 +528,52 @@ const AdvancedDashboard = () => {
                   handleSelectServicio={handleSelectServicio}
                   selectedServicio={selectedServicio}
                 />
+
+                {/* Pagination controls */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    Mostrando {pagination.count} de {pagination.total} — página{" "}
+                    {pagination.page} de {pagination.totalPages}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="px-3 py-1.5 rounded border text-sm disabled:opacity-50 hover:bg-gray-50"
+                      disabled={pagination.page <= 1}
+                      onClick={() => {
+                        if (pagination.page > 1) {
+                          obtenerServicios(
+                            pagination.page - 1,
+                            pagination.limit,
+                          );
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }}
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded border text-sm disabled:opacity-50 hover:bg-gray-50"
+                      disabled={
+                        pagination.totalPages === 0 ||
+                        pagination.page >= pagination.totalPages
+                      }
+                      onClick={() => {
+                        if (
+                          pagination.totalPages > 0 &&
+                          pagination.page < pagination.totalPages
+                        ) {
+                          obtenerServicios(
+                            pagination.page + 1,
+                            pagination.limit,
+                          );
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
