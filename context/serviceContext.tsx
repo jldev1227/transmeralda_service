@@ -105,6 +105,7 @@ interface ServiceContextType {
   servicios: ServicioConRelaciones[];
   liquidaciones: Liquidacion[];
   servicio: ServicioConRelaciones | null;
+  stats: ServiciosStats | null;
   municipios: Municipio[];
   conductores: Conductor[];
   vehiculos: Vehiculo[];
@@ -125,6 +126,12 @@ interface ServiceContextType {
   ) => Promise<ServicioConRelaciones>;
   obtenerServicio: (id: string) => Promise<ServicioConRelaciones | null>; // ✅ Agregar Promise
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+
+  // Paginación de servicios
+  pagination: PaginationMeta;
+  obtenerServicios: (page?: number, limit?: number) => Promise<void>;
+  setPage: (page: number) => void;
+  setLimit: (limit: number) => void;
 
   // Tracking de vehículos y servicios seleccionados
   vehicleTracking?: VehicleTracking | null;
@@ -398,10 +405,29 @@ export interface ApiResponse<T> {
   message?: string;
   data?: T;
   total?: number;
+  meta?: PaginationMeta;
+  stats?: ServiciosStats;
   errors?: Array<{
     field: string;
     message: string;
   }>;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  count: number;
+}
+
+export interface ServiciosStats {
+  total: number;
+  en_curso: number;
+  realizado: number;
+  solicitado: number;
+  planificado: number;
+  cancelado: number;
 }
 
 interface LiquidacionErrorEvent {
@@ -417,6 +443,14 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   children,
 }) => {
   const [servicios, setServicios] = useState<ServicioConRelaciones[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    count: 0,
+  });
+  const [stats, setStats] = useState<ServiciosStats | null>(null);
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [servicio, setServicio] = useState<ServicioConRelaciones | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
@@ -445,29 +479,82 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   );
   const [empresaCreado, setEmpresaCreado] = useState<Empresa | null>(null);
 
-  // Obtener todas las servicios
-  const obtenerServicios = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get("/api/servicios");
+  // Obtener servicios con paginación
+  const obtenerServicios = useCallback(
+    async (page?: number, limit?: number): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const targetPage = page ?? pagination.page;
+        const targetLimit = limit ?? pagination.limit;
 
-      if (response.data.success) {
-        setServicios(response.data.data);
-      } else {
-        throw new Error(
-          response.data.message || "Error al obtener liquidaciones",
+        const response = await apiClient.get("/api/servicios", {
+          params: { page: targetPage, limit: targetLimit },
+        });
+
+        if (response.data.success) {
+          setServicios(response.data.data || []);
+          if (response.data.meta) {
+            setPagination(response.data.meta as PaginationMeta);
+          } else {
+            // Compatibilidad si el backend aún no envía meta
+            setPagination((prev) => ({
+              ...prev,
+              page: targetPage,
+              limit: targetLimit,
+              total: response.data.total ?? (response.data.data?.length || 0),
+              totalPages: Math.ceil(
+                ((response.data.total ??
+                  (response.data.data?.length || 0)) as number) / targetLimit,
+              ),
+              count: response.data.data?.length || 0,
+            }));
+          }
+
+          // Stats globales desde backend, o fallback con la página actual
+          if (response.data.stats) {
+            setStats(response.data.stats as ServiciosStats);
+          } else {
+            const pageItems: ServicioConRelaciones[] = response.data.data
+              ? (response.data.data as ServicioConRelaciones[])
+              : [];
+            const countBy = (estado: EstadoServicio) =>
+              pageItems.filter((s) => s.estado === estado).length;
+            const totalFromResponse =
+              (response.data.total as number | undefined) ?? pageItems.length;
+            setStats({
+              total: totalFromResponse,
+              en_curso: countBy("en_curso"),
+              realizado: countBy("realizado"),
+              solicitado: countBy("solicitado"),
+              planificado: countBy("planificado"),
+              cancelado: countBy("cancelado"),
+            });
+          }
+        } else {
+          throw new Error(
+            response.data.message || "Error al obtener servicios",
+          );
+        }
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Error al conectar con el servidor",
         );
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Error al conectar con el servidor",
-      );
-    } finally {
-      setLoading(false);
-    }
+    },
+    [pagination.page, pagination.limit],
+  );
+
+  const setPage = useCallback((page: number) => {
+    setPagination((prev) => ({ ...prev, page }));
+  }, []);
+
+  const setLimit = useCallback((limit: number) => {
+    setPagination((prev) => ({ ...prev, limit }));
   }, []);
 
   // Obtener todas las municipios
@@ -825,16 +912,22 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     return isServiceRoute && hasToken;
   };
 
+  // Cargar catálogo principal al montar (no depende de paginación)
   useEffect(() => {
-    // Solo ejecutar estas llamadas API si NO es una ruta pública
     if (!isPublicRoute()) {
-      obtenerServicios();
       obtenerMunicipios();
       obtenerConductores();
       obtenerVehiculos();
       obtenerEmpresas();
     }
   }, []);
+
+  // Cargar servicios cuando cambie la paginación
+  useEffect(() => {
+    if (!isPublicRoute()) {
+      obtenerServicios(pagination.page, pagination.limit);
+    }
+  }, [pagination.page, pagination.limit]);
 
   // Estado para rastreo de vehículos y servicios seleccionados
   const [vehicleTracking, setVehicleTracking] =
@@ -1585,6 +1678,8 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     servicios,
     liquidaciones,
     servicio,
+    stats,
+    pagination,
     servicioTicket,
     servicioPlanilla,
     vehiculoCreado,
@@ -1596,8 +1691,11 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
     empresas,
     loading,
     registrarServicio,
+    obtenerServicios,
     obtenerServicio,
     setError,
+    setPage,
+    setLimit,
 
     // Añadir estados y métodos de tracking
     vehicleTracking,
