@@ -129,7 +129,7 @@ interface ServiceContextType {
 
   // Paginación de servicios
   pagination: PaginationMeta;
-  obtenerServicios: (page?: number, limit?: number) => Promise<void>;
+  obtenerServicios: (page?: number, limit?: number, filters?: any) => Promise<void>;
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
 
@@ -479,17 +479,40 @@ export const ServicesProvider: React.FC<ServicesProviderContext> = ({
   );
   const [empresaCreado, setEmpresaCreado] = useState<Empresa | null>(null);
 
-  // Obtener servicios con paginación
+  // Obtener servicios con paginación y filtros
   const obtenerServicios = useCallback(
-    async (page?: number, limit?: number): Promise<void> => {
+    async (page?: number, limit?: number, filters?: any): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
         const targetPage = page ?? pagination.page;
         const targetLimit = limit ?? pagination.limit;
 
+        // Construir parámetros de consulta incluyendo filtros
+        const params: any = { 
+          page: targetPage, 
+          limit: targetLimit 
+        };
+
+        // Agregar filtros si están presentes
+        if (filters) {
+          if (filters.estado) params.estado = filters.estado;
+          if (filters.proposito_servicio) params.proposito_servicio = filters.proposito_servicio;
+          if (filters.conductor_id) params.conductor_id = filters.conductor_id;
+          if (filters.vehiculo_id) params.vehiculo_id = filters.vehiculo_id;
+          if (filters.cliente_id) params.cliente_id = filters.cliente_id;
+          if (filters.origen_id) params.origen_id = filters.origen_id;
+          if (filters.destino_id) params.destino_id = filters.destino_id;
+          if (filters.fecha_solicitud) params.fecha_solicitud = filters.fecha_solicitud;
+          if (filters.fecha_realizacion) params.fecha_realizacion = filters.fecha_realizacion;
+          
+          // Ordenamiento
+          if (filters.sort) params.sort = filters.sort;
+          if (filters.order) params.order = filters.order;
+        }
+
         const response = await apiClient.get("/api/servicios", {
-          params: { page: targetPage, limit: targetLimit },
+          params,
         });
 
         if (response.data.success) {

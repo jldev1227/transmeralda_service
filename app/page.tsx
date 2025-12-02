@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MapPinIcon, PlusIcon } from "lucide-react"; // al inicio del archivo
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -77,6 +77,86 @@ const AdvancedDashboard = () => {
     to: "",
   });
 
+  // Efecto para aplicar filtros cuando cambien
+  useEffect(() => {
+    aplicarFiltros();
+  }, [filters, dateRange, dateFilterType, sortOptions]);
+
+  // Función para aplicar filtros en el backend
+  const aplicarFiltros = useCallback(async () => {
+    const backendFilters: any = {};
+
+    // Filtros básicos que coinciden con el backend
+    if (filters.estado) backendFilters.estado = filters.estado;
+    if (filters.propositoServicio) backendFilters.proposito_servicio = filters.propositoServicio;
+    if (filters.empresa) backendFilters.cliente_id = filters.empresa;
+    if (filters.vehiculo) backendFilters.vehiculo_id = filters.vehiculo;
+    if (filters.conductor) backendFilters.conductor_id = filters.conductor;
+
+    // Filtros de fecha
+    if (dateFilterType === "solicitud" && (dateRange.from || dateRange.to)) {
+      if (dateRange.from && dateRange.to) {
+        backendFilters.fecha_solicitud = dateRange.from;
+        backendFilters.fecha_realizacion = dateRange.to;
+      } else if (dateRange.from) {
+        backendFilters.fecha_solicitud = dateRange.from;
+      }
+    }
+
+    if (dateFilterType === "realizacion" && (dateRange.from || dateRange.to)) {
+      if (dateRange.from && dateRange.to) {
+        backendFilters.fecha_solicitud = dateRange.from;
+        backendFilters.fecha_realizacion = dateRange.to;
+      } else if (dateRange.from) {
+        backendFilters.fecha_solicitud = dateRange.from;
+      }
+    }
+
+    // Ordenamiento
+    backendFilters.sort = sortOptions.field;
+    backendFilters.order = sortOptions.direction.toUpperCase();
+
+    // Llamar al backend con los filtros
+    await obtenerServicios(1, pagination.limit, backendFilters);
+  }, [filters, dateRange, dateFilterType, sortOptions, obtenerServicios, pagination.limit]);
+
+  // Función helper para construir filtros actuales
+  const construirFiltrosActuales = useCallback(() => {
+    const backendFilters: any = {};
+
+    // Filtros básicos que coinciden con el backend
+    if (filters.estado) backendFilters.estado = filters.estado;
+    if (filters.propositoServicio) backendFilters.proposito_servicio = filters.propositoServicio;
+    if (filters.empresa) backendFilters.cliente_id = filters.empresa;
+    if (filters.vehiculo) backendFilters.vehiculo_id = filters.vehiculo;
+    if (filters.conductor) backendFilters.conductor_id = filters.conductor;
+
+    // Filtros de fecha
+    if (dateFilterType === "solicitud" && (dateRange.from || dateRange.to)) {
+      if (dateRange.from && dateRange.to) {
+        backendFilters.fecha_solicitud = dateRange.from;
+        backendFilters.fecha_realizacion = dateRange.to;
+      } else if (dateRange.from) {
+        backendFilters.fecha_solicitud = dateRange.from;
+      }
+    }
+
+    if (dateFilterType === "realizacion" && (dateRange.from || dateRange.to)) {
+      if (dateRange.from && dateRange.to) {
+        backendFilters.fecha_solicitud = dateRange.from;
+        backendFilters.fecha_realizacion = dateRange.to;
+      } else if (dateRange.from) {
+        backendFilters.fecha_solicitud = dateRange.from;
+      }
+    }
+
+    // Ordenamiento
+    backendFilters.sort = sortOptions.field;
+    backendFilters.order = sortOptions.direction.toUpperCase();
+
+    return backendFilters;
+  }, [filters, dateRange, dateFilterType, sortOptions]);
+
   // Select a service
   const handleSelectServicio = useCallback(
     async (servicio: ServicioConRelaciones) => {
@@ -113,111 +193,8 @@ const AdvancedDashboard = () => {
     return count;
   };
 
-  // Filter services
-  const filteredServicios = servicios.filter((servicio) => {
-    // Filtros existentes
-    if (filters.estado && servicio.estado !== filters.estado) return false;
-
-    if (
-      filters.origen &&
-      !servicio.origen_especifico
-        .toLowerCase()
-        .includes(filters.origen.toLowerCase())
-    )
-      return false;
-
-    if (
-      filters.destino &&
-      !servicio.destino_especifico
-        .toLowerCase()
-        .includes(filters.destino.toLowerCase())
-    )
-      return false;
-
-    // ✅ CORREGIDO: Filtro por empresa con igualdad estricta
-    if (filters.empresa) {
-      const clienteId = servicio.cliente_id?.toString().toLowerCase() || "";
-      const filtroEmpresa = filters.empresa.toString().toLowerCase();
-
-      if (clienteId !== filtroEmpresa && !clienteId.includes(filtroEmpresa)) {
-        return false;
-      }
-    }
-
-    if (
-      filters.propositoServicio &&
-      servicio.proposito_servicio !== filters.propositoServicio
-    )
-      return false;
-
-    // ✅ CORREGIDO: Filtro por vehículo con igualdad estricta
-    if (filters.vehiculo) {
-      const vehiculoId = servicio.vehiculo_id?.toString().toLowerCase() || "";
-      const filtroVehiculo = filters.vehiculo.toString().toLowerCase();
-
-      // Solo buscar en servicios que TIENEN vehiculo_id (no undefined/null/empty)
-      if (!servicio.vehiculo_id) return false;
-
-      // Verificar coincidencia exacta O que contenga el filtro
-      if (
-        vehiculoId !== filtroVehiculo &&
-        !vehiculoId.includes(filtroVehiculo)
-      ) {
-        return false;
-      }
-    }
-
-    // ✅ CORREGIDO: Filtro por conductor con igualdad estricta
-    if (filters.conductor) {
-      const conductorNombre =
-        `${servicio.conductor?.nombre || ""} ${servicio.conductor?.apellido || ""}`
-          .toLowerCase()
-          .trim();
-      const conductorId = servicio.conductor_id?.toString().toLowerCase() || "";
-      const filtroConductor = filters.conductor.toString().toLowerCase();
-
-      // Solo buscar en servicios que TIENEN conductor
-      if (!servicio.conductor_id && !conductorNombre) return false;
-
-      // Verificar coincidencia exacta O que contenga el filtro
-      const nombreMatch =
-        conductorNombre === filtroConductor ||
-        conductorNombre.includes(filtroConductor);
-      const idMatch =
-        conductorId === filtroConductor ||
-        conductorId.includes(filtroConductor);
-
-      if (!nombreMatch && !idMatch) return false;
-    }
-
-    // Filtrar por rango de fechas (sin cambios)
-    if (dateRange.from || dateRange.to) {
-      const dateField =
-        dateFilterType === "solicitud"
-          ? servicio.fecha_solicitud
-          : servicio.fecha_realizacion;
-
-      if (dateFilterType === "realizacion" && !dateField) {
-        return false;
-      }
-
-      const serviceDate = dateField
-        ? new Date(dateField).toISOString().split("T")[0]
-        : "";
-
-      if (!serviceDate) return false;
-
-      if (dateRange.from && serviceDate < dateRange.from) {
-        return false;
-      }
-
-      if (dateRange.to && serviceDate > dateRange.to) {
-        return false;
-      }
-    }
-
-    return true;
-  });
+  // Ya no filtramos del lado del cliente, usamos directamente los servicios del backend
+  // que ya vienen filtrados por obtenerServicios()
 
   const empresaOptions = empresas.map((empresa) => ({
     value: empresa.id,
@@ -234,69 +211,8 @@ const AdvancedDashboard = () => {
     label: `${conductor.nombre} ${conductor.apellido}  (${conductor.numero_identificacion})`,
   }));
 
-  function sortServicios(
-    servicios: ServicioConRelaciones[],
-    field: string,
-    direction: "asc" | "desc",
-  ): ServicioConRelaciones[] {
-    return [...servicios].sort((a, b) => {
-      // Función para acceder de forma segura a propiedades anidadas
-      function getProperty(obj: any, path: string): any {
-        return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
-      }
-
-      const valueA = getProperty(a, field);
-      const valueB = getProperty(b, field);
-
-      // Manejo de valores indefinidos
-      if (valueA === undefined && valueB === undefined) return 0;
-      if (valueA === undefined) return 1;
-      if (valueB === undefined) return -1;
-
-      // Ordenamiento por tipo
-      if (typeof valueA === "string" && typeof valueB === "string") {
-        return direction === "asc"
-          ? valueA.localeCompare(valueB)
-          : valueB.localeCompare(valueA);
-      }
-
-      // Fechas
-      if (
-        valueA instanceof Date ||
-        valueB instanceof Date ||
-        (typeof valueA === "string" && /^\d{4}-\d{2}-\d{2}/.test(valueA)) ||
-        (typeof valueB === "string" && /^\d{4}-\d{2}-\d{2}/.test(valueB))
-      ) {
-        const dateA =
-          valueA instanceof Date ? valueA : new Date(valueA as string);
-        const dateB =
-          valueB instanceof Date ? valueB : new Date(valueB as string);
-
-        return direction === "asc"
-          ? dateA.getTime() - dateB.getTime()
-          : dateB.getTime() - dateA.getTime();
-      }
-
-      // Numéricos
-      const numA = Number(valueA);
-      const numB = Number(valueB);
-
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return direction === "asc" ? numA - numB : numB - numA;
-      }
-
-      // Fallback para otros tipos
-      return direction === "asc"
-        ? String(valueA).localeCompare(String(valueB))
-        : String(valueB).localeCompare(String(valueA));
-    });
-  }
-
-  const sortedServices = sortServicios(
-    filteredServicios,
-    sortOptions.field,
-    sortOptions.direction,
-  );
+  // Los servicios ya vienen ordenados del backend, pero mantenemos esta función por si acaso
+  const sortedServices = servicios;
 
   const handleButtonPressForm = () => {
     // Pequeño retraso para asegurar que la limpieza se complete antes de abrir el modal
@@ -544,6 +460,7 @@ const AdvancedDashboard = () => {
                           obtenerServicios(
                             pagination.page - 1,
                             pagination.limit,
+                            construirFiltrosActuales()
                           );
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }
@@ -565,6 +482,7 @@ const AdvancedDashboard = () => {
                           obtenerServicios(
                             pagination.page + 1,
                             pagination.limit,
+                            construirFiltrosActuales()
                           );
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }
