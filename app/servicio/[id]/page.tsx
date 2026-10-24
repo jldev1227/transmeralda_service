@@ -1254,7 +1254,7 @@ function ServicioViewCliente({ servicioId }: { servicioId: string }) {
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/outdoors-v12",
+        style: "mapbox://styles/mapbox-map-design/cmclxpx6g007101s2d4kq4ivs",
         center: [-72.395, 5.3377],
         zoom: 12,
       });
